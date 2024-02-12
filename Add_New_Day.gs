@@ -13,19 +13,20 @@ function addNewDay() {
   // Get the current date
   var currentDate = new Date();
   
-  // Move existing data down
-  sheet.insertRowsAfter(2, 1);
+  // Get existing data below row 2 (excluding header and example rows)
+  var existingDataRange = sheet.getRange(3, 1, sheet.getLastRow() - 2, sheet.getLastColumn());
+  var existingData = existingDataRange.getValues();
+  
+  // Shift existing data down by 25 rows
+  var numRowsToShift = 25;
+  var newDataRange = sheet.getRange(28 + numRowsToShift, 1, sheet.getLastRow() - 2 - numRowsToShift, sheet.getLastColumn());
+  existingDataRange.copyTo(newDataRange);
+  
+  // Clear the old data above row 28
+  existingDataRange.clear();
   
   // Set the date for the new day
   sheet.getRange("A3").setValue(currentDate);
-  
-  // Populate cells with "25" starting from column 3
-  var numColumns = sheet.getLastColumn() - 2; // Excluding the first two columns
-  var valueArray = [];
-  for (var i = 0; i < numColumns; i++) {
-    valueArray.push(["25"]);
-  }
-  sheet.getRange("C3").offset(0, 0, 1, numColumns).setValues(valueArray);
   
   // Inform the user
   ui.alert('New day started successfully!');
