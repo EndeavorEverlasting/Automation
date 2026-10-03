@@ -68,5 +68,7 @@
       "PROD_PATH_CURRENT",
       "ENTRYPOINT_PROVED"
     ]
-  }
+  },
+  "resolver": "scripts/path_receipt.py",
+  "receipt_artifact_default": "Outputs/path-receipt.json"
 }
