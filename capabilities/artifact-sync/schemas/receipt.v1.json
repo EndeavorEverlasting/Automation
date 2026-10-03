@@ -1,60 +1,17 @@
 {
   "schema_version": "artifact-sync-receipt/v1",
-  "description": "Deterministic synchronization receipt emitted to stdout and optionally to an ignored/private artifact path. A separately sanitized projection may be tracked when a consumer explicitly requires durable public evidence.",
-  "required_fields": [
-    "schema_version",
-    "binding_id",
-    "operation",
-    "checkpoint_trigger",
-    "state",
-    "authority",
-    "artifact_kind",
-    "local_materialization_mode",
-    "provider_freshness_checked",
-    "conflict_checked",
-    "read_back_verified",
-    "proof_ceiling"
-  ],
-  "operations": [
-    "status",
-    "pull",
-    "push",
-    "reconcile",
-    "checkpoint",
-    "periodic_poll"
-  ],
-  "states": [
-    "NO_CHANGE",
-    "SYNCED",
-    "BLOCKED_AUTH",
-    "BLOCKED_CONFLICT",
-    "BLOCKED_UNRESOLVED_LOCATOR",
-    "UNSUPPORTED_PROVIDER_MUTATION",
-    "FAILED"
-  ],
-  "optional_private_runtime_fields": [
-    "provider_revision",
-    "provider_change_token",
-    "provider_locator_fingerprint",
-    "content_sha256_before",
-    "content_sha256_after",
-    "local_scratch_path"
-  ],
+  "description": "Deterministic synchronization receipt emitted to stdout and optionally to ignored/private runtime storage.",
+  "required_fields": ["schema_version","binding_id","operation","checkpoint_trigger","state","authority","artifact_kind","local_materialization_mode","provider_freshness_checked","baseline_checked","conflict_checked","read_back_verified","proof_ceiling"],
+  "operations": ["status","pull","push","reconcile","checkpoint","periodic_poll"],
+  "states": ["NO_CHANGE","SYNCED","BLOCKED_AUTH","BLOCKED_NO_BASELINE","BLOCKED_CONFLICT","BLOCKED_UNRESOLVED_LOCATOR","UNSUPPORTED_PROVIDER_MUTATION","FAILED"],
+  "optional_private_runtime_fields": ["provider_revision","provider_change_token","provider_locator_fingerprint","baseline_state_fingerprint","content_sha256_before","content_sha256_after","local_scratch_path"],
   "sanitized_tracking_rules": [
-    "A tracked/public projection must remove provider_revision, provider_change_token, local_scratch_path, and any raw locator/account identity.",
-    "provider_locator_fingerprint may be retained only when it is a one-way fingerprint that cannot be used as the provider locator.",
-    "state must not be promoted to SYNCED until the provider-side write and read-back verification both succeed when mutation is requested.",
+    "Tracked/public projections remove provider_revision, provider_change_token, local_scratch_path, raw baseline-store location, and raw locator/account identity.",
+    "Provider/baseline fingerprints are retained only when one-way and unusable as locators.",
+    "A provider-bound push/reconcile mutation must not report SYNCED until provider write and provider read-back verification both succeed.",
+    "A pull may report SYNCED without a provider write after provider freshness/read and local content verification succeed.",
+    "The durable baseline advances only after the operation's required verification succeeds; blocked/failed operations do not advance it.",
     "A blocked or failed sync does not disable future checkpoint or periodic attempts."
   ],
-  "proof_states": [
-    "DESIGNED",
-    "IMPLEMENTED",
-    "LOCALLY_VALIDATED",
-    "INTEGRATION_VALIDATED",
-    "COMMITTED",
-    "PUSHED",
-    "MERGED",
-    "DEPLOYED",
-    "PRODUCTION_VERIFIED"
-  ]
+  "proof_states": ["DESIGNED","IMPLEMENTED","LOCALLY_VALIDATED","INTEGRATION_VALIDATED","COMMITTED","PUSHED","MERGED","DEPLOYED","PRODUCTION_VERIFIED"]
 }
