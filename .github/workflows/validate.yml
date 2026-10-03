@@ -31,7 +31,7 @@ jobs:
       - name: Compile Python entrypoints
         run: python -m py_compile scripts/prompt_runtime.py scripts/path_receipt.py
 
-      - name: Resolve live P92 invocation
+      - name: Resolve P92 invocation from canonical source or provenance snapshot
         run: |
           mkdir -p Outputs
           python scripts/prompt_runtime.py \
@@ -51,12 +51,22 @@ jobs:
           assert payload["implementation_required"] is True, payload
           assert payload["prompt_ids"] == ["P92"], payload
           resolved = payload["resolutions"][0]
-          assert resolved["state"] == "RESOLVED_PORTABLE", resolved
+          assert resolved["state"] in {"RESOLVED_PORTABLE", "RESOLVED_SNAPSHOT_PORTABLE"}, resolved
           assert resolved["canonical_repository"] == "EndeavorEverlasting/TokenCorridor", resolved
           assert resolved["name"] == "Canonical Path Prompt", resolved
           assert resolved["source_blob_sha"], resolved
           assert len(resolved["copy_content_sha256"]) == 64, resolved
           assert "ESTABLISH AND ENFORCE THE CANONICAL DEVELOPMENT AND PRODUCTION PATH" in resolved["copy_content"], resolved
+
+          if resolved["state"] == "RESOLVED_SNAPSHOT_PORTABLE":
+              assert resolved["source_transport"] == "TRACKED_PROVENANCE_SNAPSHOT", resolved
+              assert resolved["canonical_latestness"] == "UNVERIFIED", resolved
+              manifest = json.loads(Path("harness/prompt-mirror/manifest.v1.json").read_text(encoding="utf-8"))
+              expected = next(
+                  item for item in manifest["entries"]
+                  if item["source_path"].endswith("registry/prompts/spec-architecture-prompts.v1.json")
+              )
+              assert resolved["source_blob_sha"] == expected["source_blob_sha"], (resolved, expected)
           PY
 
       - name: Emit P92 path and execution-context receipt
