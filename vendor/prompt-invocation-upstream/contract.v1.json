@@ -1,0 +1,83 @@
+{
+  "schema_version": "prompt-invocation-upstream/v1",
+  "contract_id": "prompt-invocation-upstream",
+  "purpose": "Provide one stable upstream dependency surface for P-number invocation so downstream repositories and agents can resolve and execute prompts without understanding Prompt Kit registry layout, migration topology, retained donor repositories, or conversational/model memory.",
+  "stable_consumer_surfaces": {
+    "cli": "scripts/prompt_invocation_resolver.py",
+    "catalog": "harness/exports/prompt-invocation-catalog.v1.json",
+    "result_schema": "prompt-invocation-resolution-result/v1"
+  },
+  "consumer_inputs": {
+    "required": [
+      "operator_text"
+    ],
+    "optional": [
+      "catalog_path"
+    ],
+    "forbidden_as_normal_consumer_requirements": [
+      "TokenCorridor registry path knowledge",
+      "product-boundaries.v1.json traversal",
+      "Triage checkout path",
+      "donor repository registry traversal",
+      "prompt title fuzzy matching",
+      "model or conversational memory"
+    ]
+  },
+  "consumer_outputs": {
+    "required_fields": [
+      "prompt_ids",
+      "intent",
+      "execution_required",
+      "implementation_required",
+      "overall_state",
+      "resolutions"
+    ],
+    "resolution_provenance_fields": [
+      "canonical_repository",
+      "registry_path",
+      "source_blob_sha",
+      "copy_content_sha256",
+      "copy_content"
+    ]
+  },
+  "invocation_semantics": {
+    "bare_p_number": "EXECUTE",
+    "invoke_or_execute": "EXECUTE",
+    "invoke_and_implement": "EXECUTE_AND_IMPLEMENT",
+    "explicit_prompt_mutation": "MUTATE_PROMPT",
+    "execute_plus_mutate": "EXECUTE_THEN_MUTATE",
+    "explanatory_reference": "REFERENCE"
+  },
+  "ownership_boundary": {
+    "downstream_rule": "Downstream repositories consume this contract and do not reimplement prompt discovery, registry composition, retained-source routing, or authority selection.",
+    "upstream_rule": "The upstream resolver owns registry composition, authority routing, migration compatibility, and distribution catalog generation.",
+    "retained_authority_rule": "Retained repository-local prompts may be distributed through the upstream catalog without transferring prompt-definition authority.",
+    "rename_rule": "Repository slug and physical source paths are provenance, not semantic API identity. Consumers bind to contract_id/schema_version and a configurable upstream locator."
+  },
+  "availability_modes": {
+    "live_upstream": {
+      "state": "UPSTREAM_LIVE",
+      "description": "Resolver runs in an upstream environment with current canonical sources."
+    },
+    "pinned_catalog": {
+      "state": "UPSTREAM_CATALOG_PINNED",
+      "description": "Resolver consumes the tracked upstream catalog. Exact source provenance is preserved, but freshness is bounded by the catalog build inputs."
+    }
+  },
+  "failure_states": [
+    "SOURCE_CONFLICT",
+    "UNRESOLVED",
+    "PROVIDER_LOOKUP_REQUIRED",
+    "CATALOG_STALE_OR_INVALID"
+  ],
+  "invariants": [
+    "Exact P-number identity wins; fuzzy semantic substitution is forbidden.",
+    "An invoked operational prompt is instructions to execute, not text to rewrite.",
+    "invoke and implement requires both execution and implementation intent in the result packet.",
+    "Downstream consumers never need a Triage checkout or Prompt Kit registry topology.",
+    "The distribution catalog is generated and provenance-preserving, never a competing prompt-definition authority.",
+    "Unknown or conflicting authority fails closed instead of guessing.",
+    "Prompt contribution, mutation, retirement, and registry governance remain upstream-owner concerns, not downstream consumer concerns."
+  ],
+  "proof_ceiling": "This contract proves deterministic prompt identity/intent resolution and provenance. Actual prompt execution, repository mutation, validation, integration, deployment, and production behavior remain separate proof states."
+}
