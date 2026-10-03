@@ -92,6 +92,13 @@ jobs:
             --require-ready \
             --output Outputs/runtime-handoff-validation.json
 
+      - name: Validate idea-work continuity deferred adoption
+        run: |
+          mkdir -p Outputs
+          python scripts/validate_idea_work_continuity.py \
+            --receipt docs/examples/idea-work-continuity.tokencorridor-deferred.v1.json \
+            --output Outputs/idea-work-continuity-validation.json
+
       - name: Resolve P92 through pinned upstream dependency
         run: |
           mkdir -p Outputs
