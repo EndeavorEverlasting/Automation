@@ -33,6 +33,19 @@ python scripts/prompt_runtime.py --text "invoke & implement P92"
 
 Automation delegates prompt identity, intent semantics, authority routing, and prompt bytes to the pinned `prompt-invocation-upstream/v1` dependency. It does not reproduce Prompt Kit registry logic. See [docs/PROMPT_RUNTIME.md](docs/PROMPT_RUNTIME.md).
 
+## Runtime distribution without executor judgment
+
+Automation consumes an upstream `planning.runtime_partition` placement decision through an execution-facing validation contract. It does not become a competing planner or broker.
+
+A READY handoff must be explicit enough for ordinary executors such as Cursor, OpenCode, connected-provider runtimes, or CI without relying on model memory or frontier-model judgment.
+
+- [docs/RUNTIME_DISTRIBUTION.md](docs/RUNTIME_DISTRIBUTION.md)
+- [harness/contracts/runtime-execution-handoff.v1.json](harness/contracts/runtime-execution-handoff.v1.json)
+- [docs/PUBLIC_PRIVATE_BRIDGE.md](docs/PUBLIC_PRIVATE_BRIDGE.md)
+- `python scripts/validate_runtime_handoff.py --packet <packet.json> --require-ready`
+
+Tracked public handoffs fail closed on private continuity-store links, person-specific workstation paths, and secret-bearing fields. Private operator continuity may point to this public repository, but this repository must remain usable without private continuity access.
+
 ## Repository charter
 
 The canonical ownership and placement contracts are:

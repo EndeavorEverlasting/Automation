@@ -37,6 +37,12 @@ This repository is intentionally ubiquitous. A capability belongs here when its 
 8. **Secrets and runtime state never become source.**  
    Credentials, browser profiles, cookies, session stores, tokens, generated private data, and other runtime secrets must stay outside version control.
 
+9. **Public repository independence.**  
+   Private continuity stores may help the operator incubate or coordinate work, but a public Automation capability must be usable without private continuity access. Public Git must not expose private continuity-store locators merely for traceability.
+
+10. **Executor determinism over model assumptions.**  
+   Runtime-distributed work must be packaged with explicit scope, capabilities, evidence, mutation authority, acceptance gates, and proof ceiling. No reusable contract may assume frontier-model reasoning quality to fill missing architecture.
+
 ## Placement test
 
 Before adding a capability, ask:
@@ -82,6 +88,8 @@ Capabilities should:
 - add compatibility through adapters rather than forks.
 
 ## Repository evolution
+
+Private incubation may precede public capability admission. Incubation is not source control and does not make an idea an admitted capability. Public admission still requires the contribution and seam-boundary gates.
 
 This repository may grow from a small collection of utilities into a shared automation platform. Growth should preserve the invariants above.
 

@@ -55,6 +55,8 @@ A new `capabilities/<id>/` boundary must define:
 - explicit non-goals and forbidden assumptions;
 - machine-readable artifact/schema authority where applicable;
 - runtime/secrets boundary;
+- supported execution environments and required capabilities;
+- mutation authority, evidence inputs, and freshness requirements for runtime-distributed work;
 - validation/proof gate;
 - canonical repository-relative path;
 - production/use path and promotion boundary, or an explicit `UNDECLARED` state;
@@ -94,6 +96,26 @@ When an operator invokes a P-number:
 - never recreate Prompt Kit registry traversal or retained-source routing here.
 
 If the prompt definition itself needs creation, mutation, or retirement, contribute that change to the canonical upstream prompt owner.
+
+## Runtime-distributed contributions
+
+Runtime placement is an upstream planning decision; Automation validates the execution-facing handoff rather than creating a second planning protocol.
+
+Tracked handoffs must conform to:
+
+- `harness/contracts/runtime-execution-handoff.v1.json`
+- `docs/RUNTIME_DISTRIBUTION.md`
+- `docs/PUBLIC_PRIVATE_BRIDGE.md`
+
+Before local execution, validate READY packets with:
+
+```powershell
+python scripts/validate_runtime_handoff.py --packet <packet.json> --require-ready
+```
+
+A runtime handoff must carry explicit owned/forbidden scope, evidence inputs, mutation authority, acceptance gates, proof ceiling, and freshness requirements. Local executors must not be expected to reconstruct architecture from chat history.
+
+Private operator continuity may inform a contribution, but public Git must contain only the sanitized reusable contract, synthetic fixtures, and public provenance. Do not commit private continuity-store URLs/IDs merely to preserve traceability.
 
 ## Pull request proof
 

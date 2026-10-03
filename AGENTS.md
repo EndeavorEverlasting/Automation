@@ -56,6 +56,31 @@ When the operator supplies or references a P-number:
 
 Pinned dependency manifest: `vendor/prompt-invocation-upstream/manifest.v1.json`.
 
+## Runtime execution handoff contract
+
+Automation consumes `planning.runtime_partition` as a semantic upstream dependency. This repository validates execution-facing placement; it does not invent a competing planner or broker.
+
+Before executing a runtime-distributed packet:
+
+1. Read `harness/contracts/runtime-execution-handoff.v1.json`.
+2. Read `docs/RUNTIME_DISTRIBUTION.md` and `docs/PUBLIC_PRIVATE_BRIDGE.md`.
+3. Validate the packet with:
+   `python scripts/validate_runtime_handoff.py --packet <packet.json> --require-ready`
+4. Treat `UNKNOWN_RUNTIME` as blocked, not executable.
+5. Execute only `owned_scope`; preserve `forbidden_scope`.
+6. Refresh only facts named by `freshness_requirements`; do not rediscover already inherited evidence without a freshness reason.
+7. Return the requested artifacts and acceptance-gate evidence without collapsing proof states.
+
+Local executors such as Cursor/OpenCode execute exact READY packets. They do not decide canonical ownership, select a different prompt, broaden scope, or replace the runtime-placement decision.
+
+No contract may assume a frontier model is executing it. Architecture or ownership judgment must be resolved and persisted before a packet becomes READY.
+
+### Public/private execution boundary
+
+- Never commit private continuity-store URLs/IDs, credentials, authenticated browser/session state, or person-specific workstation paths.
+- Public tracked packets use semantic identities, repository-relative paths, sanitized evidence, and synthetic fixtures.
+- A private continuity store may reference public Automation; Automation must not require a backlink to that private store.
+
 ## P92 canonical-path contract
 
 Before emitting path-sensitive mutation commands, read `harness/contracts/canonical-path.v1.json` and run:
