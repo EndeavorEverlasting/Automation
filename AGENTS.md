@@ -39,7 +39,11 @@ The current prompt-source repository name is configuration and may change. Do no
 
 ## P92 canonical-path contract
 
-Before emitting path-sensitive mutation commands, read `harness/contracts/canonical-path.v1.json`.
+Before emitting path-sensitive mutation commands, read `harness/contracts/canonical-path.v1.json` and run:
+
+`python scripts/path_receipt.py --repo-root .`
+
+Treat its machine-readable receipt as the current path/execution-context evidence.
 
 - Do not invent a new checkout path because the current one is unknown.
 - An unresolved development root is `UNKNOWN_BLOCK_NEW_CLONE`.
