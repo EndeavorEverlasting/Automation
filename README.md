@@ -41,6 +41,7 @@ The canonical ownership and placement contracts are:
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 - [AGENTS.md](AGENTS.md) for repository-capable agents
 - [harness/contracts/canonical-path.v1.json](harness/contracts/canonical-path.v1.json) for P92 path ownership
+- `python scripts/path_receipt.py --repo-root .` for the current PATH INPUT / execution-context receipt
 
 The short version:
 
