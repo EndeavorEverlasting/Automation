@@ -116,3 +116,19 @@ Execution invariants:
 7. Checkpoint triggers are `before_consume`, `after_mutation`, `handoff`, and `periodic`. Periodic checks do not replace before-use or pre-write freshness.
 8. Entire may preserve provenance around the operation, but artifact-sync owns transfer/conflict/storage behavior.
 9. Local executors implement the frozen contract; they do not redesign authority, privacy, storage, native-write, or conflict semantics.
+
+
+## Artifact continuity preflight — inherited rule, not per-repo rediscovery
+
+Before reading, editing, formatting, exporting, creating, or returning a document/spreadsheet/presentation/file, apply:
+
+- `harness/contracts/artifact-continuity-preflight.v1.json`
+- `docs/ARTIFACT_CONTINUITY_PREFLIGHT.md`
+
+If a known provider-backed source exists, resolve/use that exact source before creating a new canonical local artifact. A provider-capable current runtime performs provider work it can actually perform; it does not punt source-of-truth judgment to Cursor/OpenCode. Local output is derivative/ephemeral by default unless explicit export intent says otherwise.
+
+Validate a sanitized decision packet with:
+
+`python scripts/validate_artifact_continuity_preflight.py --packet <packet.json>`
+
+Recurring rediscovery of provider-link/local-artifact parity is an inheritance/activation defect. New repository/bootstrap paths should depend on the semantic contract rather than copy the rule into every repository.
