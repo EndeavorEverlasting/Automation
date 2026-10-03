@@ -70,9 +70,10 @@ The short version:
 
 ## Capabilities
 
-The first admitted capability is:
+Admitted capabilities:
 
 - [`playlist-link-extraction`](capabilities/playlist-link-extraction/CAPABILITY.md) — status `CORE_IMPLEMENTED_ADAPTERS_PENDING`
+- [`agent-hook-runtime`](capabilities/agent-hook-runtime/CAPABILITY.md) — status `CORE_IMPLEMENTED_CURSOR_ADAPTER_DIAGNOSTIC_ONLY`; separates JSON-stdio host transport/schema proof from consumer policy and emits privacy-safe runtime receipts.
 
 Reusable core entrypoint:
 

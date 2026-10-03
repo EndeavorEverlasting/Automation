@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent-hook-transport-receipt/v1",
+  "title": "Agent hook transport receipt",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "state",
+    "byte_length",
+    "sha256",
+    "content_persisted",
+    "payload_keys",
+    "input_complete"
+  ],
+  "properties": {
+    "schema_version": {"const": "agent-hook-transport-receipt/v1"},
+    "state": {
+      "enum": [
+        "PARSED",
+        "EMPTY_INPUT",
+        "DECODE_ERROR",
+        "INVALID_JSON",
+        "NON_OBJECT_JSON",
+        "INPUT_TOO_LARGE"
+      ]
+    },
+    "byte_length": {"type": "integer", "minimum": 0},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "content_persisted": {"const": false},
+    "payload_keys": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "input_complete": {"type": "boolean"},
+    "encoding": {"type": ["string", "null"]},
+    "error_type": {"type": "string"},
+    "error_offset": {"type": "integer", "minimum": 0},
+    "json_type": {"type": "string"},
+    "limit_bytes": {"type": "integer", "minimum": 1}
+  },
+  "additionalProperties": false
+}
