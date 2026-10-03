@@ -11,6 +11,16 @@ def _req(obj:Any, fields:list[str], prefix:str, errors:list[str]):
     for field in fields:
         if field not in obj: errors.append(f"{prefix} missing required field: {field}")
 
+def _check_handle(value: Any, name: str, errors: list[str]) -> None:
+    if not isinstance(value, str) or not value.strip():
+        errors.append(f"{name} must be a non-empty string handle")
+        return
+    drive_like = "://" in value
+    absolute_like = value.startswith("/") or value.startswith("\\")
+    windows_like = len(value) > 2 and value[1] == ":" and value[2] in ("/", "\\")
+    if drive_like or absolute_like or windows_like:
+        errors.append(f"{name} must not be a URL or absolute path")
+
 def validate_binding(binding:Any, contract:dict[str,Any])->list[str]:
     errors=[]
     if not isinstance(binding,dict): return ["binding root must be a JSON object"]
@@ -19,12 +29,18 @@ def validate_binding(binding:Any, contract:dict[str,Any])->list[str]:
     if binding.get("artifact_kind") not in contract["artifact_kinds"]: errors.append("artifact_kind is unsupported")
     if binding.get("authority") not in contract["authority_states"]: errors.append("authority is unsupported")
     provider=binding.get("provider"); _req(provider,contract["provider_required_fields"],"provider",errors)
-    if isinstance(provider,dict) and provider.get("locator_resolution")!="private_runtime_only": errors.append("provider.locator_resolution must be private_runtime_only")
+    if isinstance(provider,dict):
+        _check_handle(provider.get("locator_handle"), "provider.locator_handle", errors)
+        if provider.get("locator_resolution")!="private_runtime_only": errors.append("provider.locator_resolution must be private_runtime_only")
     baseline=binding.get("baseline_state"); _req(baseline,contract["baseline_state_required_fields"],"baseline_state",errors)
-    if isinstance(baseline,dict) and baseline.get("state_resolution")!="private_runtime_only": errors.append("baseline_state.state_resolution must be private_runtime_only")
+    if isinstance(baseline,dict):
+        _check_handle(baseline.get("state_handle"), "baseline_state.state_handle", errors)
+        if baseline.get("state_resolution")!="private_runtime_only": errors.append("baseline_state.state_resolution must be private_runtime_only")
     if binding.get("authority") in contract["local_side_required_when"]:
         local=binding.get("local_side"); _req(local,contract["local_side_required_fields"],"local_side",errors)
-        if isinstance(local,dict) and local.get("locator_resolution")!="private_runtime_only": errors.append("local_side.locator_resolution must be private_runtime_only")
+        if isinstance(local,dict):
+            _check_handle(local.get("locator_handle"), "local_side.locator_handle", errors)
+            if local.get("locator_resolution")!="private_runtime_only": errors.append("local_side.locator_resolution must be private_runtime_only")
     material=binding.get("local_materialization"); _req(material,contract["local_materialization_required_fields"],"local_materialization",errors)
     if isinstance(material,dict):
         mode=material.get("mode"); retain=material.get("retain_after_success"); budget=material.get("max_retained_bytes")
@@ -39,6 +55,8 @@ def validate_binding(binding:Any, contract:dict[str,Any])->list[str]:
         if policy.get("conflict_policy") not in contract["conflict_policies"]: errors.append("sync_policy.conflict_policy is unsupported")
         if policy.get("freshness_policy") not in contract["freshness_policies"]: errors.append("sync_policy.freshness_policy is unsupported")
         if policy.get("native_write_policy") not in contract["native_write_policies"]: errors.append("sync_policy.native_write_policy is unsupported")
+        if str(binding.get("artifact_kind","")).startswith("native_") and policy.get("native_write_policy")!="provider_native_api_required":
+            errors.append("native artifact kinds require native_write_policy=provider_native_api_required")
         cps=policy.get("checkpoint_triggers")
         if not isinstance(cps,list) or not cps: errors.append("sync_policy.checkpoint_triggers must be a non-empty list")
         elif any(x not in contract["checkpoint_triggers"] for x in cps): errors.append("sync_policy.checkpoint_triggers contains an unsupported trigger")
