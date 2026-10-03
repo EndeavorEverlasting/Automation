@@ -146,3 +146,12 @@ For new or modified provider-backed artifact flows:
 - require provider write plus read-back verification before reporting `SYNCED`;
 - keep authentication, tokens, account context, and private locator maps outside Git;
 - route semantic changes to the artifact-sync contract owner rather than asking a lower-capability executor to invent policy.
+
+
+## Artifact continuity is a bootstrap/inheritance concern
+
+Do not solve provider-backed artifact continuity by adding a fresh handwritten rule to each repository.
+
+Repositories/workflows that may consume or produce provider-backed artifacts should consume `artifact-continuity-preflight/v1` through root wayfinding, a pinned shared dependency, or repository/bootstrap tooling.
+
+The preflight determines known provider source, exact identity, runtime/provider ownership, local derivative role, provider-link delivery, and unresolved sync obligations. `artifact-sync` owns synchronization mechanics after the preflight selects a binding.
