@@ -37,6 +37,15 @@ Adapters feed normalized observations into the core. They must not redefine the 
 
 See `adapters/README.md`.
 
+### Admitted offline adapter: `yt-dlp-json`
+
+```powershell
+python capabilities/playlist-link-extraction/adapters/yt-dlp-json/adapt.py `
+  --payload capabilities/playlist-link-extraction/adapters/yt-dlp-json/fixtures/sample-playlist.v1.json `
+  --target-id target-a `
+  --output-batch Outputs/playlist-link-observation-batch.json
+```
+
 ## Invocation
 
 ```powershell
@@ -78,4 +87,13 @@ The reusable **core** is implemented and proven with synthetic observation fixtu
 - canonical JSON artifact + CSV projection;
 - CLI validate/build entrypoint.
 
-Live provider adapters, authenticated runtime extraction, and production use remain unproven.
+The offline **`yt-dlp-json`** adapter is implemented and proven with a synthetic
+yt-dlp-style playlist fixture:
+
+- provider payload validation fails closed;
+- ordered membership is preserved, including repeats;
+- observation batches feed the existing core without core schema changes.
+
+Live `yt-dlp` execution, authenticated runtime extraction, browser-backed
+extraction, and production use remain unproven. Capability status remains
+`CORE_IMPLEMENTED_ADAPTERS_PENDING` because live provider use is still unproven.

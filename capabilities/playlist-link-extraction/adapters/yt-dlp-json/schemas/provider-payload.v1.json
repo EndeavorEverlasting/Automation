@@ -1,0 +1,28 @@
+{
+  "schema_version": "yt-dlp-json-playlist-payload/v1",
+  "description": "Offline yt-dlp-style playlist JSON accepted by the yt-dlp-json adapter. This is provider-specific input, not a generic Automation core schema.",
+  "required_fields": [
+    "entries"
+  ],
+  "optional_fields": [
+    "_type",
+    "id",
+    "title",
+    "webpage_url",
+    "url",
+    "original_url",
+    "extractor",
+    "extractor_key"
+  ],
+  "entry_url_fields": [
+    "webpage_url",
+    "url",
+    "original_url"
+  ],
+  "notes": [
+    "When _type is present it must equal playlist.",
+    "Null entries are skipped and do not consume ordinals.",
+    "The adapter preserves repeated URLs; deduplication belongs to the reusable core.",
+    "Cookies, tokens, browser profiles, and private account state must never appear in tracked fixtures."
+  ]
+}

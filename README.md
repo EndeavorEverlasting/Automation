@@ -84,7 +84,18 @@ python capabilities/playlist-link-extraction/extract_links.py `
   --output-csv Outputs/playlist-link-artifact.csv
 ```
 
-Adapters emit `playlist-link-observation-batch/v1`; the core owns normalization, ordered occurrences, unique-link aggregation, canonical JSON, and CSV projection. Live provider adapters remain the next transition.
+Adapters emit `playlist-link-observation-batch/v1`; the core owns normalization, ordered occurrences, unique-link aggregation, canonical JSON, and CSV projection.
+
+Offline adapter surface:
+
+```powershell
+python capabilities/playlist-link-extraction/adapters/yt-dlp-json/adapt.py `
+  --payload capabilities/playlist-link-extraction/adapters/yt-dlp-json/fixtures/sample-playlist.v1.json `
+  --target-id target-a `
+  --output-batch Outputs/playlist-link-observation-batch.json
+```
+
+Live provider execution remains unproven; status stays `CORE_IMPLEMENTED_ADAPTERS_PENDING`.
 
 ## Existing experiments
 

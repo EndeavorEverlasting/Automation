@@ -17,8 +17,25 @@ python capabilities/playlist-link-extraction/extract_links.py `
   --output-csv <projection.csv>
 ```
 
+## Admitted adapters
+
+### `yt-dlp-json` (offline)
+
+Path: `adapters/yt-dlp-json/`
+
+Converts captured/synthetic yt-dlp-style playlist JSON into an observation batch.
+Proof ceiling: offline transformation only. Live `yt-dlp` execution,
+authenticated extraction, browser profiles, and production use remain unproven.
+
+```powershell
+python capabilities/playlist-link-extraction/adapters/yt-dlp-json/adapt.py `
+  --payload capabilities/playlist-link-extraction/adapters/yt-dlp-json/fixtures/sample-playlist.v1.json `
+  --target-id target-a `
+  --output-batch Outputs/playlist-link-observation-batch.json
+```
+
 ## Status
 
-No live provider adapter is admitted in this repository yet. Synthetic fixtures
-under `fixtures/` prove the core/adapter seam without authenticated runtime
-dependency.
+One offline provider adapter is admitted: `yt-dlp-json`. No live network or
+authenticated provider adapter is admitted yet. Synthetic core fixtures under
+`fixtures/` remain available for provider-agnostic core proof.

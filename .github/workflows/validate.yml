@@ -52,9 +52,12 @@ jobs:
             scripts/path_receipt.py \
             scripts/validate_runtime_handoff.py \
             vendor/prompt-invocation-upstream/prompt_invocation_resolver.py \
+            scripts/validate_idea_work_continuity.py \
             capabilities/playlist-link-extraction/extract_links.py \
             capabilities/playlist-link-extraction/core/normalize.py \
             capabilities/playlist-link-extraction/core/artifact.py \
+            capabilities/playlist-link-extraction/adapters/yt-dlp-json/adapt.py \
+            capabilities/playlist-link-extraction/adapters/yt-dlp-json/convert.py \
             capabilities/agent-hook-runtime/diagnose_cursor_hook.py \
             capabilities/agent-hook-runtime/core/transport.py \
             capabilities/agent-hook-runtime/adapters/cursor.py
@@ -80,6 +83,41 @@ jobs:
           assert artifact["receipt"]["occurrence_count"] == 4, artifact
           assert artifact["receipt"]["unique_link_count"] == 2, artifact
           with Path("Outputs/playlist-link-artifact.csv").open(encoding="utf-8", newline="") as handle:
+              rows = list(csv.DictReader(handle))
+          assert len(rows) == 4, rows
+          PY
+
+      - name: Adapt yt-dlp-json fixture through reusable core
+        run: |
+          mkdir -p Outputs
+          python capabilities/playlist-link-extraction/adapters/yt-dlp-json/adapt.py \
+            --payload capabilities/playlist-link-extraction/adapters/yt-dlp-json/fixtures/sample-playlist.v1.json \
+            --target-id target-a \
+            --output-batch Outputs/playlist-link-observation-batch.json
+          python capabilities/playlist-link-extraction/extract_links.py \
+            --batch Outputs/playlist-link-observation-batch.json \
+            --output-json Outputs/playlist-link-yt-dlp-artifact.json \
+            --output-csv Outputs/playlist-link-yt-dlp-artifact.csv
+
+      - name: Validate yt-dlp-json adapter and core parity receipt
+        run: |
+          python - <<'PY'
+          import csv
+          import json
+          from pathlib import Path
+
+          batch = json.loads(Path("Outputs/playlist-link-observation-batch.json").read_text(encoding="utf-8"))
+          assert batch["schema_version"] == "playlist-link-observation-batch/v1", batch
+          assert len(batch["observations"]) == 4, batch
+          assert all(item["adapter_id"] == "yt-dlp-json" for item in batch["observations"]), batch
+          urls = [item["url"] for item in batch["observations"]]
+          assert urls.count("https://example.test/video/2") == 2, urls
+
+          artifact = json.loads(Path("Outputs/playlist-link-yt-dlp-artifact.json").read_text(encoding="utf-8"))
+          assert artifact["receipt"]["occurrence_count"] == 4, artifact
+          assert artifact["receipt"]["unique_link_count"] == 2, artifact
+          assert "yt-dlp-json" in artifact["receipt"]["adapter_ids"], artifact
+          with Path("Outputs/playlist-link-yt-dlp-artifact.csv").open(encoding="utf-8", newline="") as handle:
               rows = list(csv.DictReader(handle))
           assert len(rows) == 4, rows
           PY
