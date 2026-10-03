@@ -85,6 +85,13 @@ python capabilities/playlist-link-extraction/extract_links.py `
 
 Adapters emit `playlist-link-observation-batch/v1`; the core owns normalization, ordered occurrences, unique-link aggregation, canonical JSON, and CSV projection. Live provider adapters remain the next transition.
 
+
+### Artifact continuity before synchronization
+
+Before artifact-producing work decides to create a local file, use the repository-wide [artifact continuity preflight](docs/ARTIFACT_CONTINUITY_PREFLIGHT.md) and its [machine-readable contract](harness/contracts/artifact-continuity-preflight.v1.json).
+
+`artifact-continuity-preflight/v1` is the activation/inheritance layer: it makes existing provider source authority, current-runtime provider work, local derivative role, provider-link delivery, and unresolved sync obligations explicit. `artifact-sync` remains the mechanics layer.
+
 ### Artifact synchronization
 
 - [`artifact-sync`](capabilities/artifact-sync/CAPABILITY.md) — status `CONTRACT_DEFINED_RUST_IMPLEMENTATION_PENDING`
