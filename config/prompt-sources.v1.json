@@ -1,0 +1,17 @@
+{
+  "schema_version": "automation-prompt-sources/v1",
+  "portable": {
+    "repository": "EndeavorEverlasting/TokenCorridor",
+    "repository_env": "AUTOMATION_PROMPT_PORTABLE_REPOSITORY",
+    "ref": "main",
+    "ref_env": "AUTOMATION_PROMPT_PORTABLE_REF",
+    "product_boundaries_path": "src/tokencorridor/interface/promptkit/registry/prompts/product-boundaries.v1.json",
+    "promptkit_root": "src/tokencorridor/interface/promptkit"
+  },
+  "retained": {
+    "repository": "EndeavorEverlasting/web-excel-repair-triage",
+    "repository_env": "AUTOMATION_PROMPT_RETAINED_REPOSITORY",
+    "ref": "main",
+    "ref_env": "AUTOMATION_PROMPT_RETAINED_REF"
+  }
+}
