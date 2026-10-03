@@ -94,6 +94,53 @@ class RuntimeHandoffContractTests(unittest.TestCase):
         self.assertTrue(any("acceptance_gates must be a non-empty list" in error for error in errors))
         self.assertTrue(any("proof_ceiling must be a non-empty string" in error for error in errors))
 
+    def test_common_secret_and_private_state_keys_are_rejected(self) -> None:
+        for forbidden_key in (
+            "api_key",
+            "client_secret",
+            "credential_blob",
+            "session_state",
+            "browser_state",
+        ):
+            with self.subTest(forbidden_key=forbidden_key):
+                packet = copy.deepcopy(self.example)
+                packet["evidence_inputs"].append(
+                    {
+                        "type": "private_state",
+                        forbidden_key: "synthetic-sensitive-value",
+                    }
+                )
+                errors = self.validator.validate_packet(packet, self.contract)
+                self.assertTrue(any("privacy violation" in error for error in errors))
+
+    def test_non_object_json_root_fails_closed(self) -> None:
+        for packet in ([], "not-an-object", 42):
+            with self.subTest(packet=packet):
+                errors = self.validator.validate_packet(
+                    packet,
+                    self.contract,
+                    require_ready=True,
+                )
+                self.assertEqual(errors, ["packet root must be a JSON object"])
+
+    def test_list_items_must_contain_meaningful_data(self) -> None:
+        cases = (
+            ("owned_scope", [""]),
+            ("required_capabilities", [None]),
+            ("evidence_inputs", [{}]),
+        )
+        for field, value in cases:
+            with self.subTest(field=field):
+                packet = copy.deepcopy(self.example)
+                packet[field] = value
+                errors = self.validator.validate_packet(packet, self.contract)
+                self.assertTrue(
+                    any(
+                        f"{field}[0] must contain meaningful non-null data" in error
+                        for error in errors
+                    )
+                )
+
     def test_root_wayfinding_exposes_runtime_and_privacy_contracts(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
