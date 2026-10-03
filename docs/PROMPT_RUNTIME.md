@@ -76,3 +76,13 @@ If an ID is unknown, it returns `UNRESOLVED`.
 If the same identity appears in incompatible canonical owners, it returns `SOURCE_CONFLICT`.
 
 None of those states permits a remembered or semantically similar prompt to be substituted.
+
+## P92 path preflight
+
+P92 is the first prompt used to prove this runtime. Before path-sensitive mutation, run:
+
+```powershell
+python scripts/path_receipt.py --repo-root . --output Outputs/path-receipt.json
+```
+
+The receipt validates the current checkout's Git remote identity, captures execution-context evidence, records production/use state conservatively, and keeps remote integration, development freshness, production freshness, and entrypoint proof separate. It never chooses a new checkout path when the canonical path is unresolved.
