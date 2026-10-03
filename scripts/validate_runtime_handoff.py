@@ -24,13 +24,31 @@ def _walk(value: Any, path: str = "$"):
             yield from _walk(child, child_path)
 
 
+def _has_meaningful_content(value: Any) -> bool:
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, dict):
+        return bool(value) and all(
+            isinstance(key, str)
+            and bool(key.strip())
+            and _has_meaningful_content(child)
+            for key, child in value.items()
+        )
+    if isinstance(value, list):
+        return bool(value) and all(_has_meaningful_content(child) for child in value)
+    return value is not None
+
+
 def validate_packet(
-    packet: dict[str, Any],
+    packet: Any,
     contract: dict[str, Any],
     *,
     require_ready: bool = False,
 ) -> list[str]:
     errors: list[str] = []
+
+    if not isinstance(packet, dict):
+        return ["packet root must be a JSON object"]
 
     if packet.get("schema_version") != contract["packet_schema_version"]:
         errors.append(
@@ -46,6 +64,18 @@ def validate_packet(
         value = packet.get(field)
         if not isinstance(value, str) or not value.strip():
             errors.append(f"{field} must be a non-empty string")
+
+    for field in contract["list_fields"]:
+        value = packet.get(field)
+        if value is not None and not isinstance(value, list):
+            errors.append(f"{field} must be a list")
+            continue
+        if isinstance(value, list):
+            for index, item in enumerate(value):
+                if not _has_meaningful_content(item):
+                    errors.append(
+                        f"{field}[{index}] must contain meaningful non-null data"
+                    )
 
     for field in contract["nonempty_list_fields"]:
         value = packet.get(field)
@@ -113,6 +143,15 @@ def validate_packet(
     return errors
 
 
+def _write_receipt(receipt: dict[str, Any], output: Path | None) -> None:
+    serialized = json.dumps(receipt, indent=2, sort_keys=True) + "\n"
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(serialized, encoding="utf-8")
+    else:
+        sys.stdout.write(serialized)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--packet", required=True, type=Path)
@@ -121,29 +160,37 @@ def main() -> int:
     parser.add_argument("--require-ready", action="store_true")
     args = parser.parse_args()
 
-    packet = json.loads(args.packet.read_text(encoding="utf-8"))
     contract = json.loads(args.contract.read_text(encoding="utf-8"))
+
+    try:
+        packet = json.loads(args.packet.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        receipt = {
+            "schema_version": "automation-runtime-handoff-validation-receipt/v1",
+            "packet_schema_version": None,
+            "contract_schema_version": contract.get("schema_version"),
+            "state": "FAIL",
+            "errors": [f"packet read/JSON error: {exc}"],
+        }
+        _write_receipt(receipt, args.output)
+        return 2
 
     errors = validate_packet(
         packet,
         contract,
         require_ready=args.require_ready,
     )
+    packet_schema_version = (
+        packet.get("schema_version") if isinstance(packet, dict) else None
+    )
     receipt = {
         "schema_version": "automation-runtime-handoff-validation-receipt/v1",
-        "packet_schema_version": packet.get("schema_version"),
+        "packet_schema_version": packet_schema_version,
         "contract_schema_version": contract.get("schema_version"),
         "state": "PASS" if not errors else "FAIL",
         "errors": errors,
     }
-
-    serialized = json.dumps(receipt, indent=2, sort_keys=True) + "\n"
-    if args.output:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(serialized, encoding="utf-8")
-    else:
-        sys.stdout.write(serialized)
-
+    _write_receipt(receipt, args.output)
     return 0 if not errors else 2
 
 
