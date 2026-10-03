@@ -7,6 +7,7 @@ import json
 import os
 import urllib.error
 import unittest
+import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -151,6 +152,59 @@ class PromptRuntimeTests(unittest.TestCase):
         result = self.resolve("what is P92?")
         self.assertEqual(result["intent"], "REFERENCE")
         self.assertFalse(result["execution_required"])
+
+    def test_provider_failure_can_resolve_from_tracked_snapshot_without_memory(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            mirror = root / "harness/prompt-mirror"
+            (mirror / "portable/registry/base").mkdir(parents=True)
+            (mirror / "portable/registry/prompts").mkdir(parents=True)
+            (mirror / "retained/registry/prompts").mkdir(parents=True)
+            boundaries = {
+                "shared_inputs": {
+                    "base_registry": "registry/base/prompts.json",
+                    "content_registries": ["registry/prompts/spec.v1.json"],
+                },
+                "products": {
+                    "afk-agent-flow": {"extension_registries": []},
+                    "triage-local-operations": {
+                        "donor_retained_registries": ["registry/prompts/retained.v1.json"]
+                    },
+                },
+            }
+            (mirror / "product-boundaries.v1.json").write_text(json.dumps(boundaries), encoding="utf-8")
+            (mirror / "portable/registry/base/prompts.json").write_text(json.dumps([]), encoding="utf-8")
+            (mirror / "portable/registry/prompts/spec.v1.json").write_text(
+                json.dumps({"prompts": [{"id": "P92", "name": "Canonical Path Prompt", "copyContent": "SNAPSHOT P92"}]}),
+                encoding="utf-8",
+            )
+            (mirror / "retained/registry/prompts/retained.v1.json").write_text(json.dumps([]), encoding="utf-8")
+            manifest = {
+                "entries": [
+                    {"authority": "portable", "source_path": "pk/registry/base/prompts.json", "source_blob_sha": "base", "mirror_path": "harness/prompt-mirror/portable/registry/base/prompts.json"},
+                    {"authority": "portable", "source_path": "pk/registry/prompts/spec.v1.json", "source_blob_sha": "p92snap", "mirror_path": "harness/prompt-mirror/portable/registry/prompts/spec.v1.json"},
+                    {"authority": "retained", "source_path": "registry/prompts/retained.v1.json", "source_blob_sha": "ret", "mirror_path": "harness/prompt-mirror/retained/registry/prompts/retained.v1.json"},
+                ],
+                "generated_from": {"product_boundaries_blob_sha": "boundaries"},
+            }
+            (mirror / "manifest.v1.json").write_text(json.dumps(manifest), encoding="utf-8")
+            config = json.loads(json.dumps(self.config))
+            config["mirror"] = {"root": "harness/prompt-mirror", "manifest": "manifest.v1.json", "product_boundaries_mirror": "product-boundaries.v1.json"}
+            mirror_fetch = MOD.build_snapshot_fetcher(config, root)
+
+            def failed_provider(repo, path, ref):
+                raise MOD.PromptSourceError("provider unavailable")
+
+            result = MOD.resolve_prompt_invocation(
+                "invoke & implement P92", config, failed_provider, mirror_fetch_json=mirror_fetch
+            )
+            resolved = result["resolutions"][0]
+            self.assertEqual(result["overall_state"], "RESOLVED")
+            self.assertEqual(resolved["state"], "RESOLVED_SNAPSHOT_PORTABLE")
+            self.assertEqual(resolved["copy_content"], "SNAPSHOT P92")
+            self.assertEqual(resolved["source_blob_sha"], "p92snap")
+            self.assertEqual(resolved["canonical_latestness"], "UNVERIFIED")
+            self.assertIn("provider unavailable", resolved["provider_lookup_error"])
 
     def test_unknown_prompt_fails_closed_without_fuzzy_match(self):
         result = self.resolve("invoke P99")
