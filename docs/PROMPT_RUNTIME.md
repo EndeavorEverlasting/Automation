@@ -55,6 +55,20 @@ Retained prompt authorities have equivalent configuration/override fields.
 
 This means a repository rename does not require rewriting the resolver.
 
+## Tracked provenance snapshot
+
+Cross-repository transport is not guaranteed in every runtime. In particular, a repository-scoped GitHub Actions token may be unable to read the separate canonical Prompt Kit repository.
+
+Automation therefore carries a generated prompt snapshot under `harness/prompt-mirror/`. The snapshot:
+
+- contains exact registry bytes recovered from the canonical owners;
+- records source repository paths and source blob SHAs in `harness/prompt-mirror/manifest.v1.json`;
+- is a **fallback cache, never a competing prompt authority**;
+- allows exact P-number execution without conversational/model memory when provider transport is unavailable;
+- returns `RESOLVED_SNAPSHOT_PORTABLE` or `RESOLVED_SNAPSHOT_RETAINED` with `canonical_latestness=UNVERIFIED`.
+
+A freshness-sensitive request, prompt mutation, or explicit request for the latest prompt must refresh the canonical owner first. Snapshot fallback must never be represented as proof that no newer canonical prompt exists.
+
 ## Agent execution contract
 
 `AGENTS.md` binds repo-capable agents to this rule:
