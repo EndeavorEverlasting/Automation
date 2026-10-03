@@ -1,0 +1,28 @@
+{
+  "schema_version": "automation-capability/v1",
+  "capability_id": "agent-hook-runtime",
+  "status": "CORE_IMPLEMENTED_CURSOR_ADAPTER_DIAGNOSTIC_ONLY",
+  "purpose": "Provide privacy-safe JSON-stdio hook transport normalization, provider schema validation, and diagnostic receipts without embedding product-specific policy.",
+  "core_owner": "capabilities/agent-hook-runtime/core/transport.py",
+  "adapters": {
+    "cursor": "capabilities/agent-hook-runtime/adapters/cursor.py"
+  },
+  "entrypoints": {
+    "cursor_transport_probe": "capabilities/agent-hook-runtime/diagnose_cursor_hook.py"
+  },
+  "artifacts": {
+    "transport_receipt_schema": "capabilities/agent-hook-runtime/schemas/transport-receipt.v1.json"
+  },
+  "runtime_boundary": {
+    "secrets": "No credentials required.",
+    "privacy": "Transport receipts persist raw-byte hash, length, encoding, and top-level keys only; payload values are not persisted.",
+    "supported_execution": ["LOCAL_AGENT_RUNTIME", "CI_OR_REMOTE_RUNNER"]
+  },
+  "non_goals": [
+    "own prompt registries or prompt semantics",
+    "decide whether P07 or any other prompt should execute",
+    "claim malformed Cursor input without a captured receipt",
+    "persist raw prompts, attachments, or session identifiers in diagnostic receipts"
+  ],
+  "proof_ceiling": "Synthetic tests can prove parser/schema behavior. A live Cursor receipt is required to attribute a workstation transport failure to Cursor."
+}
