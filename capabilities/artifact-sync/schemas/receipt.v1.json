@@ -1,16 +1,26 @@
 {
   "schema_version": "artifact-sync-receipt/v1",
-  "description": "Deterministic synchronization receipt emitted to stdout and optionally to ignored/private runtime storage.",
-  "required_fields": ["schema_version","binding_id","operation","checkpoint_trigger","state","authority","artifact_kind","local_materialization_mode","provider_freshness_checked","baseline_checked","conflict_checked","read_back_verified","proof_ceiling"],
+  "description": "Deterministic synchronization receipt emitted to stdout and optionally to ignored/private runtime storage. Synchronization success is dimensioned: identity, content, structure, and presentation are verified according to task intent.",
+  "required_fields": [
+    "schema_version","binding_id","operation","artifact_action","checkpoint_trigger","state",
+    "authority","artifact_kind","local_materialization_mode","provider_freshness_checked",
+    "baseline_checked","conflict_checked","provider_write_performed","read_back_verified",
+    "required_fidelity_dimensions","verified_fidelity_dimensions","proof_ceiling"
+  ],
   "operations": ["status","pull","push","reconcile","checkpoint","periodic_poll"],
+  "artifact_actions": ["read","edit","format","export","create"],
+  "fidelity_dimensions": ["identity","content","structure","presentation"],
   "states": ["NO_CHANGE","SYNCED","BLOCKED_AUTH","BLOCKED_NO_BASELINE","BLOCKED_CONFLICT","BLOCKED_UNRESOLVED_LOCATOR","UNSUPPORTED_PROVIDER_MUTATION","FAILED"],
-  "optional_private_runtime_fields": ["provider_revision","provider_change_token","provider_locator_fingerprint","baseline_state_fingerprint","content_sha256_before","content_sha256_after","local_scratch_path"],
+  "optional_private_runtime_fields": ["provider_revision","provider_change_token","provider_locator_fingerprint","baseline_state_fingerprint","content_sha256_before","content_sha256_after","local_scratch_path","verification_evidence"],
   "sanitized_tracking_rules": [
     "Tracked/public projections remove provider_revision, provider_change_token, local_scratch_path, raw baseline-store location, and raw locator/account identity.",
     "Provider/baseline fingerprints are retained only when one-way and unusable as locators.",
-    "A provider-bound push/reconcile mutation must not report SYNCED until provider write and provider read-back verification both succeed.",
-    "A pull may report SYNCED without a provider write after provider freshness/read and local content verification succeed.",
-    "The durable baseline advances only after the operation's required verification succeeds; blocked/failed operations do not advance it.",
+    "SYNCED requires every required fidelity dimension to appear in verified_fidelity_dimensions.",
+    "A format action requires presentation in required_fidelity_dimensions and cannot report SYNCED until presentation is verified on the authoritative target.",
+    "A provider-bound push/reconcile mutation must not report SYNCED until provider_write_performed=true and provider read-back verification succeeds.",
+    "A pull may report SYNCED without a provider write after provider freshness/read and the required local fidelity dimensions are verified.",
+    "A local derivative that contains the requested formatting while the authoritative provider source remains visually unchanged is not a synchronized result.",
+    "The durable baseline advances only after the operation's required fidelity verification succeeds; blocked/failed operations do not advance it.",
     "A blocked or failed sync does not disable future checkpoint or periodic attempts."
   ],
   "proof_states": ["DESIGNED","IMPLEMENTED","LOCALLY_VALIDATED","INTEGRATION_VALIDATED","COMMITTED","PUSHED","MERGED","DEPLOYED","PRODUCTION_VERIFIED"]
