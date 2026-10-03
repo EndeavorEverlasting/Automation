@@ -1,0 +1,39 @@
+{
+  "schema_version": "idea-work-continuity-receipt/v1",
+  "continuity_id": "iwc-tokencorridor-prompt-scratch-20261003",
+  "source": {
+    "state": "PRIVATE_INTAKE",
+    "semantic_source": "prompt-scratch/idea-inbox",
+    "item_identity_handle": "private-intake:prompt-scratch:idea-to-automation-continuity",
+    "content_sha256": "7b145625b1fcf56b00d26a00d4c1823601d43e8cc824ce19cbe7036b7f0cbf2e",
+    "raw_content_persisted": false
+  },
+  "execution_relevant": true,
+  "existing_remote_plan": {
+    "state": "FOUND",
+    "canonical_owner": "EndeavorEverlasting/TokenCorridor",
+    "anchor": "plans/active/PROMPT-SCRATCH-UBIQUITOUS-SPRINT-MAP.md"
+  },
+  "target": {
+    "semantic_owner": "EndeavorEverlasting/TokenCorridor",
+    "consumer_state": "MIGRATION_ACTIVE",
+    "collision_state": "UNKNOWN",
+    "observed_revision": "52b2a6c208865fdfe9ac0c0e9da132037eaa26b3"
+  },
+  "disposition": "DEFERRED_ADOPTION",
+  "durable_anchor": {
+    "type": "DEFERRED_ADOPTION",
+    "identity": "docs/plans/IDEA_WORK_CONTINUITY_2026-10-03.md#tokencorridor-adoption"
+  },
+  "priority": {
+    "source": "UNSPECIFIED",
+    "value": null
+  },
+  "next_transition": "Refresh TokenCorridor migration/convergence truth. If the existing Prompt Scratch program owner is collision-clear, add one bounded adoption iteration there; do not create a competing Prompt Scratch plan.",
+  "evidence_refs": [
+    "github:EndeavorEverlasting/Automation@431732467833c41ddc80f5a3f9ccaaaa87f2af0e",
+    "github:EndeavorEverlasting/TokenCorridor@52b2a6c208865fdfe9ac0c0e9da132037eaa26b3",
+    "repo:EndeavorEverlasting/TokenCorridor:plans/active/PROMPT-SCRATCH-UBIQUITOUS-SPRINT-MAP.md"
+  ],
+  "proof_ceiling": "Durable remote adoption obligation only. No TokenCorridor mutation, Prompt Scratch provider synchronization, scheduler execution, merge, deployment, or production behavior is claimed."
+}
