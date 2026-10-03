@@ -34,6 +34,7 @@ When the operator supplies or references a P-number:
 8. `REFERENCE` does not authorize execution.
 9. `UNRESOLVED`, `SOURCE_CONFLICT`, or `PROVIDER_LOOKUP_REQUIRED` fail closed. Recover provider/repository truth rather than guessing.
 10. Resolution proves prompt identity only. Preserve separate proof states for implementation, validation, integration, deployment, and production behavior.
+11. A tracked provenance snapshot may be used when canonical transport is unavailable, but it carries `canonical_latestness=UNVERIFIED`. Freshness-sensitive execution or prompt mutation requires canonical source refresh first.
 
 The current prompt-source repository name is configuration and may change. Do not hard-code it outside `config/prompt-sources.v1.json`; honor its environment overrides.
 
