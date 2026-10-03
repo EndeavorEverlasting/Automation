@@ -63,16 +63,17 @@ Consumer repositories must not fork Automation's reusable core merely to customi
 
 ## Prompt-driven work
 
-Prompt identities such as `P92` are resolved through the repository prompt runtime described in `docs/PROMPT_RUNTIME.md`.
+Prompt definitions and prompt governance are upstream dependencies, not Automation contribution surfaces.
 
-When an operator invokes a prompt:
+When an operator invokes a P-number:
 
-- recover the exact prompt body from repository-owned canonical sources;
-- do not rely on conversational/model memory as authority;
-- do not fuzzy-substitute a different P-number;
-- execute the resolved workflow when invocation intent is present;
-- when the operator says **invoke and implement**, carry authorized changes through reachable validation/integration gates rather than merely explaining the prompt;
-- preserve source path, source blob SHA, and prompt-body SHA-256 in the invocation packet.
+- call `scripts/prompt_runtime.py` with the verbatim request;
+- consume the pinned `prompt-invocation-upstream/v1` packet;
+- execute the resolved workflow locally when execution intent is present;
+- for **invoke and implement**, carry authorized local work through reachable proof gates;
+- never recreate Prompt Kit registry traversal or retained-source routing here.
+
+If the prompt definition itself needs creation, mutation, or retirement, contribute that change to the canonical upstream prompt owner.
 
 ## Pull request proof
 
