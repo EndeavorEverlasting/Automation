@@ -38,6 +38,8 @@ Automation delegates prompt identity, intent semantics, authority routing, and p
 The canonical ownership and placement contracts are:
 
 - [docs/REPOSITORY_CHARTER.md](docs/REPOSITORY_CHARTER.md)
+- [docs/SEAM_BOUNDARY_REVIEW.md](docs/SEAM_BOUNDARY_REVIEW.md) for reusable seam/consumer-boundary review
+- [harness/contracts/seam-boundary-review.v1.json](harness/contracts/seam-boundary-review.v1.json) for the machine-readable review contract
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 - [AGENTS.md](AGENTS.md) for repository-capable agents
 - [harness/contracts/canonical-path.v1.json](harness/contracts/canonical-path.v1.json) for P92 path ownership

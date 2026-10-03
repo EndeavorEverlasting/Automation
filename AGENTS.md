@@ -17,6 +17,27 @@ Treat `docs/REPOSITORY_CHARTER.md` as the canonical ownership contract and `CONT
 - If a proposed feature is inseparable from one product's business logic, leave it with that product instead of contaminating this repository's core.
 - Do not claim universal compatibility beyond observed validation.
 
+## Seam / boundary review contract
+
+When work creates or changes a shared interface, cross-repository dependency, adapter, provider bridge, package boundary, scheduler boundary, data authority, generated artifact, CLI surface, or other reusable seam, read:
+
+- `harness/contracts/seam-boundary-review.v1.json`
+- `docs/SEAM_BOUNDARY_REVIEW.md`
+
+Required review behavior:
+
+1. Identify the true owner.
+2. Run the **Consumer Knowledge Test**: list what a normal consumer must know.
+3. Treat upstream topology, donor repositories, migration history, provider quirks, and authority-routing rules as suspected leakage unless the public contract explicitly requires them.
+4. Separate semantic contract identity from physical repo/path/provider location.
+5. Verify fresh-agent discoverability from root wayfinding.
+6. Treat repeated downstream discovery/routing/mirroring as evidence of upstream contract pressure.
+7. Prove portability with an **Isolated Consumer Canary** when the seam is intended to be reusable.
+8. After repairing the owner, migrate a real consumer and remove obsolete compensating downstream machinery.
+9. Add a regression that prevents the obsolete path from silently returning.
+
+Correct ownership alone is not a PASS. A seam remains defective when normal consumers still need implementation knowledge.
+
 ## Prompt invocation contract
 
 P-number semantics are an **upstream dependency**. Automation consumes `prompt-invocation-upstream/v1`; it does not own prompt discovery, registry composition, authority routing, creation, mutation, or retirement.

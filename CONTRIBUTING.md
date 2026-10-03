@@ -24,6 +24,26 @@ Before adding code, classify it:
 6. **Product-specific business logic**  
    Leave it with that product unless a clean reusable automation primitive is deliberately extracted. Do not migrate an application into Automation merely because it contains automation.
 
+## Shared seam / boundary review
+
+Changes that create or materially alter a shared interface, adapter, cross-repository dependency, scheduler boundary, provider bridge, package boundary, data authority, generated artifact, or reusable CLI surface must apply the repository seam review:
+
+- human checklist: `docs/SEAM_BOUNDARY_REVIEW.md`
+- machine-readable contract: `harness/contracts/seam-boundary-review.v1.json`
+
+A contribution does not pass this gate merely because the correct repository owns the code. Reviewers must establish:
+
+- the normal consumer's minimal inputs/outputs;
+- which facts the consumer must know;
+- whether any of those facts are leaked upstream implementation topology;
+- stable semantic contract identity distinct from repo/path/provider location;
+- root discoverability;
+- whether repeated downstream workarounds indicate a missing upstream contract;
+- isolated-consumer portability where reuse is claimed;
+- removal of obsolete compensating downstream implementations after repair.
+
+If a consumer still needs internal source layout, donor checkout paths, migration topology, authority-selection logic, or provider-specific implementation details, treat the boundary as leaky until explicitly justified.
+
 ## Admission gate for a new capability
 
 A new `capabilities/<id>/` boundary must define:
