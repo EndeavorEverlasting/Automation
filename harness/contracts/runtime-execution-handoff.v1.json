@@ -1,0 +1,103 @@
+{
+  "schema_version": "automation-runtime-execution-handoff/v1",
+  "packet_schema_version": "automation-runtime-handoff-packet/v1",
+  "semantic_dependency": "planning.runtime_partition",
+  "role": "consumer_validation_only",
+  "description": "Execution-facing handoff validation for deterministic runtime placement. This contract consumes an upstream placement decision; it does not plan work, broker execution, or choose ownership.",
+  "execution_environments": [
+    "CURRENT_CHAT_RUNTIME",
+    "CONNECTED_PROVIDER",
+    "LOCAL_AGENT_RUNTIME",
+    "CI_OR_REMOTE_RUNNER",
+    "OPERATOR_OR_PHYSICAL_RUNTIME",
+    "UNKNOWN_RUNTIME"
+  ],
+  "packet_states": [
+    "READY",
+    "BLOCKED",
+    "COMPLETE"
+  ],
+  "required_fields": [
+    "schema_version",
+    "packet_state",
+    "work_unit_id",
+    "semantic_owner",
+    "execution_environment",
+    "required_capabilities",
+    "mutation_authority",
+    "owned_scope",
+    "forbidden_scope",
+    "evidence_inputs",
+    "dependencies",
+    "collision_surface",
+    "expected_artifacts",
+    "acceptance_gates",
+    "proof_ceiling",
+    "runtime_handoff",
+    "freshness_requirements"
+  ],
+  "nonempty_string_fields": [
+    "work_unit_id",
+    "semantic_owner",
+    "execution_environment",
+    "proof_ceiling",
+    "runtime_handoff"
+  ],
+  "nonempty_list_fields": [
+    "required_capabilities",
+    "mutation_authority",
+    "owned_scope",
+    "forbidden_scope",
+    "evidence_inputs",
+    "expected_artifacts",
+    "acceptance_gates",
+    "freshness_requirements"
+  ],
+  "ready_rules": {
+    "forbid_unknown_runtime": true,
+    "require_nonempty_dependencies": false,
+    "require_nonempty_collision_surface": false
+  },
+  "privacy": {
+    "forbidden_key_fragments": [
+      "drive_url",
+      "drive_file_id",
+      "drive_folder_id",
+      "google_drive",
+      "access_token",
+      "refresh_token",
+      "password",
+      "cookie",
+      "browser_profile_path"
+    ],
+    "forbidden_string_patterns": [
+      "drive.google.com/",
+      "docs.google.com/document/",
+      "docs.google.com/spreadsheets/",
+      "docs.google.com/presentation/"
+    ],
+    "forbidden_string_regexes": [
+      "(?i)[A-Z]:\\\\Users\\\\[^\\\\]+\\\\",
+      "/home/[^/]+/"
+    ],
+    "rule": "Tracked public packets must use semantic inputs, sanitized evidence, repository-relative paths, synthetic fixtures, and public provenance. Private locator mappings stay outside public Git."
+  },
+  "local_executor_invariants": [
+    "Local executors consume READY packets; they do not decide canonical ownership or broaden scope.",
+    "A packet must carry enough evidence to avoid rediscovery except where freshness_requirements explicitly require revalidation.",
+    "A failed acceptance gate remains failed until diagnosed and rerun; it is not a completion claim.",
+    "No packet may assume frontier-model reasoning quality.",
+    "UNKNOWN_RUNTIME is an owner/capability-resolution state, not an executable placement."
+  ],
+  "proof_states": [
+    "DESIGNED",
+    "IMPLEMENTED",
+    "LOCALLY_VALIDATED",
+    "INTEGRATION_VALIDATED",
+    "COMMITTED",
+    "PUSHED",
+    "MERGED",
+    "DEPLOYED",
+    "PRODUCTION_VERIFIED"
+  ]
+}
