@@ -69,18 +69,41 @@ def validate_packet(
         value = packet.get(field)
         if value is not None and not isinstance(value, list):
             errors.append(f"{field} must be a list")
-            continue
-        if isinstance(value, list):
-            for index, item in enumerate(value):
-                if not _has_meaningful_content(item):
-                    errors.append(
-                        f"{field}[{index}] must contain meaningful non-null data"
-                    )
 
     for field in contract["nonempty_list_fields"]:
         value = packet.get(field)
         if not isinstance(value, list) or not value:
             errors.append(f"{field} must be a non-empty list")
+
+    for field in contract["string_list_fields"]:
+        value = packet.get(field)
+        if not isinstance(value, list):
+            continue
+        for index, item in enumerate(value):
+            if not isinstance(item, str) or not item.strip():
+                errors.append(
+                    f"{field}[{index}] must be a non-empty string"
+                )
+
+    evidence_inputs = packet.get("evidence_inputs")
+    if isinstance(evidence_inputs, list):
+        required_evidence_fields = contract["evidence_input_required_fields"]
+        for index, item in enumerate(evidence_inputs):
+            if not isinstance(item, dict) or not item:
+                errors.append(
+                    f"evidence_inputs[{index}] must be a non-empty object"
+                )
+                continue
+            for field in required_evidence_fields:
+                value = item.get(field)
+                if not isinstance(value, str) or not value.strip():
+                    errors.append(
+                        f"evidence_inputs[{index}].{field} must be a non-empty string"
+                    )
+            if not _has_meaningful_content(item):
+                errors.append(
+                    f"evidence_inputs[{index}] must contain meaningful non-null data"
+                )
 
     state = packet.get("packet_state")
     if state not in contract["packet_states"]:
