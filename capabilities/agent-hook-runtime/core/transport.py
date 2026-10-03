@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Any
+from typing import Any, BinaryIO
 
 SCHEMA_VERSION = "agent-hook-transport-receipt/v1"
+MAX_HOOK_INPUT_BYTES = 8 * 1024 * 1024
 
 
 def _base_receipt(raw: bytes) -> dict[str, Any]:
@@ -14,6 +15,7 @@ def _base_receipt(raw: bytes) -> dict[str, Any]:
         "sha256": hashlib.sha256(raw).hexdigest(),
         "content_persisted": False,
         "payload_keys": [],
+        "input_complete": True,
     }
 
 
@@ -26,12 +28,7 @@ def _detect_encoding(raw: bytes) -> str:
 
 
 def parse_json_object(raw: bytes) -> tuple[dict[str, Any] | None, dict[str, Any]]:
-    """Parse one JSON object from hook stdin without persisting payload content.
-
-    The receipt intentionally records only transport metadata and top-level keys.
-    Prompt values, attachments, session identifiers, and other payload values are
-    never copied into the transport receipt.
-    """
+    """Parse one JSON object without persisting payload content."""
 
     receipt = _base_receipt(raw)
     if not raw:
@@ -84,3 +81,32 @@ def parse_json_object(raw: bytes) -> tuple[dict[str, Any] | None, dict[str, Any]
         }
     )
     return value, receipt
+
+
+def read_json_object(
+    stream: BinaryIO,
+    *,
+    max_bytes: int = MAX_HOOK_INPUT_BYTES,
+) -> tuple[dict[str, Any] | None, dict[str, Any]]:
+    """Read a bounded hook payload and parse it as a JSON object.
+
+    Only max_bytes + 1 bytes are consumed. If the limit is exceeded, policy
+    execution must not inspect a partial object. The receipt hash then covers
+    only the observed prefix and input_complete is false.
+    """
+
+    if max_bytes < 1:
+        raise ValueError("max_bytes must be positive")
+    raw = stream.read(max_bytes + 1)
+    if len(raw) > max_bytes:
+        receipt = _base_receipt(raw)
+        receipt.update(
+            {
+                "state": "INPUT_TOO_LARGE",
+                "encoding": _detect_encoding(raw),
+                "input_complete": False,
+                "limit_bytes": max_bytes,
+            }
+        )
+        return None, receipt
+    return parse_json_object(raw)
