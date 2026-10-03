@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import io
 import json
 import os
+import urllib.error
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -36,6 +38,20 @@ class FakeFetch:
             return self.files[(repo, path, ref)]
         except KeyError as exc:
             raise MOD.PromptSourceError(f"missing fixture: {repo}@{ref}:{path}") from exc
+
+
+class FakeResponse:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def read(self):
+        return json.dumps(self.payload).encode("utf-8")
 
 
 class PromptRuntimeTests(unittest.TestCase):
@@ -176,6 +192,31 @@ class PromptRuntimeTests(unittest.TestCase):
             repo, ref = MOD._resolved_source(self.config["portable"])
         self.assertEqual(repo, "Renamed/ControlPlane")
         self.assertEqual(ref, "stable")
+
+    def test_repo_scoped_token_404_retries_public_source_anonymously(self):
+        envelope = {
+            "content": __import__("base64").b64encode(b'{"prompts": []}').decode("ascii"),
+            "sha": "blob123",
+            "html_url": "https://example.invalid/source",
+        }
+        calls = []
+
+        def opener(request, timeout):
+            calls.append(dict(request.header_items()))
+            if len(calls) == 1:
+                raise urllib.error.HTTPError(
+                    request.full_url, 404, "Not Found", hdrs=None, fp=io.BytesIO()
+                )
+            return FakeResponse(envelope)
+
+        client = MOD.GitHubContentsClient(token="repo-scoped-token", opener=opener)
+        payload, meta = client.fetch_json("Other/Public", "registry.json", "main")
+        self.assertEqual(payload, {"prompts": []})
+        self.assertEqual(meta["blob_sha"], "blob123")
+        first = {k.lower(): v for k, v in calls[0].items()}
+        second = {k.lower(): v for k, v in calls[1].items()}
+        self.assertIn("authorization", first)
+        self.assertNotIn("authorization", second)
 
 
 if __name__ == "__main__":
