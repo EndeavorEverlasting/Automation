@@ -1,0 +1,26 @@
+{
+  "schema_version": "automation-capability/v1",
+  "capability_id": "idea-work-continuity",
+  "status": "CONTRACT_IMPLEMENTED_PROVIDER_ADAPTERS_PENDING",
+  "purpose": "Bind execution-relevant ideas and contract gaps to durable remote work state while preserving existing planning authority and migration collision boundaries.",
+  "semantic_contract": "idea-work-continuity/v1",
+  "contract_path": "harness/contracts/idea-work-continuity.v1.json",
+  "validator": "scripts/validate_idea_work_continuity.py",
+  "core_owner": "capabilities/idea-work-continuity/",
+  "non_goals": [
+    "own raw idea text",
+    "infer operator priority",
+    "replace a consumer's canonical planning/compiler authority",
+    "create a second plan when a canonical plan already exists",
+    "force consumer mutation during active migration or convergence",
+    "own scheduler lifecycle",
+    "own Prompt Kit prompt governance"
+  ],
+  "supported_execution": [
+    "CURRENT_CHAT_RUNTIME",
+    "CONNECTED_PROVIDER",
+    "LOCAL_AGENT_RUNTIME",
+    "CI_OR_REMOTE_RUNNER"
+  ],
+  "proof_ceiling": "Contract/validator and synthetic/public-safe continuity examples only. No live Prompt Scratch provider adapter or TokenCorridor adoption is claimed."
+}

@@ -1,0 +1,59 @@
+{
+  "schema_version": "idea-work-continuity-contract/v1",
+  "contract_id": "idea-work-continuity/v1",
+  "purpose": "Ensure execution-relevant ideas and discovered contract gaps leave chat as durable remote work state without duplicating existing plans or destabilizing active consumer migrations.",
+  "receipt_schema_version": "idea-work-continuity-receipt/v1",
+  "source_states": ["PRIVATE_INTAKE", "PUBLIC_REPOSITORY", "PROVIDER_EVENT", "UNKNOWN"],
+  "existing_plan_states": ["FOUND", "NOT_FOUND", "UNKNOWN"],
+  "consumer_states": ["STABLE", "MIGRATION_ACTIVE", "CONVERGENCE_ACTIVE", "UNKNOWN"],
+  "collision_states": ["CLEAR", "POTENTIAL", "BLOCKED", "UNKNOWN"],
+  "dispositions": [
+    "MIRROR_EXISTING_PLAN",
+    "APPEND_ITERATION",
+    "CREATE_REMOTE_PLAN",
+    "DEFERRED_ADOPTION",
+    "BLOCKED_OWNER_RESOLUTION",
+    "NO_EXECUTION_OBLIGATION"
+  ],
+  "durable_anchor_types": [
+    "EXISTING_PLAN",
+    "PLAN_ITERATION",
+    "NEW_PLAN",
+    "DEFERRED_ADOPTION",
+    "NO_ACTION"
+  ],
+  "required_fields": [
+    "schema_version",
+    "continuity_id",
+    "source",
+    "execution_relevant",
+    "existing_remote_plan",
+    "target",
+    "disposition",
+    "durable_anchor",
+    "priority",
+    "next_transition",
+    "evidence_refs",
+    "proof_ceiling"
+  ],
+  "rules": [
+    "Raw private idea text is not a public continuity artifact. Public receipts persist only semantic source identity, stable item handles, hashes, sanitized evidence references, and bounded work state.",
+    "Every execution-relevant idea must end the current agent turn with a durable remote anchor. CHAT_ONLY is not a valid completion state.",
+    "If an existing canonical plan is FOUND, CREATE_REMOTE_PLAN is forbidden; use that plan, add a bounded iteration when safe, or persist DEFERRED_ADOPTION.",
+    "When the target consumer is MIGRATION_ACTIVE or CONVERGENCE_ACTIVE and collision state is not CLEAR, mutation of that consumer is forbidden for this continuity transition; disposition must be DEFERRED_ADOPTION.",
+    "If canonical ownership is unresolved, do not guess. Persist BLOCKED_OWNER_RESOLUTION with a durable deferred anchor and an explicit owner-resolution next transition.",
+    "Operator priority is never inferred from chronology, timestamps, model judgment, frequency, or apparent urgency. Priority remains UNSPECIFIED unless explicitly supplied by the operator.",
+    "A disposition is continuity state, not implementation proof. Repository/provider implementation, merge, deployment, and production behavior require their own evidence."
+  ],
+  "privacy": {
+    "raw_content_persisted_must_be_false": true,
+    "forbidden_string_patterns": [
+      "drive.google.com/",
+      "docs.google.com/",
+      "://",
+      "\\Users\\",
+      "/Users/",
+      "/home/"
+    ]
+  }
+}
