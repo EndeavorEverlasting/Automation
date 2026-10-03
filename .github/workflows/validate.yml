@@ -1,0 +1,89 @@
+name: Automation Validation
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Unit and contract tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Compile Python entrypoints
+        run: python -m py_compile scripts/prompt_runtime.py scripts/path_receipt.py
+
+      - name: Resolve live P92 invocation
+        run: |
+          mkdir -p Outputs
+          python scripts/prompt_runtime.py \
+            --text "invoke & implement P92" \
+            --output Outputs/p92-invocation.json
+
+      - name: Validate live P92 invocation receipt
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path("Outputs/p92-invocation.json").read_text(encoding="utf-8"))
+          assert payload["overall_state"] == "RESOLVED", payload
+          assert payload["intent"] == "EXECUTE_AND_IMPLEMENT", payload
+          assert payload["execution_required"] is True, payload
+          assert payload["implementation_required"] is True, payload
+          assert payload["prompt_ids"] == ["P92"], payload
+          resolved = payload["resolutions"][0]
+          assert resolved["state"] == "RESOLVED_PORTABLE", resolved
+          assert resolved["canonical_repository"] == "EndeavorEverlasting/TokenCorridor", resolved
+          assert resolved["name"] == "Canonical Path Prompt", resolved
+          assert resolved["source_blob_sha"], resolved
+          assert len(resolved["copy_content_sha256"]) == 64, resolved
+          assert "ESTABLISH AND ENFORCE THE CANONICAL DEVELOPMENT AND PRODUCTION PATH" in resolved["copy_content"], resolved
+          PY
+
+      - name: Emit P92 path and execution-context receipt
+        run: |
+          python scripts/path_receipt.py \
+            --repo-root . \
+            --output Outputs/path-receipt.json
+
+      - name: Validate P92 checkout receipt
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path("Outputs/path-receipt.json").read_text(encoding="utf-8"))
+          path = payload["path_input_receipt"]
+          assert path["development_state"] == "CANONICAL_PROVED", payload
+          assert path["normalized_origin_identity"] == "EndeavorEverlasting/Automation", payload
+          assert path["production_use_state"] == "UNKNOWN", payload
+          assert path["production_mutation_allowed"] is False, payload
+          assert payload["version_receipt"]["REMOTE_INTEGRATED"] == "UNKNOWN", payload
+          PY
+
+      - name: Upload validation receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: automation-validation-receipts
+          path: Outputs/*.json
+          if-no-files-found: error
