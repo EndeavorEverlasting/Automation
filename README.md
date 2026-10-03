@@ -23,12 +23,25 @@ consumer / repository / workflow
 machine-readable artifact / receipt
 ```
 
+## Prompt invocation without model memory
+
+Repository-capable agents do not need conversational memory to know what `P92` or another registered prompt means.
+
+```powershell
+python scripts/prompt_runtime.py --text "invoke & implement P92"
+```
+
+The resolver recovers the exact prompt from configured canonical repository sources, records source/blob/body hashes, classifies invocation intent, and fails closed on unknown/conflicting identities. See [docs/PROMPT_RUNTIME.md](docs/PROMPT_RUNTIME.md).
+
 ## Repository charter
 
-The canonical ownership and placement contract is:
+The canonical ownership and placement contracts are:
 
 - [docs/REPOSITORY_CHARTER.md](docs/REPOSITORY_CHARTER.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md)
 - [AGENTS.md](AGENTS.md) for repository-capable agents
+- [harness/contracts/canonical-path.v1.json](harness/contracts/canonical-path.v1.json) for P92 path ownership
+- `python scripts/path_receipt.py --repo-root .` for the current PATH INPUT / execution-context receipt
 
 The short version:
 
@@ -39,6 +52,12 @@ The short version:
 - machine-readable contracts are preferred;
 - secrets and runtime state never belong in source control;
 - "ubiquitous" is a direction backed by validation, not an unsupported compatibility claim.
+
+## Capabilities
+
+The first admitted capability boundary is:
+
+- [`playlist-link-extraction`](capabilities/playlist-link-extraction/CAPABILITY.md) - boundary defined; existing prototype integration is the next transition.
 
 ## Existing experiments
 

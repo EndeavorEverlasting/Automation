@@ -1,0 +1,48 @@
+{
+  "schema_version": "prompt-registry-product-boundaries/v1",
+  "contract_id": "prompt-registry-product-boundaries",
+  "purpose": "Separate AFK Agent Flow prompt-product inputs from WebExcel Triage-local operational inputs. Destination packaging for TokenCorridor PK-B01A: AFK registries are source-migrated here; Triage spreadsheet/billing/management registries remain donor-retained.",
+  "legacy_combined_surface": {
+    "status": "donor_compatibility_surface",
+    "builder": "src/tokencorridor/interface/promptkit/build/build_prompt_kit_registry.py",
+    "site": "compat/promptkit/ (PK-B01B regenerates; never treat raw HTML as source authority)",
+    "composition": [
+      "afk-agent-flow"
+    ],
+    "preserve_until": "PK-B01B generated-site parity plus M4 authority cutover authorize retiring the Triage compatibility route."
+  },
+  "shared_inputs": {
+    "base_registry": "registry/base/prompts.json",
+    "content_registries": [
+      "registry/prompts/correspondence-prompts.v1.json"
+    ]
+  },
+  "products": {
+    "afk-agent-flow": {
+      "target_repository": "EndeavorEverlasting/TokenCorridor",
+      "ownership": "product-portable",
+      "extension_registries": [
+        "registry/prompts/skill-development-prompts.v1.json",
+        "registry/prompts/tutorial-discovery-prompts.v1.json",
+        "registry/prompts/ai-engineering-level-up-prompts.v1.json",
+        "registry/prompts/repository-work-ledger-prompts.v1.json",
+        "registry/prompts/spec-architecture-prompts.v1.json"
+      ],
+      "must_not_include": [
+        "registry/prompts/management-operations-prompts.v1.json"
+      ]
+    },
+    "triage-local-operations": {
+      "target_repository": "EndeavorEverlasting/web-excel-repair-triage",
+      "ownership": "repository-local-donor-retained",
+      "extension_registries": [],
+      "donor_retained_registries": [
+        "registry/prompts/management-operations-prompts.v1.json"
+      ],
+      "must_not_export_to": [
+        "afk-agent-flow"
+      ],
+      "reason": "Management/billing/attendance/spreadsheet operational prompts remain Triage-local. PK-B01A must not transplant Excel/OOXML/attendance/billing domain behavior."
+    }
+  }
+}

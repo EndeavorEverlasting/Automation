@@ -1,0 +1,18 @@
+# Runtime/output artifacts
+Outputs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Node/browser runtimes
+node_modules/
+.playwright-profile/
+playwright-profile/
+
+# Local secrets/config
+.env
+.env.*
+!.env.example

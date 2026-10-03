@@ -1,0 +1,40 @@
+{
+  "schema_version": "automation-capability/v1",
+  "capability_id": "playlist-link-extraction",
+  "status": "BOUNDARY_DEFINED_IMPLEMENTATION_PENDING",
+  "repository_path": "capabilities/playlist-link-extraction",
+  "purpose": "Accept one or more playlist/page targets and emit deterministic machine-readable link and ordered-membership artifacts without coupling the reusable core to one consumer repository.",
+  "core_owns": [
+    "target-list input normalization",
+    "stable source identity and target provenance",
+    "link normalization and deduplication",
+    "ordered occurrence versus unique entity separation",
+    "canonical JSON artifact construction",
+    "CSV projections derived from canonical JSON",
+    "batch-wide aggregation and per-target receipts",
+    "schema/version compatibility"
+  ],
+  "adapters_own": [
+    "provider-specific navigation and extraction",
+    "authenticated browser/session integration",
+    "YouTube DOM or metadata behavior",
+    "yt-dlp integration",
+    "Playwright integration",
+    "provider-specific throttling, selectors, and failure translation"
+  ],
+  "forbidden_core_assumptions": [
+    "one repository layout",
+    "one user profile or username",
+    "one browser profile location",
+    "one provider authentication method",
+    "YouTube-only identifiers in generic core schemas unless namespaced as adapter data"
+  ],
+  "canonical_artifacts": [
+    "JSON is canonical",
+    "CSV is a projection",
+    "runtime browser/session state is never source"
+  ],
+  "production_use_path": "UNDECLARED",
+  "entrypoint": "UNDECLARED",
+  "next_transition": "Integrate the existing playlist-link-extractor prototype under this boundary and prove the core/adapter seam before widening compatibility claims."
+}

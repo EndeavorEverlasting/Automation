@@ -1,0 +1,74 @@
+{
+  "schema_version": "automation-canonical-path/v1",
+  "contract_id": "automation-canonical-path",
+  "repository": "EndeavorEverlasting/Automation",
+  "purpose": "Give every execution environment one repository-owned rule for resolving development, worktree, and production/use paths without hard-coded usernames or model-chosen clone locations.",
+  "profiles": {
+    "default": {
+      "development_checkout": {
+        "role": "CANONICAL_DEVELOPMENT_CHECKOUT",
+        "resolution_kind": "environment_or_verified_existing_checkout",
+        "environment_variable": "AUTOMATION_DEV_ROOT",
+        "required_remote_identity": "EndeavorEverlasting/Automation",
+        "fallback": "the already-supplied current Git checkout only when its origin resolves to the required repository identity",
+        "on_unresolved": "UNKNOWN_BLOCK_NEW_CLONE",
+        "literal_path": null
+      },
+      "worktree_root": {
+        "role": "CANONICAL_WORKTREE_ROOT",
+        "resolution_kind": "explicit_local_profile_or_capability_contract",
+        "environment_variable": "AUTOMATION_WORKTREE_ROOT",
+        "on_unresolved": "NO_GLOBAL_WORKTREE_ROOT",
+        "literal_path": null
+      },
+      "production_use": {
+        "role": "CANONICAL_PRODUCTION_USE_PATH",
+        "resolution_kind": "capability_owned",
+        "environment_variable": "AUTOMATION_PROD_ROOT",
+        "state_environment_variable": "AUTOMATION_PROD_USE_STATE",
+        "allowed_use_states": [
+          "ACTIVE",
+          "QUIESCED",
+          "OFFLINE",
+          "UNKNOWN"
+        ],
+        "default_use_state": "UNKNOWN",
+        "on_unresolved": "UNKNOWN_BLOCK_PRODUCTION_MUTATION",
+        "repository_default_path": null
+      },
+      "entrypoint": {
+        "role": "CANONICAL_ENTRYPOINT",
+        "resolution_kind": "capability_owned",
+        "repository_default": null
+      }
+    }
+  },
+  "precedence": [
+    "tracked canonical-path/profile contract",
+    "authorized local machine/profile override",
+    "native environment resolution",
+    "verified existing-checkout evidence"
+  ],
+  "invariants": [
+    "A fresh agent must not invent a clone, install, Desktop, AppData, OneDrive, home, or worktree path from model preference.",
+    "An unresolved canonical development root is UNKNOWN, not permission to create another normal mutable checkout.",
+    "Ordinary mutation occurs in the canonical development checkout or approved worktree, never an UNKNOWN or ACTIVE production/use path.",
+    "A capability that has a production/use path must declare that path and its promotion/update boundary in its own capability contract.",
+    "If development and production resolve to the same physical path, every write is production-impacting.",
+    "Remote integration is not local deployment proof.",
+    "Runtime receipts must preserve shell/interpreter and execution-target uncertainty instead of guessing."
+  ],
+  "receipt_requirements": {
+    "path_input_receipt": true,
+    "execution_context_receipt_before_path_sensitive_commands": true,
+    "production_use_state_before_production_mutation": true,
+    "separate_states": [
+      "REMOTE_INTEGRATED",
+      "DEV_CHECKOUT_CURRENT",
+      "PROD_PATH_CURRENT",
+      "ENTRYPOINT_PROVED"
+    ]
+  },
+  "resolver": "scripts/path_receipt.py",
+  "receipt_artifact_default": "Outputs/path-receipt.json"
+}
