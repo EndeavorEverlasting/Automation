@@ -27,6 +27,7 @@ def validate_packet(packet: Any, contract: dict[str, Any]) -> list[str]:
     for field in contract["required_fields"]:
         if field not in packet:
             errors.append(f"missing required field: {field}")
+
     enum_fields = {
         "artifact_action":"artifact_actions","execution_environment":"execution_environments",
         "exact_source_binding_state":"exact_source_binding_states","provider_access_state":"provider_access_states",
@@ -36,6 +37,26 @@ def validate_packet(packet: Any, contract: dict[str, Any]) -> list[str]:
     for field, owner in enum_fields.items():
         if field in packet and packet[field] not in contract[owner]:
             errors.append(f"{field} must be one of {', '.join(contract[owner])}")
+
+    dims = packet.get("required_fidelity_dimensions")
+    allowed_dims = set(contract["fidelity_dimensions"])
+    if not isinstance(dims, list) or not dims:
+        errors.append("required_fidelity_dimensions must be a non-empty list")
+        dims_set = set()
+    else:
+        dims_set = set(dims)
+        unknown = dims_set - allowed_dims
+        if unknown:
+            errors.append(f"required_fidelity_dimensions contains unsupported values: {', '.join(sorted(unknown))}")
+        if len(dims) != len(dims_set):
+            errors.append("required_fidelity_dimensions must not contain duplicates")
+
+    action = packet.get("artifact_action")
+    if action == "format" and "presentation" not in dims_set:
+        errors.append("format action requires presentation fidelity")
+    if action == "edit" and "content" not in dims_set:
+        errors.append("edit action requires content fidelity")
+
     for field in ("work_unit_id","artifact_semantic_id","proof_ceiling"):
         if not isinstance(packet.get(field), str) or not packet[field].strip():
             errors.append(f"{field} must be a non-empty string")
@@ -52,8 +73,8 @@ def validate_packet(packet: Any, contract: dict[str, Any]) -> list[str]:
 
     known=packet.get("known_provider_source"); exact=packet.get("exact_source_binding_state")
     access=packet.get("provider_access_state"); write=packet.get("provider_write_state")
-    action=packet.get("artifact_action"); role=packet.get("local_output_role")
-    link=packet.get("provider_link_policy"); obligation=packet.get("sync_obligation"); state=packet.get("result_state")
+    role=packet.get("local_output_role"); link=packet.get("provider_link_policy")
+    obligation=packet.get("sync_obligation"); state=packet.get("result_state")
 
     if known is True:
         if link != "PRIMARY_WHEN_AVAILABLE":
