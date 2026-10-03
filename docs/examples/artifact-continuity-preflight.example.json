@@ -3,6 +3,7 @@
   "work_unit_id": "example-provider-backed-formatting",
   "artifact_semantic_id": "example-existing-provider-document",
   "artifact_action": "format",
+  "required_fidelity_dimensions": ["identity","content","structure","presentation"],
   "execution_environment": "CURRENT_CHAT_RUNTIME",
   "known_provider_source": true,
   "exact_source_binding_state": "RESOLVED",
@@ -12,5 +13,5 @@
   "provider_link_policy": "PRIMARY_WHEN_AVAILABLE",
   "sync_obligation": "NONE_PENDING",
   "result_state": "READY_PROVIDER_FIRST",
-  "proof_ceiling": "Authority decision only; provider-native write and read-back proof remain separately required."
+  "proof_ceiling": "Authority/fidelity decision only; provider-native write plus provider-side content/structure/presentation verification remain separately required."
 }
