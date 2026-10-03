@@ -4,65 +4,35 @@
   "work_unit_id": "artifact-sync-rust-cli-v1",
   "semantic_owner": "automation-capability/artifact-sync",
   "execution_environment": "LOCAL_AGENT_RUNTIME",
-  "required_capabilities": [
-    "repository checkout",
-    "Rust stable toolchain",
-    "Python 3.12 for repository contract tests"
-  ],
-  "mutation_authority": [
-    "bounded feature branch write",
-    "Rust implementation and tests inside artifact-sync owned scope",
-    "CI wiring necessary to validate the admitted Rust capability"
-  ],
+  "required_capabilities": ["repository checkout","Rust stable toolchain","Python 3.12 for repository contract tests"],
+  "mutation_authority": ["bounded feature branch write","Rust implementation and tests inside artifact-sync owned scope","CI wiring necessary to validate the admitted Rust capability"],
   "owned_scope": [
-    "capabilities/artifact-sync/Cargo.toml",
-    "capabilities/artifact-sync/Cargo.lock",
-    "capabilities/artifact-sync/src/",
-    "capabilities/artifact-sync/adapters/",
-    "capabilities/artifact-sync/tests/",
-    "tests/test_artifact_sync_contracts.py",
-    ".github/workflows/validate.yml"
+    "capabilities/artifact-sync/Cargo.toml","capabilities/artifact-sync/Cargo.lock","capabilities/artifact-sync/src/",
+    "capabilities/artifact-sync/adapters/","capabilities/artifact-sync/tests/","tests/test_artifact_sync_contracts.py",".github/workflows/validate.yml"
   ],
   "forbidden_scope": [
-    "artifact-sync v1 authority, privacy, storage, or conflict-policy redesign",
+    "artifact-sync v1 activation, authority, privacy, storage, durable-baseline, local-side, or conflict-policy redesign",
+    "artifact-continuity-preflight semantic redesign",
     "prompt definitions or upstream prompt governance",
-    "private provider locators, credentials, tokens, or account identity",
-    "consumer-specific business logic",
-    "unrelated capabilities",
-    "live provider mutation or production deployment"
+    "private provider locators, baseline-store locations, credentials, tokens, or account identity",
+    "consumer-specific business logic","unrelated capabilities","live provider mutation or production deployment"
   ],
   "evidence_inputs": [
-    {
-      "type": "public_contract",
-      "identity": "artifact-sync-binding/v1"
-    },
-    {
-      "type": "public_contract",
-      "identity": "artifact-sync-receipt/v1"
-    },
-    {
-      "type": "public_design",
-      "identity": "capabilities/artifact-sync/CAPABILITY.md"
-    },
-    {
-      "type": "public_plan",
-      "identity": "docs/plans/P04_ARTIFACT_SYNC_FACTORING_2026-10-03.md"
-    },
-    {
-      "type": "synthetic_fixture",
-      "identity": "example-provider-backed-document"
-    }
+    {"type":"public_contract","identity":"artifact-continuity-preflight/v1"},
+    {"type":"public_contract","identity":"artifact-sync-binding/v1"},
+    {"type":"public_contract","identity":"artifact-sync-receipt/v1"},
+    {"type":"public_design","identity":"capabilities/artifact-sync/CAPABILITY.md"},
+    {"type":"public_plan","identity":"P04 artifact-sync factoring plus artifact-continuity inheritance repair"},
+    {"type":"synthetic_fixture","identity":"example-provider-backed-document"}
   ],
   "dependencies": [
-    "P04 architecture and policy commit must be present in the branch history before implementation begins."
+    "Current-runtime artifact-continuity, durable-baseline, local-side, pull-success, and artifact-scoped gating repairs must be present before implementation."
   ],
-  "collision_surface": [
-    ".github/workflows/validate.yml",
-    "tests/test_artifact_sync_contracts.py"
-  ],
+  "collision_surface": [".github/workflows/validate.yml","tests/test_artifact_sync_contracts.py"],
   "expected_artifacts": [
     "Rust CLI implementing validate-binding, status, sync, checkpoint, and periodic-poll commands",
-    "provider-neutral core state machine",
+    "provider-neutral core state machine with durable common-baseline recovery",
+    "local-side semantic handle support for local/bidirectional authority",
     "workspace-provider adapter boundary with exact private locator resolution",
     "native-document versus blob-file mutation split",
     "synthetic provider fixture adapter",
@@ -74,17 +44,24 @@
     "cargo clippy --all-targets --all-features -- -D warnings passes",
     "cargo test passes",
     "python -m unittest discover -s tests -v passes",
-    "synthetic provider tests prove ephemeral cleanup after successful read-back verification",
-    "synthetic conflict test fails closed when both sides changed",
+    "synthetic provider tests prove ephemeral cleanup after successful required verification",
+    "synthetic pull test proves SYNCED without a provider write after local verification",
+    "synthetic push/reconcile test requires provider read-back before SYNCED",
+    "synthetic conflict test recovers a durable common baseline and fails closed when both sides changed",
+    "synthetic bidirectional no-baseline test emits BLOCKED_NO_BASELINE",
+    "synthetic local/bidirectional binding requires an explicit local-side semantic handle",
     "synthetic native-document test rejects raw-byte replacement",
-    "tracked files contain no private provider locators or credentials",
+    "tracked files contain no private provider locators, state-store locations, or credentials",
+    "artifact continuity preflight remains green",
     "git diff --check passes"
   ],
   "proof_ceiling": "Integration validation against synthetic provider behavior only; no live OAuth, live provider mutation, scheduler installation, merge, deployment, or production verification is authorized.",
-  "runtime_handoff": "Implement the frozen artifact-sync v1 contracts exactly. Do not redesign authority, storage defaults, privacy boundaries, native-document mutation policy, or conflict semantics. When an implementation choice is not fixed by the contract, choose the smallest deterministic option and add a test; if a choice would alter a frozen semantic, stop and report the exact ambiguity instead of deciding it.",
+  "runtime_handoff": "Implement the revised artifact-sync v1 contracts exactly. Current-runtime architecture has already resolved activation, authority, storage, privacy, durable-baseline recovery, local-side identity, native-write, pull-success, artifact-scoped gating, and conflict semantics. Do not redesign them. If an implementation choice would alter a frozen semantic, stop and report the exact ambiguity instead of deciding it.",
   "freshness_requirements": [
     "refresh origin/main and open pull-request state before mutation",
-    "confirm the P04 artifact-sync architecture commit is an ancestor of the working branch",
-    "re-read the artifact-sync capability and both v1 contract files before implementation"
+    "confirm the artifact-continuity preflight and revised artifact-sync contracts are present on the working branch",
+    "validate docs/examples/artifact-continuity-preflight.example.json",
+    "validate capabilities/artifact-sync/fixtures/binding.example.v1.json",
+    "re-read the artifact-sync capability, binding contract, receipt contract, and runtime packet before implementation"
   ]
 }
