@@ -137,6 +137,21 @@ If the normal consumer needs those details, investigate the boundary before addi
 
 **Repair:** Run the entire checklist. Ownership is one gate, not the conclusion.
 
+## Cross-domain anti-pattern examples
+
+The doctrine is intentionally broader than repositories or prompt systems.
+
+| Domain | Leaky seam | Healthy repair |
+| --- | --- | --- |
+| Scheduler | Every consumer must know provider task IDs, storage internals, and retry-object layout. | Expose a stable job/trigger contract and keep provider task topology behind the scheduler owner. |
+| Data layer | Consumers query raw owner tables and encode migration-era column names. | Publish a stable dataset/query contract or view; keep storage schema and migrations behind the data owner. |
+| Package/library | Consumers import private modules because the public entry point omits required behavior. | Promote the missing capability to a supported public interface and block private-module imports in consumers. |
+| Generated artifacts | Consumers edit generated files because canonical source/generator ownership is unclear. | Make source, generator, output, provenance, and refresh command explicit; consumers depend on the generated contract, not generator internals. |
+| Provider bridge | Each repo implements the same auth fallback, pagination, rate-limit, and error translation. | Terminate provider behavior in one adapter and expose stable provider-neutral results/failures. |
+| Repository convergence | Consumers hard-code the old repository name/path as the API identity. | Bind to a semantic contract/version and resolve the current repository/path as a locator. |
+| CLI/tooling | Users must memorize command ordering and hidden environment setup to reach a reusable operation. | Publish one stable executable entry point with explicit inputs, failure states, and receipts. |
+| Agent harness | Fresh agents reconstruct ownership from search/history because no root pointer identifies the canonical seam. | Put canonical owner, invocation, contract, and proof ceiling in root wayfinding and test discoverability. |
+
 ## Holistic repair sequence
 
 When a seam fails:
