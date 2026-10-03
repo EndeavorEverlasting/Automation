@@ -13,5 +13,12 @@
     "repository_env": "AUTOMATION_PROMPT_RETAINED_REPOSITORY",
     "ref": "main",
     "ref_env": "AUTOMATION_PROMPT_RETAINED_REF"
+  },
+  "mirror": {
+    "root": "harness/prompt-mirror",
+    "manifest": "manifest.v1.json",
+    "product_boundaries_mirror": "product-boundaries.v1.json",
+    "authority": "SNAPSHOT_ONLY_EXTERNAL_CANONICAL_OWNER",
+    "latestness": "UNVERIFIED_UNLESS_CANONICAL_REFRESHED"
   }
 }
