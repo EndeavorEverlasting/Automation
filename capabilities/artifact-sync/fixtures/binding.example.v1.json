@@ -3,26 +3,16 @@
   "binding_id": "example-provider-backed-document",
   "artifact_kind": "native_document",
   "authority": "provider",
-  "provider": {
-    "adapter_id": "workspace-provider",
-    "locator_handle": "private:example-provider-backed-document",
-    "locator_resolution": "private_runtime_only"
+  "provider": {"adapter_id":"workspace-provider","locator_handle":"private:example-provider-backed-document","locator_resolution":"private_runtime_only"},
+  "baseline_state": {
+    "state_handle":"private:artifact-sync-state/example-provider-backed-document",
+    "state_resolution":"private_runtime_only",
+    "required_baseline_fields":["binding_id","provider_revision_or_equivalent","local_content_hash_or_equivalent_when_durable","verified_at"]
   },
-  "local_materialization": {
-    "mode": "ephemeral",
-    "retain_after_success": false,
-    "max_retained_bytes": 0
-  },
+  "local_materialization": {"mode":"ephemeral","retain_after_success":false,"max_retained_bytes":0},
   "sync_policy": {
-    "default_direction": "reconcile",
-    "conflict_policy": "fail_closed",
-    "freshness_policy": "provider_revision_or_change_token",
-    "checkpoint_triggers": [
-      "before_consume",
-      "after_mutation",
-      "handoff",
-      "periodic"
-    ],
-    "native_write_policy": "provider_native_api_required"
+    "default_direction":"reconcile","conflict_policy":"fail_closed","freshness_policy":"provider_revision_or_change_token",
+    "checkpoint_triggers":["before_consume","after_mutation","handoff","periodic"],
+    "native_write_policy":"provider_native_api_required"
   }
 }
