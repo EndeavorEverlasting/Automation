@@ -305,6 +305,101 @@ def _record(pid: str, state: str, hit: dict[str, Any], repository: str) -> dict[
     }
 
 
+def build_snapshot_fetcher(
+    config: dict[str, Any], repository_root: Path
+) -> FetchJson | None:
+    mirror = config.get("mirror")
+    if not isinstance(mirror, dict):
+        return None
+
+    mirror_root = repository_root / str(mirror.get("root", "harness/prompt-mirror"))
+    manifest_path = mirror_root / str(mirror.get("manifest", "manifest.v1.json"))
+    boundaries_mirror = mirror_root / str(
+        mirror.get("product_boundaries_mirror", "product-boundaries.v1.json")
+    )
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise PromptSourceError(f"cannot read prompt snapshot manifest {manifest_path}: {exc}") from exc
+
+    entries = manifest.get("entries")
+    if not isinstance(entries, list):
+        raise PromptSourceError(f"prompt snapshot manifest has no entries: {manifest_path}")
+
+    portable = config["portable"]
+    boundaries_source_path = str(portable["product_boundaries_path"])
+    promptkit_root = str(portable["promptkit_root"]).rstrip("/") + "/"
+    boundary_blob = (manifest.get("generated_from") or {}).get("product_boundaries_blob_sha")
+
+    by_key: dict[tuple[str, str], dict[str, Any]] = {}
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        authority = entry.get("authority")
+        source_path = entry.get("source_path")
+        if isinstance(authority, str) and isinstance(source_path, str):
+            by_key[(authority, source_path)] = entry
+
+    def snapshot_fetch(repository: str, path: str, ref: str) -> tuple[Any, dict[str, Any]]:
+        if path == boundaries_source_path:
+            source_path = boundaries_mirror
+            source_blob = boundary_blob
+            authority = "portable"
+        elif path.startswith(promptkit_root):
+            entry = by_key.get(("portable", path))
+            if entry is None:
+                raise PromptSourceError(f"prompt snapshot missing portable source path: {path}")
+            source_path = repository_root / str(entry["mirror_path"])
+            source_blob = entry.get("source_blob_sha")
+            authority = "portable"
+        else:
+            entry = by_key.get(("retained", path))
+            if entry is None:
+                raise PromptSourceError(f"prompt snapshot missing retained source path: {path}")
+            source_path = repository_root / str(entry["mirror_path"])
+            source_blob = entry.get("source_blob_sha")
+            authority = "retained"
+
+        try:
+            payload = json.loads(source_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise PromptSourceError(f"cannot read prompt snapshot {source_path}: {exc}") from exc
+        return payload, {
+            "repository": repository,
+            "ref": ref,
+            "path": path,
+            "blob_sha": source_blob,
+            "html_url": None,
+            "transport": "TRACKED_PROVENANCE_SNAPSHOT",
+            "mirror_path": str(source_path.relative_to(repository_root)),
+            "mirror_authority": authority,
+            "mirror_manifest": str(manifest_path.relative_to(repository_root)),
+        }
+
+    return snapshot_fetch
+
+
+def _mark_snapshot_resolution(
+    resolution: dict[str, Any], provider_error: str
+) -> dict[str, Any]:
+    state_map = {
+        "RESOLVED_PORTABLE": "RESOLVED_SNAPSHOT_PORTABLE",
+        "RESOLVED_RETAINED": "RESOLVED_SNAPSHOT_RETAINED",
+    }
+    state = resolution.get("state")
+    if state in state_map:
+        resolution["state"] = state_map[state]
+        resolution["source_transport"] = "TRACKED_PROVENANCE_SNAPSHOT"
+        resolution["canonical_latestness"] = "UNVERIFIED"
+        resolution["snapshot_warning"] = (
+            "Canonical provider/local source transport was unavailable. Exact prompt bytes came from "
+            "the tracked provenance snapshot; refresh canonical source before any freshness-sensitive "
+            "or prompt-mutation operation."
+        )
+        resolution["provider_lookup_error"] = provider_error
+    return resolution
+
+
 def resolve_prompt_id(
     pid: str, config: dict[str, Any], fetch_json: FetchJson
 ) -> dict[str, Any]:
@@ -371,7 +466,10 @@ def resolve_prompt_id(
 
 
 def resolve_prompt_invocation(
-    text: str, config: dict[str, Any], fetch_json: FetchJson
+    text: str,
+    config: dict[str, Any],
+    fetch_json: FetchJson,
+    mirror_fetch_json: FetchJson | None = None,
 ) -> dict[str, Any]:
     prompt_ids = extract_prompt_ids(text)
     intent = classify_intent(text, prompt_ids)
@@ -381,11 +479,20 @@ def resolve_prompt_invocation(
         try:
             resolutions.append(resolve_prompt_id(pid, config, fetch_json))
         except PromptSourceError as exc:
+            if mirror_fetch_json is not None:
+                try:
+                    snapshot = resolve_prompt_id(pid, config, mirror_fetch_json)
+                    resolutions.append(_mark_snapshot_resolution(snapshot, str(exc)))
+                    continue
+                except PromptSourceError as snapshot_exc:
+                    reason = f"canonical source failed: {exc}; snapshot fallback failed: {snapshot_exc}"
+            else:
+                reason = str(exc)
             resolutions.append(
                 {
                     "prompt_id": pid,
                     "state": "PROVIDER_LOOKUP_REQUIRED",
-                    "reason": str(exc),
+                    "reason": reason,
                 }
             )
 
@@ -429,9 +536,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        config = load_config(Path(args.config))
+        config_path = Path(args.config).resolve()
+        config = load_config(config_path)
         client = GitHubContentsClient()
-        result = resolve_prompt_invocation(args.text, config, client.fetch_json)
+        mirror_fetch = build_snapshot_fetcher(config, ROOT)
+        result = resolve_prompt_invocation(
+            args.text, config, client.fetch_json, mirror_fetch_json=mirror_fetch
+        )
     except PromptRuntimeError as exc:
         print(f"prompt-runtime error: {exc}", file=sys.stderr)
         return 1
