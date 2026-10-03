@@ -1,94 +1,59 @@
 {
   "schema_version": "artifact-sync-binding/v1",
-  "description": "Provider-neutral synchronization binding. Tracked manifests contain semantic identity and a protected locator handle only; raw provider URLs, IDs, credentials, and user-specific filesystem paths are runtime-private.",
-  "required_fields": [
-    "schema_version",
-    "binding_id",
-    "artifact_kind",
-    "authority",
-    "provider",
-    "local_materialization",
-    "sync_policy"
-  ],
-  "artifact_kinds": [
-    "blob_file",
-    "native_document",
-    "native_spreadsheet",
-    "native_presentation",
-    "directory"
-  ],
-  "authority_states": [
-    "provider",
-    "local",
-    "bidirectional"
-  ],
-  "provider_required_fields": [
-    "adapter_id",
-    "locator_handle",
-    "locator_resolution"
-  ],
+  "description": "Provider-neutral synchronization binding. Tracked manifests contain semantic identities and protected locator/state handles only; raw provider URLs, IDs, credentials, state-store locations, and user-specific filesystem paths are runtime-private.",
+  "required_fields": ["schema_version","binding_id","artifact_kind","authority","provider","baseline_state","local_materialization","sync_policy"],
+  "artifact_kinds": ["blob_file","native_document","native_spreadsheet","native_presentation","directory"],
+  "authority_states": ["provider","local","bidirectional"],
+  "provider_required_fields": ["adapter_id","locator_handle","locator_resolution"],
   "provider_rules": [
     "adapter_id names the provider adapter, not an account or file.",
     "locator_handle is a semantic private-resolution key and must not contain a provider URL, raw provider identifier, credential, or user-specific path.",
     "locator_resolution must be private_runtime_only in tracked public manifests.",
     "Exact provider identity is resolved at runtime from protected state; title or filename search is not an identity mechanism."
   ],
-  "local_materialization_required_fields": [
-    "mode",
-    "retain_after_success",
-    "max_retained_bytes"
+  "local_side_required_when": ["local","bidirectional"],
+  "local_side_required_fields": ["locator_handle","locator_resolution"],
+  "local_side_rules": [
+    "local/bidirectional authority requires an explicit semantic local-side handle; hidden consumer-specific path knowledge is forbidden.",
+    "locator_resolution must be private_runtime_only in tracked public manifests.",
+    "provider-authoritative bindings with ephemeral materialization may omit local_side because the local copy is not a durable authority."
   ],
-  "local_materialization_modes": [
-    "ephemeral",
-    "persistent"
+  "baseline_state_required_fields": ["state_handle","state_resolution","required_baseline_fields"],
+  "baseline_state_rules": [
+    "state_handle resolves to durable private runtime state for this binding; the raw state-store path/provider object must not be tracked.",
+    "state_resolution must be private_runtime_only.",
+    "required_baseline_fields must include binding identity, provider revision-or-equivalent, local content hash-or-equivalent when durable, and verification timestamp.",
+    "conflict evaluation recovers the last common verified baseline before comparing both sides.",
+    "a bidirectional sync with two pre-existing sides and no recoverable common baseline fails closed as BLOCKED_NO_BASELINE."
   ],
+  "local_materialization_required_fields": ["mode","retain_after_success","max_retained_bytes"],
+  "local_materialization_modes": ["ephemeral","persistent"],
   "local_materialization_rules": [
     "ephemeral is the default for provider-backed artifacts.",
     "ephemeral materialization uses an OS/runtime scratch location rather than the consumer repository.",
-    "successful provider write plus read-back verification permits cleanup of ephemeral bytes.",
+    "provider-bound writes may clean up ephemeral bytes only after provider read-back verification; pulls may clean up after downloaded content verification when no durable local copy is requested.",
     "persistent mode requires explicit consumer policy and a bounded max_retained_bytes value.",
-    "a provider-backed edit must not silently degrade to local-only output merely because local file generation is easier."
+    "a provider-backed edit must not silently degrade to local-only output merely because local generation is easier."
   ],
-  "sync_policy_required_fields": [
-    "default_direction",
-    "conflict_policy",
-    "freshness_policy",
-    "checkpoint_triggers",
-    "native_write_policy"
-  ],
-  "directions": [
-    "pull",
-    "push",
-    "reconcile"
-  ],
-  "conflict_policies": [
-    "fail_closed"
-  ],
-  "freshness_policies": [
-    "provider_check_before_use",
-    "provider_revision_or_change_token"
-  ],
-  "checkpoint_triggers": [
-    "before_consume",
-    "after_mutation",
-    "handoff",
-    "periodic"
-  ],
-  "native_write_policies": [
-    "provider_native_api_required",
-    "raw_bytes_allowed_for_blob_only"
-  ],
+  "sync_policy_required_fields": ["default_direction","conflict_policy","freshness_policy","checkpoint_triggers","native_write_policy"],
+  "directions": ["pull","push","reconcile"],
+  "conflict_policies": ["fail_closed"],
+  "freshness_policies": ["provider_check_before_use","provider_revision_or_change_token"],
+  "checkpoint_triggers": ["before_consume","after_mutation","handoff","periodic"],
+  "native_write_policies": ["provider_native_api_required","raw_bytes_allowed_for_blob_only"],
   "sync_rules": [
     "Provider authority requires a provider freshness check before consuming a cached/materialized artifact.",
-    "A push requires a pre-write provider revision check and post-write read-back verification.",
-    "If both authoritative sides changed since the last common receipt, state is BLOCKED_CONFLICT.",
+    "A provider-bound push/reconcile mutation requires a pre-write provider revision check and post-write provider read-back verification.",
+    "A pull may report SYNCED after provider freshness/read succeeds and downloaded/materialized local content is verified; it does not require a provider write.",
+    "Conflict detection compares current sides to the recovered last common verified baseline.",
+    "If both authoritative sides changed since that baseline, state is BLOCKED_CONFLICT.",
     "Provider-native document formats must be mutated with the provider-native API; raw file replacement is only valid for blob files.",
     "Periodic synchronization supplements checkpoint synchronization; it does not replace before-use and before-write freshness gates."
   ],
   "privacy_rules": [
-    "Public Git may contain semantic locator handles but not raw private provider locators.",
-    "Private locator maps and OAuth material stay outside Git.",
+    "Public Git may contain semantic locator/state handles but not raw private provider locators or state-store locations.",
+    "Private locator maps, baseline state stores, and OAuth material stay outside Git.",
     "Tracked examples must use synthetic bindings only.",
-    "Sanitized tracked receipts must omit raw provider locators and private account identity."
+    "Sanitized tracked receipts omit raw provider locators, private account identity, and private state-store location."
   ]
 }
