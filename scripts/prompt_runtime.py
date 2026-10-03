@@ -142,9 +142,22 @@ def load_config(path: Path = DEFAULT_CONFIG) -> dict[str, Any]:
 class GitHubContentsClient:
     """Small stdlib GitHub Contents API client with optional token auth."""
 
-    def __init__(self, token: str | None = None):
+    def __init__(self, token: str | None = None, opener=None):
         self.token = token or os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+        self.opener = opener or urllib.request.urlopen
         self._cache: dict[tuple[str, str, str], tuple[Any, dict[str, Any]]] = {}
+
+    def _request_envelope(self, url: str, *, authenticated: bool) -> dict[str, Any]:
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "EndeavorEverlasting-Automation-PromptRuntime/1",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+        if authenticated and self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
+        request = urllib.request.Request(url, headers=headers)
+        with self.opener(request, timeout=20) as response:
+            return json.loads(response.read().decode("utf-8"))
 
     def fetch_json(self, repository: str, path: str, ref: str) -> tuple[Any, dict[str, Any]]:
         key = (repository, path, ref)
@@ -154,18 +167,26 @@ class GitHubContentsClient:
         quoted_path = urllib.parse.quote(path, safe="/")
         query = urllib.parse.urlencode({"ref": ref})
         url = f"https://api.github.com/repos/{repository}/contents/{quoted_path}?{query}"
-        headers = {
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "EndeavorEverlasting-Automation-PromptRuntime/1",
-            "X-GitHub-Api-Version": "2022-11-28",
-        }
-        if self.token:
-            headers["Authorization"] = f"Bearer {self.token}"
-
-        request = urllib.request.Request(url, headers=headers)
         try:
-            with urllib.request.urlopen(request, timeout=20) as response:
-                envelope = json.loads(response.read().decode("utf-8"))
+            envelope = self._request_envelope(url, authenticated=bool(self.token))
+        except urllib.error.HTTPError as exc:
+            # GitHub Actions' repository-scoped GITHUB_TOKEN can return 404 for a
+            # different public repository even though anonymous public access is
+            # valid. Retry once without credentials so an over-scoped token cannot
+            # make a public canonical prompt source disappear. Private sources still
+            # fail closed if the anonymous retry is also rejected.
+            if self.token and exc.code in {403, 404}:
+                try:
+                    envelope = self._request_envelope(url, authenticated=False)
+                except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as retry_exc:
+                    raise PromptSourceError(
+                        f"cannot fetch {repository}@{ref}:{path}: authenticated request returned {exc.code}; "
+                        f"anonymous retry failed: {retry_exc}"
+                    ) from retry_exc
+            else:
+                raise PromptSourceError(
+                    f"cannot fetch {repository}@{ref}:{path}: {exc}"
+                ) from exc
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
             raise PromptSourceError(
                 f"cannot fetch {repository}@{ref}:{path}: {exc}"
