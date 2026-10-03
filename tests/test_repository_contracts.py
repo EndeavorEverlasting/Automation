@@ -40,17 +40,25 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertEqual(capability["production_use_path"], "UNDECLARED")
         self.assertEqual(capability["status"], "BOUNDARY_DEFINED_IMPLEMENTATION_PENDING")
 
-    def test_agent_contract_requires_repository_prompt_resolution(self):
+    def test_agent_contract_consumes_prompt_upstream_dependency(self):
         agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
         for marker in (
-            "Prompt identities are repository-owned inputs, not model-memory shortcuts.",
+            "P-number semantics are an **upstream dependency**.",
+            "prompt-invocation-upstream/v1",
             "python scripts/prompt_runtime.py",
             "EXECUTE_AND_IMPLEMENT",
-            "Never substitute remembered prompt text",
+            "Prompt mutation/governance belongs upstream",
             "UNKNOWN_BLOCK_NEW_CLONE",
             "python scripts/path_receipt.py",
         ):
             self.assertIn(marker, agents)
+
+    def test_obsolete_downstream_prompt_mirror_is_absent(self):
+        self.assertFalse((ROOT / "harness/prompt-mirror").exists())
+        self.assertFalse((ROOT / "config/prompt-sources.v1.json").exists())
+        self.assertTrue(
+            (ROOT / "vendor/prompt-invocation-upstream/manifest.v1.json").is_file()
+        )
 
     def test_contribution_policy_has_explicit_placement_lanes(self):
         policy = (ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
