@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import os
 import subprocess
@@ -31,6 +32,7 @@ CURSOR = _load_module(
     CAP / "adapters" / "cursor.py",
 )
 parse_json_object = TRANSPORT.parse_json_object
+read_json_object = TRANSPORT.read_json_object
 neutral_response = CURSOR.neutral_response
 validate_event = CURSOR.validate_event
 
@@ -43,6 +45,7 @@ class AgentHookRuntimeTests(unittest.TestCase):
         self.assertEqual(receipt["state"], "PARSED")
         self.assertEqual(receipt["payload_keys"], ["attachments", "prompt"])
         self.assertFalse(receipt["content_persisted"])
+        self.assertTrue(receipt["input_complete"])
         self.assertNotIn("private words", json.dumps(receipt))
 
     def test_utf8_bom_is_normalized(self) -> None:
@@ -64,6 +67,14 @@ class AgentHookRuntimeTests(unittest.TestCase):
         self.assertIsNone(payload)
         self.assertEqual(receipt["state"], "INVALID_JSON")
         self.assertNotIn("secret", json.dumps(receipt))
+
+    def test_stream_read_is_bounded(self) -> None:
+        payload, receipt = read_json_object(io.BytesIO(b"x" * 17), max_bytes=16)
+        self.assertIsNone(payload)
+        self.assertEqual(receipt["state"], "INPUT_TOO_LARGE")
+        self.assertFalse(receipt["input_complete"])
+        self.assertEqual(receipt["limit_bytes"], 16)
+        self.assertEqual(receipt["byte_length"], 17)
 
     def test_cursor_before_submit_uses_documented_shape_only(self) -> None:
         valid = validate_event("beforeSubmitPrompt", {"prompt": "P07", "attachments": []})
@@ -119,6 +130,49 @@ class AgentHookRuntimeTests(unittest.TestCase):
             self.assertEqual(receipt["transport"]["state"], "INVALID_JSON")
             self.assertEqual(receipt["cursor_version"], "test-version")
             self.assertFalse(receipt["transport"]["content_persisted"])
+
+    def test_probe_allow_mode_does_not_export_invalid_session(self) -> None:
+        script = CAP / "diagnose_cursor_hook.py"
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(script),
+                "--event",
+                "sessionStart",
+                "--failure-policy",
+                "allow",
+            ],
+            input=json.dumps({"session_id": "session-123"}),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(json.loads(proc.stdout), {})
+
+    def test_optional_receipt_io_failure_does_not_kill_hook(self) -> None:
+        script = CAP / "diagnose_cursor_hook.py"
+        with tempfile.TemporaryDirectory() as tmp:
+            not_a_directory = Path(tmp) / "receipt-target"
+            not_a_directory.write_text("occupied", encoding="utf-8")
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    str(script),
+                    "--event",
+                    "beforeSubmitPrompt",
+                    "--failure-policy",
+                    "allow",
+                    "--receipt-dir",
+                    str(not_a_directory),
+                ],
+                input=json.dumps({"prompt": "hello"}),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertEqual(json.loads(proc.stdout), {"continue": True})
 
     def test_probe_block_mode_blocks_invalid_json(self) -> None:
         script = CAP / "diagnose_cursor_hook.py"
