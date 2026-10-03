@@ -1,7 +1,7 @@
 {
   "schema_version": "automation-capability/v1",
   "capability_id": "playlist-link-extraction",
-  "status": "BOUNDARY_DEFINED_IMPLEMENTATION_PENDING",
+  "status": "CORE_IMPLEMENTED_ADAPTERS_PENDING",
   "repository_path": "capabilities/playlist-link-extraction",
   "purpose": "Accept one or more playlist/page targets and emit deterministic machine-readable link and ordered-membership artifacts without coupling the reusable core to one consumer repository.",
   "core_owns": [
@@ -34,7 +34,12 @@
     "CSV is a projection",
     "runtime browser/session state is never source"
   ],
+  "schemas": {
+    "observation_batch": "capabilities/playlist-link-extraction/schemas/observation-batch.v1.json",
+    "artifact": "capabilities/playlist-link-extraction/schemas/artifact.v1.json"
+  },
   "production_use_path": "UNDECLARED",
-  "entrypoint": "UNDECLARED",
-  "next_transition": "Integrate the existing playlist-link-extractor prototype under this boundary and prove the core/adapter seam before widening compatibility claims."
+  "entrypoint": "capabilities/playlist-link-extraction/extract_links.py",
+  "proof_ceiling": "Core normalization/artifacts proven with synthetic fixtures; live adapters and production use remain unproven.",
+  "next_transition": "Admit the first live provider adapter behind capabilities/playlist-link-extraction/adapters/<adapter-id>/ and prove observation-batch parity against the synthetic seam."
 }

@@ -70,9 +70,20 @@ The short version:
 
 ## Capabilities
 
-The first admitted capability boundary is:
+The first admitted capability is:
 
-- [`playlist-link-extraction`](capabilities/playlist-link-extraction/CAPABILITY.md) - boundary defined; existing prototype integration is the next transition.
+- [`playlist-link-extraction`](capabilities/playlist-link-extraction/CAPABILITY.md) — status `CORE_IMPLEMENTED_ADAPTERS_PENDING`
+
+Reusable core entrypoint:
+
+```powershell
+python capabilities/playlist-link-extraction/extract_links.py `
+  --batch capabilities/playlist-link-extraction/fixtures/synthetic-observation-batch.v1.json `
+  --output-json Outputs/playlist-link-artifact.json `
+  --output-csv Outputs/playlist-link-artifact.csv
+```
+
+Adapters emit `playlist-link-observation-batch/v1`; the core owns normalization, ordered occurrences, unique-link aggregation, canonical JSON, and CSV projection. Live provider adapters remain the next transition.
 
 ## Existing experiments
 
