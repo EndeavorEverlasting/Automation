@@ -2,82 +2,54 @@
 
 `artifact-sync` is the reusable synchronization boundary for provider-backed artifacts that must remain fresh without turning every consumer repository or agent into a provider client.
 
-## Why this capability exists
+## Activation versus mechanics
 
-A provider-backed source should not silently become a pile of local derivatives merely because a local tool can generate files more easily than it can update the source provider. That behavior creates stale duplicates, consumes local storage, obscures authority, and makes downstream agents rediscover where the real file lives.
+The repository-wide `artifact-continuity-preflight/v1` contract decides **when** an existing provider-backed source must be considered before local artifact creation/return. This capability owns **how** synchronization proceeds after a binding is selected.
 
-The capability therefore treats **artifact identity, authority, freshness, storage policy, conflict handling, and proof** as first-class contract fields.
+Repeated rediscovery of cloud/source authority is therefore an activation/inheritance defect, not a reason to redesign synchronization in every repository.
 
 ## Ownership
 
-### Core owns
+Core owns binding validation, semantic identity, authority/direction evaluation, checkpoint synchronization, durable baseline recovery, freshness/conflict transitions, hashing/read-back verification, local materialization policy, receipts, and periodic polling contract.
 
-- binding validation and semantic artifact identity;
-- authority/direction decisions;
-- checkpoint-triggered synchronization;
-- freshness and conflict state transitions;
-- content hashing and read-back verification;
-- local materialization policy;
-- provider-neutral receipts;
-- periodic polling contract.
+Provider adapters own authentication, private locator resolution, provider revision/change-token translation, provider-native reads/writes, watch/poll behavior, and provider error translation.
 
-### Provider adapters own
+Integrations own calling the stable CLI at declared artifact checkpoints, attaching evidence to provenance systems such as Entire, and consumer-specific semantic bindings.
 
-- authentication and token lifecycle;
-- resolving a semantic `locator_handle` to the exact provider object from protected runtime state;
-- provider revision/change-token APIs;
-- provider-native reads/writes;
-- watch/poll behavior and provider error translation.
-
-### Integrations own
-
-- calling the stable CLI at declared checkpoints;
-- attaching sync evidence to a provenance system such as Entire;
-- consumer-specific semantic bindings.
-
-Entire is **provenance**, not the file-transfer engine and not the scheduler. A checkpoint integration may invoke artifact-sync and let Entire preserve the surrounding agent/commit context, but provider transfer and conflict logic stay in this capability.
+Entire is provenance, not file transfer, scheduling, authority selection, or conflict resolution.
 
 ## Storage default
 
-Provider-backed artifacts default to **ephemeral local materialization**:
+Provider-backed artifacts default to ephemeral local materialization:
 
-1. Resolve the exact provider object through protected runtime state.
-2. Check provider freshness before use.
-3. Materialize only when the consumer actually needs local bytes.
-4. Perform the bounded operation.
-5. For provider-bound mutation, write through the correct provider API.
-6. Read back and verify.
-7. Emit a receipt.
-8. Delete ephemeral bytes after verified success.
+1. resolve exact provider identity from protected runtime state;
+2. recover the last common verified baseline;
+3. check provider freshness;
+4. materialize only when local bytes are needed;
+5. perform the bounded operation;
+6. for provider-bound mutation, write through the correct provider API;
+7. read back/verify as required;
+8. advance the durable baseline only after successful verification;
+9. emit a receipt;
+10. clean ephemeral bytes after verified success.
 
-A persistent local mirror is opt-in and must declare a storage budget. A successful provider-backed edit must never silently stop at a local-only file just because that is easier.
+Persistent mirrors are explicit and storage-bounded. A provider-backed edit never silently becomes a local-only canonical file.
+
+## Identity, local side, and baseline
+
+Tracked bindings use semantic handles. Raw provider IDs/URLs, local private paths, credentials, and private baseline-store locations stay outside public Git.
+
+Local or bidirectional authority requires an explicit semantic `local_side` handle. Hidden consumer-specific path knowledge is not a contract.
+
+Every binding also carries a semantic private `baseline_state.state_handle`. Conflict detection compares current sides to that recovered common verified state.
+
+A bidirectional sync with two pre-existing sides and no recoverable common baseline emits `BLOCKED_NO_BASELINE`.
 
 ## Native provider documents versus blob files
 
-These are different mutation classes.
+Blob files may use byte operations when supported. Native documents/spreadsheets/presentations require provider-native mutation APIs. Exported local files are projections, not writable canonical identity.
 
-- **Blob files** may use byte download/update semantics when the adapter supports them.
-- **Native documents/spreadsheets/presentations** must use provider-native mutation APIs. Exported local files are projections, not writable canonical identity.
-
-The core must reject raw-byte replacement when the bound artifact kind is provider-native.
-
-## Identity and privacy
-
-Tracked bindings use:
-
-```json
-{
-  "provider": {
-    "adapter_id": "workspace-provider",
-    "locator_handle": "private:example-provider-backed-document",
-    "locator_resolution": "private_runtime_only"
-  }
-}
-```
-
-The actual provider object identifier and account context live outside public Git. Filename/title search may help discovery during an explicit intake workflow, but it never becomes the synchronization identity.
-
-## Checkpoint model
+## Checkpoints
 
 Required trigger vocabulary:
 
@@ -86,17 +58,16 @@ Required trigger vocabulary:
 - `handoff`
 - `periodic`
 
-Checkpoint synchronization is the correctness path. Periodic polling is a convenience/recovery path and cannot waive freshness checks required before use or write.
+Checkpoint synchronization is the correctness path. Periodic polling is recovery/convenience and cannot waive before-use or pre-write freshness.
 
-## Conflict rule
+## Success semantics
 
-V1 is deliberately conservative: **fail closed**.
+- Pull: may report `SYNCED` after provider freshness/read and downloaded/local content verification. No provider write is required.
+- Provider-bound push/reconcile: may report `SYNCED` only after provider write and provider read-back verification.
+- Durable baseline advances only after required verification.
+- Blocked/failed attempts remain retryable and do not disable later checkpoints.
 
-If both authoritative sides changed since the last common verified receipt, emit `BLOCKED_CONFLICT`. Do not guess, merge opaque binaries, or let a lower-capability executor select a winner.
-
-## Rust CLI contract
-
-The planned executable is `artifact-sync`.
+## CLI target
 
 ```text
 artifact-sync validate-binding --binding <binding.json>
@@ -107,29 +78,18 @@ artifact-sync checkpoint       --binding <binding.json> --checkpoint handoff
 artifact-sync periodic-poll    --binding <binding.json> --interval-seconds <n>
 ```
 
-Common requirements:
-
-- provider locator resolution is private runtime state;
-- JSON receipt goes to stdout by default;
-- `--receipt <path>` is optional and should normally target ignored/private runtime storage;
-- no command accepts a raw provider URL or identifier as the normal tracked invocation path;
-- mutation commands perform pre-write freshness, write, and read-back verification;
-- nonzero exit status distinguishes blocked/conflict/auth/validation failures from success.
-
-V1 implementation should use Rust stable with a small provider-neutral core. The first provider adapter may use generated Workspace API Rust crates plus OAuth support, but provider crates stay behind the adapter boundary.
+Tracked invocations use semantic bindings, not raw provider URLs/IDs. JSON receipts go to stdout by default.
 
 ## Entire integration boundary
 
-Entire associates agent sessions/checkpoints with Git work. Artifact Sync should not modify Entire's checkpoint storage format.
+Only work that consumes or mutates the **bound artifact** is gated on its artifact-sync result. Unrelated repository changes are not blocked merely because a provider is unavailable.
 
-The initial integration is deliberately thin:
+A future Entire/hook adapter may invoke artifact-sync for covered work units and preserve the surrounding session/checkpoint provenance, but provider availability must never become a hidden dependency of unrelated commits.
 
-1. Agent/harness invokes `artifact-sync sync ...` at the declared artifact checkpoint.
-2. The sync receipt is emitted in the session transcript and may optionally be written to ignored runtime output.
-3. Code/document changes proceed only after a PASS-like sync state.
-4. When the repo commit occurs, Entire preserves the surrounding session/checkpoint provenance.
-5. A future hook adapter may automate invocation, but hook ordering must not make provider availability a hidden dependency of unrelated Git commits.
+## Future inheritance
+
+New repository/bootstrap tooling should expose `artifact-continuity-preflight/v1` from root wayfinding or a pinned shared dependency. Existing repositories migrate by representative archetype rather than copying provider rules by hand.
 
 ## Proof ceiling
 
-The current repository state defines the v1 architecture and deterministic contracts. It does **not** yet prove the Rust executable, live OAuth, live provider mutation, periodic service installation, or production synchronization.
+Current repository work defines activation/binding/receipt/baseline contracts and deterministic validators. Rust implementation, live OAuth/provider mutation, service installation, deployment, and production synchronization remain unproven.
