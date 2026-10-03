@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import subprocess
@@ -10,10 +11,28 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CAP = ROOT / "capabilities" / "agent-hook-runtime"
-sys.path.insert(0, str(CAP))
 
-from adapters.cursor import neutral_response, validate_event  # noqa: E402
-from core.transport import parse_json_object  # noqa: E402
+
+def _load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+TRANSPORT = _load_module(
+    "automation_agent_hook_transport",
+    CAP / "core" / "transport.py",
+)
+CURSOR = _load_module(
+    "automation_agent_hook_cursor_adapter",
+    CAP / "adapters" / "cursor.py",
+)
+parse_json_object = TRANSPORT.parse_json_object
+neutral_response = CURSOR.neutral_response
+validate_event = CURSOR.validate_event
 
 
 class AgentHookRuntimeTests(unittest.TestCase):
