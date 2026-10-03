@@ -13,6 +13,7 @@ class RepositoryContractTests(unittest.TestCase):
             (ROOT / "harness/contracts/canonical-path.v1.json").read_text(encoding="utf-8")
         )
         self.assertEqual(contract["repository"], "EndeavorEverlasting/Automation")
+        self.assertEqual(contract["resolver"], "scripts/path_receipt.py")
         default = contract["profiles"]["default"]
         dev = default["development_checkout"]
         self.assertEqual(dev["literal_path"], None)
@@ -47,6 +48,7 @@ class RepositoryContractTests(unittest.TestCase):
             "EXECUTE_AND_IMPLEMENT",
             "Never substitute remembered prompt text",
             "UNKNOWN_BLOCK_NEW_CLONE",
+            "python scripts/path_receipt.py",
         ):
             self.assertIn(marker, agents)
 
