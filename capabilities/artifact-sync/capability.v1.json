@@ -1,0 +1,65 @@
+{
+  "schema_version": "automation-capability/v1",
+  "capability_id": "artifact-sync",
+  "status": "CONTRACT_DEFINED_RUST_IMPLEMENTATION_PENDING",
+  "repository_path": "capabilities/artifact-sync",
+  "purpose": "Synchronize provider-backed artifacts with bounded local materialization while preserving exact identity, source authority, freshness, conflict safety, privacy, storage limits, and machine-readable receipts across repositories and workflows.",
+  "core_owns": [
+    "binding validation and semantic artifact identity",
+    "authority and direction evaluation",
+    "checkpoint-triggered synchronization decisions",
+    "freshness and conflict state transitions",
+    "content hashing and read-back verification",
+    "ephemeral-versus-persistent local materialization policy",
+    "provider-neutral synchronization receipts",
+    "periodic polling orchestration contract"
+  ],
+  "adapters_own": [
+    "provider authentication and token lifecycle",
+    "provider locator resolution from protected runtime state",
+    "provider revision/change-token translation",
+    "provider-native file mutation",
+    "provider-specific watch/poll APIs and failure translation",
+    "native workspace document mutation semantics"
+  ],
+  "integrations_own": [
+    "Entire session/checkpoint provenance attachment without making Entire the transfer engine or scheduler",
+    "agent or repository hooks that invoke the stable artifact-sync CLI at declared checkpoints",
+    "consumer-specific semantic bindings and protected locator resolution"
+  ],
+  "forbidden_core_assumptions": [
+    "one repository layout or consuming product",
+    "one cloud provider",
+    "tracked provider URLs or provider file identifiers",
+    "persistent local copies as the default",
+    "filename search as artifact identity",
+    "silent last-writer-wins conflict resolution",
+    "raw-byte replacement of provider-native document formats",
+    "frontier-model judgment at execution time"
+  ],
+  "authority_states": [
+    "provider",
+    "local",
+    "bidirectional"
+  ],
+  "local_materialization_modes": [
+    "ephemeral",
+    "persistent"
+  ],
+  "conflict_policy_floor": "fail_closed",
+  "checkpoint_triggers": [
+    "before_consume",
+    "after_mutation",
+    "handoff",
+    "periodic"
+  ],
+  "schemas": {
+    "binding": "capabilities/artifact-sync/schemas/binding.v1.json",
+    "receipt": "capabilities/artifact-sync/schemas/receipt.v1.json"
+  },
+  "implementation_language": "Rust",
+  "planned_cli_entrypoint": "capabilities/artifact-sync/src/main.rs",
+  "production_use_path": "UNDECLARED",
+  "proof_ceiling": "Architecture, binding/receipt contracts, privacy/storage policy, and deterministic local-agent handoff are defined. Rust implementation, live OAuth/provider mutation, periodic service installation, and production synchronization remain unproven.",
+  "next_transition": "Implement the Rust CLI and provider adapter to the frozen v1 contracts using the READY runtime handoff packet in docs/examples/runtime-handoff.artifact-sync-rust-cli.json."
+}

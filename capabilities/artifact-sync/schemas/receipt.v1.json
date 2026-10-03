@@ -1,0 +1,60 @@
+{
+  "schema_version": "artifact-sync-receipt/v1",
+  "description": "Deterministic synchronization receipt emitted to stdout and optionally to an ignored/private artifact path. A separately sanitized projection may be tracked when a consumer explicitly requires durable public evidence.",
+  "required_fields": [
+    "schema_version",
+    "binding_id",
+    "operation",
+    "checkpoint_trigger",
+    "state",
+    "authority",
+    "artifact_kind",
+    "local_materialization_mode",
+    "provider_freshness_checked",
+    "conflict_checked",
+    "read_back_verified",
+    "proof_ceiling"
+  ],
+  "operations": [
+    "status",
+    "pull",
+    "push",
+    "reconcile",
+    "checkpoint",
+    "periodic_poll"
+  ],
+  "states": [
+    "NO_CHANGE",
+    "SYNCED",
+    "BLOCKED_AUTH",
+    "BLOCKED_CONFLICT",
+    "BLOCKED_UNRESOLVED_LOCATOR",
+    "UNSUPPORTED_PROVIDER_MUTATION",
+    "FAILED"
+  ],
+  "optional_private_runtime_fields": [
+    "provider_revision",
+    "provider_change_token",
+    "provider_locator_fingerprint",
+    "content_sha256_before",
+    "content_sha256_after",
+    "local_scratch_path"
+  ],
+  "sanitized_tracking_rules": [
+    "A tracked/public projection must remove provider_revision, provider_change_token, local_scratch_path, and any raw locator/account identity.",
+    "provider_locator_fingerprint may be retained only when it is a one-way fingerprint that cannot be used as the provider locator.",
+    "state must not be promoted to SYNCED until the provider-side write and read-back verification both succeed when mutation is requested.",
+    "A blocked or failed sync does not disable future checkpoint or periodic attempts."
+  ],
+  "proof_states": [
+    "DESIGNED",
+    "IMPLEMENTED",
+    "LOCALLY_VALIDATED",
+    "INTEGRATION_VALIDATED",
+    "COMMITTED",
+    "PUSHED",
+    "MERGED",
+    "DEPLOYED",
+    "PRODUCTION_VERIFIED"
+  ]
+}

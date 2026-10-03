@@ -95,3 +95,24 @@ Treat its machine-readable receipt as the current path/execution-context evidenc
 - Remote merge success is not local deployment proof.
 
 Before substantial mutation, recover current repository/provider truth and preserve these invariants.
+
+
+## Provider-backed artifact synchronization
+
+When work reads or mutates a provider-backed artifact, read:
+
+- `capabilities/artifact-sync/CAPABILITY.md`
+- `capabilities/artifact-sync/schemas/binding.v1.json`
+- `capabilities/artifact-sync/schemas/receipt.v1.json`
+
+Execution invariants:
+
+1. Tracked public configuration uses a semantic `locator_handle`; raw provider IDs, URLs, account identity, credentials, and tokens remain protected runtime state.
+2. Exact provider identity is authoritative. Filename/title search is discovery only and never the synchronization identity.
+3. Provider-backed artifacts default to ephemeral local materialization. Persistent mirrors require an explicit bounded storage policy.
+4. A provider-backed edit may not claim completion when it only created a local derivative and failed to update/read back the authoritative provider source.
+5. Native documents/spreadsheets/presentations require provider-native mutation APIs. Raw byte replacement is for blob files only.
+6. V1 conflicts fail closed. A local executor must not choose a winner when both sides changed.
+7. Checkpoint triggers are `before_consume`, `after_mutation`, `handoff`, and `periodic`. Periodic checks do not replace before-use or pre-write freshness.
+8. Entire may preserve provenance around the operation, but artifact-sync owns transfer/conflict/storage behavior.
+9. Local executors implement the frozen contract; they do not redesign authority, privacy, storage, native-write, or conflict semantics.

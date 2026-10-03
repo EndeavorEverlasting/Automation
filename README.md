@@ -85,6 +85,18 @@ python capabilities/playlist-link-extraction/extract_links.py `
 
 Adapters emit `playlist-link-observation-batch/v1`; the core owns normalization, ordered occurrences, unique-link aggregation, canonical JSON, and CSV projection. Live provider adapters remain the next transition.
 
+### Artifact synchronization
+
+- [`artifact-sync`](capabilities/artifact-sync/CAPABILITY.md) — status `CONTRACT_DEFINED_RUST_IMPLEMENTATION_PENDING`
+
+Provider-backed artifact edits must not silently stop at local-only derivatives. The admitted v1 contract uses semantic bindings, exact provider identity resolved only from protected runtime state, ephemeral-by-default local materialization, fail-closed conflicts, provider-native mutation for native workspace documents, and read-back verification before a mutation can report `SYNCED`.
+
+See:
+- [binding contract](capabilities/artifact-sync/schemas/binding.v1.json)
+- [receipt contract](capabilities/artifact-sync/schemas/receipt.v1.json)
+- [P04 factoring plan](docs/plans/P04_ARTIFACT_SYNC_FACTORING_2026-10-03.md)
+- [READY Cursor handoff](docs/examples/runtime-handoff.artifact-sync-rust-cli.json)
+
 ## Existing experiments
 
 This repository began as a small automation sandbox. Early experiments may predate the current charter. New work should follow the charter rather than treating historical layout as the architectural model.
