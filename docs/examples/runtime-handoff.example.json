@@ -1,0 +1,52 @@
+{
+  "schema_version": "automation-runtime-handoff-packet/v1",
+  "packet_state": "READY",
+  "work_unit_id": "example-adapter-validation",
+  "semantic_owner": "automation-capability/example",
+  "execution_environment": "LOCAL_AGENT_RUNTIME",
+  "required_capabilities": [
+    "repository checkout",
+    "Python 3.12"
+  ],
+  "mutation_authority": [
+    "bounded feature branch write"
+  ],
+  "owned_scope": [
+    "capabilities/example/adapters/synthetic-provider",
+    "tests/example"
+  ],
+  "forbidden_scope": [
+    "consumer business logic",
+    "provider credentials",
+    "unrelated capabilities"
+  ],
+  "evidence_inputs": [
+    {
+      "type": "public_contract",
+      "identity": "automation-runtime-execution-handoff/v1"
+    },
+    {
+      "type": "fixture",
+      "identity": "synthetic-provider-fixture"
+    }
+  ],
+  "dependencies": [],
+  "collision_surface": [
+    "example adapter directory"
+  ],
+  "expected_artifacts": [
+    "adapter implementation",
+    "focused tests",
+    "validation receipt"
+  ],
+  "acceptance_gates": [
+    "focused tests pass",
+    "runtime handoff validator passes",
+    "no private locators or secrets are tracked"
+  ],
+  "proof_ceiling": "Integration validation only; no live provider mutation or production publication is authorized.",
+  "runtime_handoff": "Execute this bounded packet exactly. Do not redesign ownership or broaden scope.",
+  "freshness_requirements": [
+    "refresh the default branch and active pull-request state before mutation"
+  ]
+}
