@@ -73,7 +73,11 @@
       "secret",
       "credential",
       "session",
-      "browser_state"
+      "browser_state",
+      "private_key",
+      "authorization",
+      "token",
+      "auth_header"
     ],
     "forbidden_string_patterns": [
       "drive.google.com/",
@@ -82,8 +86,9 @@
       "docs.google.com/presentation/"
     ],
     "forbidden_string_regexes": [
-      "(?i)[A-Z]:\\\\Users\\\\[^\\\\]+\\\\",
-      "/home/[^/]+/"
+      "(?i)[A-Z]:[\\\\\\\\/]Users[\\\\\\\\/][^\\\\\\\\/]+[\\\\\\\\/]",
+      "/home/[^/]+/",
+      "/Users/[^/]+/"
     ],
     "rule": "Tracked public packets must use semantic inputs, sanitized evidence, repository-relative paths, synthetic fixtures, and public provenance. Private locator mappings stay outside public Git."
   },
@@ -116,5 +121,20 @@
     "expected_artifacts",
     "acceptance_gates",
     "freshness_requirements"
+  ],
+  "string_list_fields": [
+    "required_capabilities",
+    "mutation_authority",
+    "owned_scope",
+    "forbidden_scope",
+    "dependencies",
+    "collision_surface",
+    "expected_artifacts",
+    "acceptance_gates",
+    "freshness_requirements"
+  ],
+  "evidence_input_required_fields": [
+    "type",
+    "identity"
   ]
 }
