@@ -31,7 +31,7 @@ Repository-capable agents do not need conversational memory to know what `P92` o
 python scripts/prompt_runtime.py --text "invoke & implement P92"
 ```
 
-The resolver recovers the exact prompt from configured canonical repository sources, records source/blob/body hashes, classifies invocation intent, and fails closed on unknown/conflicting identities. See [docs/PROMPT_RUNTIME.md](docs/PROMPT_RUNTIME.md).
+Automation delegates prompt identity, intent semantics, authority routing, and prompt bytes to the pinned `prompt-invocation-upstream/v1` dependency. It does not reproduce Prompt Kit registry logic. See [docs/PROMPT_RUNTIME.md](docs/PROMPT_RUNTIME.md).
 
 ## Repository charter
 

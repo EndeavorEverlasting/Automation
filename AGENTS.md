@@ -19,24 +19,21 @@ Treat `docs/REPOSITORY_CHARTER.md` as the canonical ownership contract and `CONT
 
 ## Prompt invocation contract
 
-Prompt identities are repository-owned inputs, not model-memory shortcuts.
+P-number semantics are an **upstream dependency**. Automation consumes `prompt-invocation-upstream/v1`; it does not own prompt discovery, registry composition, authority routing, creation, mutation, or retirement.
 
 When the operator supplies or references a P-number:
 
 1. Read `docs/PROMPT_RUNTIME.md`.
-2. Resolve the operator's **verbatim invocation text** through:
+2. Resolve the **verbatim operator text** through:
    `python scripts/prompt_runtime.py --text "<operator text>"`
-3. Use the exact resolved `copy_content`, source repository/path/blob SHA, and body SHA-256 as prompt authority.
-4. Never substitute remembered prompt text, a semantically similar prompt, or a fuzzy ID match.
+3. Treat the returned upstream packet as prompt identity/intent authority.
+4. Never substitute remembered prompt text, fuzzy-match another ID, inspect Prompt Kit registry topology, or require a Triage checkout.
 5. `EXECUTE` means execute the resolved workflow now.
-6. `EXECUTE_AND_IMPLEMENT` means execute it and carry authorized implementation through reachable validation/integration gates. Do not stop after printing, summarizing, or recommending.
-7. `EXECUTE_THEN_MUTATE` executes first unless the operator explicitly ordered prompt mutation first.
-8. `REFERENCE` does not authorize execution.
-9. `UNRESOLVED`, `SOURCE_CONFLICT`, or `PROVIDER_LOOKUP_REQUIRED` fail closed. Recover provider/repository truth rather than guessing.
-10. Resolution proves prompt identity only. Preserve separate proof states for implementation, validation, integration, deployment, and production behavior.
-11. A tracked provenance snapshot may be used when canonical transport is unavailable, but it carries `canonical_latestness=UNVERIFIED`. Freshness-sensitive execution or prompt mutation requires canonical source refresh first.
+6. `EXECUTE_AND_IMPLEMENT` means execute it and carry authorized local implementation through reachable proof gates.
+7. Prompt mutation/governance belongs upstream; Automation does not invent a downstream contribution lifecycle.
+8. Preserve separate proof states for resolution, execution, implementation, integration, deployment, and production behavior.
 
-The current prompt-source repository name is configuration and may change. Do not hard-code it outside `config/prompt-sources.v1.json`; honor its environment overrides.
+Pinned dependency manifest: `vendor/prompt-invocation-upstream/manifest.v1.json`.
 
 ## P92 canonical-path contract
 

@@ -1,102 +1,69 @@
 # Repository Prompt Runtime
 
-Automation can resolve operator P-number shorthand from canonical repository-owned prompt registries. This prevents prompt execution from depending on ChatGPT memory, conversation history, or a human re-pasting the prompt body.
+Automation is a downstream consumer of **`prompt-invocation-upstream/v1`**.
 
-## Operator semantics
+It does not know how Prompt Kit registries are composed, where retained prompts live, or how prompt authority is migrated. Those are upstream concerns.
 
-Examples:
-
-```text
-P92
-invoke P92
-invoke & implement P92
-what is P92?
-rewrite P92
-```
-
-The repository follows the canonical invocation semantics imported from the Prompt Kit control plane:
-
-- bare `P92` or `invoke P92` -> `EXECUTE`
-- `invoke & implement P92` -> `EXECUTE_AND_IMPLEMENT`
-- explanatory questions -> `REFERENCE`
-- explicit rewrite/edit/strengthen verbs -> prompt mutation intent
-- unknown IDs fail closed; fuzzy substitution is forbidden
-
-## Resolver
+## Normal use
 
 ```powershell
 python scripts/prompt_runtime.py --text "invoke & implement P92"
 ```
 
-The JSON packet includes:
-
-- normalized prompt ID;
-- invocation intent;
-- canonical source repository/ref/path;
-- source blob SHA;
-- SHA-256 of the exact prompt body;
-- exact `copyContent`;
-- whether execution and implementation are required.
-
-The resolver uses GitHub's Contents API and supports `GITHUB_TOKEN` or `GH_TOKEN` for authenticated source access.
-
-## Source mobility
-
-The current portable prompt authority is configured in `config/prompt-sources.v1.json`. Repository names are configuration, not code constants.
-
-If the prompt product repository is renamed or transferred, update the config or set:
+Automation's wrapper loads the pinned upstream resolver and catalog from:
 
 ```text
-AUTOMATION_PROMPT_PORTABLE_REPOSITORY
-AUTOMATION_PROMPT_PORTABLE_REF
+vendor/prompt-invocation-upstream/
+  manifest.v1.json
+  contract.v1.json
+  catalog.v1.json
+  prompt_invocation_resolver.py
 ```
 
-Retained prompt authorities have equivalent configuration/override fields.
+The result packet comes from the upstream resolver and includes exact prompt identity, intent, prompt body, canonical source provenance, and implementation intent.
 
-This means a repository rename does not require rewriting the resolver.
+## Dependency provenance
 
-## Tracked provenance snapshot
+`vendor/prompt-invocation-upstream/manifest.v1.json` records:
 
-Cross-repository transport is not guaranteed in every runtime. In particular, a repository-scoped GitHub Actions token may be unable to read the separate canonical Prompt Kit repository.
+- upstream repository;
+- exact upstream commit;
+- upstream contract identity;
+- source blob SHA for every vendored dependency file.
 
-Automation therefore carries a generated prompt snapshot under `harness/prompt-mirror/`. The snapshot:
+The contract, catalog, and resolver are refreshed **as one unit** from one proven upstream commit.
 
-- contains exact registry bytes recovered from the canonical owners;
-- records source repository paths and source blob SHAs in `harness/prompt-mirror/manifest.v1.json`;
-- is a **fallback cache, never a competing prompt authority**;
-- allows exact P-number execution without conversational/model memory when provider transport is unavailable;
-- returns `RESOLVED_SNAPSHOT_PORTABLE` or `RESOLVED_SNAPSHOT_RETAINED` with `canonical_latestness=UNVERIFIED`.
+The current pin is a dependency version, not a claim that no newer upstream commit exists.
 
-A freshness-sensitive request, prompt mutation, or explicit request for the latest prompt must refresh the canonical owner first. Snapshot fallback must never be represented as proof that no newer canonical prompt exists.
+## Ownership boundary
 
-## Agent execution contract
+Automation owns:
 
-`AGENTS.md` binds repo-capable agents to this rule:
+- invoking the pinned upstream interface;
+- applying the resolved workflow to Automation's local context;
+- local implementation and proof.
 
-1. resolve the exact P-number from repository-owned source;
-2. inspect the invocation packet and exact body;
-3. execute it against current repository/provider/runtime truth;
-4. if intent is `EXECUTE_AND_IMPLEMENT`, perform reachable authorized mutations and validation;
-5. report proof states separately.
+Automation does **not** own:
 
-Resolution is not execution proof. Printing a prompt body does not satisfy an invocation.
+- prompt registry discovery;
+- Prompt Kit product-boundary traversal;
+- retained Triage routing;
+- prompt creation/admission/retirement;
+- canonical prompt mutation;
+- a competing prompt cache format.
+
+If a prompt itself must be changed, route that mutation to the upstream prompt owner.
 
 ## Failure semantics
 
-If canonical source lookup fails, the resolver returns `PROVIDER_LOOKUP_REQUIRED`.
-
-If an ID is unknown, it returns `UNRESOLVED`.
-
-If the same identity appears in incompatible canonical owners, it returns `SOURCE_CONFLICT`.
-
-None of those states permits a remembered or semantically similar prompt to be substituted.
+Unknown/conflicting P-numbers fail closed according to the upstream resolver. Automation must not repair an upstream lookup failure by guessing from model memory.
 
 ## P92 path preflight
 
-P92 is the first prompt used to prove this runtime. Before path-sensitive mutation, run:
+P92 remains a local workflow once resolved upstream. Before path-sensitive mutation run:
 
 ```powershell
 python scripts/path_receipt.py --repo-root . --output Outputs/path-receipt.json
 ```
 
-The receipt validates the current checkout's Git remote identity, captures execution-context evidence, records production/use state conservatively, and keeps remote integration, development freshness, production freshness, and entrypoint proof separate. It never chooses a new checkout path when the canonical path is unresolved.
+Remote integration, local checkout freshness, production freshness, and entrypoint proof remain separate states.

@@ -1,0 +1,28 @@
+{
+  "schema_version": "automation-upstream-dependency/v1",
+  "dependency_id": "prompt-invocation-upstream",
+  "contract_id": "prompt-invocation-upstream/v1",
+  "upstream_repository": "EndeavorEverlasting/TokenCorridor",
+  "upstream_commit": "0755b08eca0c4e105d3724b47dd2e43a25f67bee",
+  "role": "PINNED_DOWNSTREAM_DEPENDENCY",
+  "authority_rule": "Prompt definitions and invocation semantics remain upstream-owned. Automation consumes this pinned dependency and does not reimplement registry discovery or authority routing.",
+  "files": [
+    {
+      "source_path": "harness/contracts/prompt-invocation-upstream.v1.json",
+      "source_blob_sha": "38d44cb32d84b21657c7b3fe0167d23fa02b2c70",
+      "local_path": "vendor/prompt-invocation-upstream/contract.v1.json"
+    },
+    {
+      "source_path": "harness/exports/prompt-invocation-catalog.v1.json",
+      "source_blob_sha": "48658027720196bedc7c020b6da12c09a97f6cae",
+      "local_path": "vendor/prompt-invocation-upstream/catalog.v1.json"
+    },
+    {
+      "source_path": "scripts/prompt_invocation_resolver.py",
+      "source_blob_sha": "98ecc1ec630629dacb7c78a25ce7fe1c899ee91f",
+      "local_path": "vendor/prompt-invocation-upstream/prompt_invocation_resolver.py"
+    }
+  ],
+  "refresh_rule": "Refresh the contract, catalog, and resolver together from one proven upstream commit. Never update one dependency file independently.",
+  "freshness": "PINNED_TO_UPSTREAM_COMMIT"
+}

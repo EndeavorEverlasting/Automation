@@ -13,8 +13,6 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ github.token }}
 
     steps:
       - name: Checkout
@@ -25,20 +23,38 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Verify vendored prompt upstream bytes
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          manifest_path = Path("vendor/prompt-invocation-upstream/manifest.v1.json")
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          assert manifest["contract_id"] == "prompt-invocation-upstream/v1", manifest
+          for item in manifest["files"]:
+              local = Path(item["local_path"])
+              assert local.is_file(), local
+              observed = subprocess.check_output(
+                  ["git", "hash-object", str(local)], text=True
+              ).strip()
+              assert observed == item["source_blob_sha"], (local, observed, item)
+          PY
+
       - name: Unit and contract tests
         run: python -m unittest discover -s tests -v
 
       - name: Compile Python entrypoints
-        run: python -m py_compile scripts/prompt_runtime.py scripts/path_receipt.py
+        run: |
+          python -m py_compile             scripts/prompt_runtime.py             scripts/path_receipt.py             vendor/prompt-invocation-upstream/prompt_invocation_resolver.py
 
-      - name: Resolve P92 invocation from canonical source or provenance snapshot
+      - name: Resolve P92 through pinned upstream dependency
         run: |
           mkdir -p Outputs
-          python scripts/prompt_runtime.py \
-            --text "invoke & implement P92" \
-            --output Outputs/p92-invocation.json
+          python scripts/prompt_runtime.py             --text "invoke & implement P92"             --output Outputs/p92-invocation.json
 
-      - name: Validate live P92 invocation receipt
+      - name: Validate upstream P92 packet
         run: |
           python - <<'PY'
           import json
@@ -46,34 +62,19 @@ jobs:
 
           payload = json.loads(Path("Outputs/p92-invocation.json").read_text(encoding="utf-8"))
           assert payload["overall_state"] == "RESOLVED", payload
+          assert payload["upstream_contract"] == "prompt-invocation-upstream/v1", payload
           assert payload["intent"] == "EXECUTE_AND_IMPLEMENT", payload
-          assert payload["execution_required"] is True, payload
           assert payload["implementation_required"] is True, payload
-          assert payload["prompt_ids"] == ["P92"], payload
+          assert payload["resolution_mode"] == "UPSTREAM_CATALOG_PINNED", payload
           resolved = payload["resolutions"][0]
-          assert resolved["state"] in {"RESOLVED_PORTABLE", "RESOLVED_SNAPSHOT_PORTABLE"}, resolved
-          assert resolved["canonical_repository"] == "EndeavorEverlasting/TokenCorridor", resolved
+          assert resolved["state"] == "RESOLVED_UPSTREAM", resolved
+          assert resolved["prompt_id"] == "P92", resolved
           assert resolved["name"] == "Canonical Path Prompt", resolved
-          assert resolved["source_blob_sha"], resolved
-          assert len(resolved["copy_content_sha256"]) == 64, resolved
-          assert "ESTABLISH AND ENFORCE THE CANONICAL DEVELOPMENT AND PRODUCTION PATH" in resolved["copy_content"], resolved
-
-          if resolved["state"] == "RESOLVED_SNAPSHOT_PORTABLE":
-              assert resolved["source_transport"] == "TRACKED_PROVENANCE_SNAPSHOT", resolved
-              assert resolved["canonical_latestness"] == "UNVERIFIED", resolved
-              manifest = json.loads(Path("harness/prompt-mirror/manifest.v1.json").read_text(encoding="utf-8"))
-              expected = next(
-                  item for item in manifest["entries"]
-                  if item["source_path"].endswith("registry/prompts/spec-architecture-prompts.v1.json")
-              )
-              assert resolved["source_blob_sha"] == expected["source_blob_sha"], (resolved, expected)
           PY
 
       - name: Emit P92 path and execution-context receipt
         run: |
-          python scripts/path_receipt.py \
-            --repo-root . \
-            --output Outputs/path-receipt.json
+          python scripts/path_receipt.py             --repo-root .             --output Outputs/path-receipt.json
 
       - name: Validate P92 checkout receipt
         run: |
