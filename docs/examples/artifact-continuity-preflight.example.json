@@ -1,0 +1,16 @@
+{
+  "schema_version": "automation-artifact-continuity-preflight-packet/v1",
+  "work_unit_id": "example-provider-backed-formatting",
+  "artifact_semantic_id": "example-existing-provider-document",
+  "artifact_action": "format",
+  "execution_environment": "CURRENT_CHAT_RUNTIME",
+  "known_provider_source": true,
+  "exact_source_binding_state": "RESOLVED",
+  "provider_access_state": "AVAILABLE",
+  "provider_write_state": "AUTHORIZED",
+  "local_output_role": "EPHEMERAL_DERIVATIVE",
+  "provider_link_policy": "PRIMARY_WHEN_AVAILABLE",
+  "sync_obligation": "NONE_PENDING",
+  "result_state": "READY_PROVIDER_FIRST",
+  "proof_ceiling": "Authority decision only; provider-native write and read-back proof remain separately required."
+}
