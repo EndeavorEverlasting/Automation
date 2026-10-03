@@ -54,7 +54,10 @@ jobs:
             vendor/prompt-invocation-upstream/prompt_invocation_resolver.py \
             capabilities/playlist-link-extraction/extract_links.py \
             capabilities/playlist-link-extraction/core/normalize.py \
-            capabilities/playlist-link-extraction/core/artifact.py
+            capabilities/playlist-link-extraction/core/artifact.py \
+            capabilities/agent-hook-runtime/diagnose_cursor_hook.py \
+            capabilities/agent-hook-runtime/core/transport.py \
+            capabilities/agent-hook-runtime/adapters/cursor.py
 
       - name: Build playlist-link synthetic artifact
         run: |
