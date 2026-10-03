@@ -51,6 +51,42 @@ class ArtifactContinuityPreflightTests(unittest.TestCase):
         p["artifact_semantic_id"]="https://"+"docs.google"+".com/document/d/private"
         self.assertTrue(any("raw provider locator" in e for e in self.v.validate_packet(p,self.contract)))
 
+
+    def test_provider_neutral_url_is_rejected(self):
+        p=load(EXAMPLE)
+        p["artifact_semantic_id"]="scheme"+"://opaque"
+        self.assertTrue(any("raw provider locator" in e for e in self.v.validate_packet(p,self.contract)))
+
+    def test_known_resolved_source_rejects_not_applicable_access(self):
+        p=load(EXAMPLE)
+        p["provider_access_state"]="NOT_APPLICABLE"
+        errors=self.v.validate_packet(p,self.contract)
+        self.assertTrue(any("concrete provider_access_state" in e for e in errors))
+
+    def test_known_available_read_cannot_claim_no_provider_source(self):
+        p=load(EXAMPLE)
+        p["artifact_action"]="read"
+        p["required_fidelity_dimensions"]=["identity","content"]
+        p["result_state"]="READY_NO_PROVIDER_SOURCE"
+        errors=self.v.validate_packet(p,self.contract)
+        self.assertTrue(any("READY_PROVIDER_FIRST" in e for e in errors))
+
+    def test_no_provider_source_requires_not_applicable_provider_state(self):
+        p=load(EXAMPLE)
+        p.update({
+            "known_provider_source":False,
+            "exact_source_binding_state":"NOT_APPLICABLE",
+            "provider_link_policy":"NOT_APPLICABLE",
+            "result_state":"READY_NO_PROVIDER_SOURCE",
+            "provider_access_state":"AVAILABLE",
+            "provider_write_state":"AUTHORIZED",
+            "sync_obligation":"PENDING_PROVIDER_SYNC",
+        })
+        errors=self.v.validate_packet(p,self.contract)
+        joined=" | ".join(errors)
+        self.assertIn("NOT_APPLICABLE",joined)
+        self.assertIn("NONE_PENDING",joined)
+
     def test_future_inheritance_is_contractual(self):
         self.assertIn("root wayfinding",self.contract["future_inheritance"]["new_repository_rule"])
         self.assertIn("recopying"," ".join(self.contract["invariants"]).lower())
