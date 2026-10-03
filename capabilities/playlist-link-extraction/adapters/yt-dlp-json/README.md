@@ -1,6 +1,7 @@
 # yt-dlp-json adapter
 
-**Adapter ID:** `yt-dlp-json`  
+**Adapter ID:** `yt-dlp-json`
+
 **Proof ceiling:** offline provider-payload → observation-batch transformation only.
 
 Converts captured or synthetic yt-dlp-style playlist JSON into
