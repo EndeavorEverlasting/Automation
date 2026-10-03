@@ -38,7 +38,11 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("canonical JSON artifact construction", capability["core_owns"])
         self.assertIn("Playwright integration", capability["adapters_own"])
         self.assertEqual(capability["production_use_path"], "UNDECLARED")
-        self.assertEqual(capability["status"], "BOUNDARY_DEFINED_IMPLEMENTATION_PENDING")
+        self.assertEqual(capability["status"], "CORE_IMPLEMENTED_ADAPTERS_PENDING")
+        self.assertEqual(
+            capability["entrypoint"],
+            "capabilities/playlist-link-extraction/extract_links.py",
+        )
 
     def test_agent_contract_consumes_prompt_upstream_dependency(self):
         agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

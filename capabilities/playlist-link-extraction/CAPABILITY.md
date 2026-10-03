@@ -1,7 +1,7 @@
 # Playlist Link Extraction Capability
 
 **Capability ID:** `playlist-link-extraction`  
-**State:** `BOUNDARY_DEFINED_IMPLEMENTATION_PENDING`
+**State:** `CORE_IMPLEMENTED_ADAPTERS_PENDING`
 
 This is the first reusable capability boundary admitted under the Automation repository charter.
 
@@ -35,6 +35,23 @@ Provider/runtime adapters may own:
 
 Adapters feed normalized observations into the core. They must not redefine the canonical artifact shape or duplicate core deduplication/occurrence semantics.
 
+See `adapters/README.md`.
+
+## Invocation
+
+```powershell
+python capabilities/playlist-link-extraction/extract_links.py `
+  --batch capabilities/playlist-link-extraction/fixtures/synthetic-observation-batch.v1.json `
+  --output-json Outputs/playlist-link-artifact.json `
+  --output-csv Outputs/playlist-link-artifact.csv
+```
+
+Machine-readable contracts:
+
+- `schemas/observation-batch.v1.json`
+- `schemas/artifact.v1.json`
+- `capability.v1.json`
+
 ## Authentication and runtime state
 
 Cookies, tokens, browser profiles, session stores, downloaded private data, and other authenticated runtime state remain outside source control.
@@ -53,4 +70,12 @@ No global production/use path is declared yet. A future launcher/install surface
 
 ## Current proof ceiling
 
-Only the **boundary** is admitted here. The earlier playlist extractor prototype has not yet been integrated into this repository under this contract, so implementation, adapter parity, runtime behavior, and production use remain unproven.
+The reusable **core** is implemented and proven with synthetic observation fixtures:
+
+- URL normalization and stable identity;
+- ordered occurrences including repeats;
+- unique-link aggregation across targets;
+- canonical JSON artifact + CSV projection;
+- CLI validate/build entrypoint.
+
+Live provider adapters, authenticated runtime extraction, and production use remain unproven.

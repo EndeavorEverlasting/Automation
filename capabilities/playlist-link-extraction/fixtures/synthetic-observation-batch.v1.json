@@ -1,0 +1,49 @@
+{
+  "schema_version": "playlist-link-observation-batch/v1",
+  "targets": [
+    {
+      "target_id": "target-a",
+      "source_ref": "https://example.test/playlist/A",
+      "label": "Synthetic playlist A"
+    },
+    {
+      "target_id": "target-b",
+      "source_ref": "https://example.test/playlist/B",
+      "label": "Synthetic playlist B"
+    }
+  ],
+  "observations": [
+    {
+      "target_id": "target-a",
+      "url": "HTTPS://Example.TEST:443/video/1?b=2&a=1#frag",
+      "ordinal": 0,
+      "adapter_id": "synthetic",
+      "title": "First item",
+      "adapter_data": {
+        "provider": "synthetic",
+        "item_key": "v1"
+      }
+    },
+    {
+      "target_id": "target-a",
+      "url": "https://example.test/video/2",
+      "ordinal": 1,
+      "adapter_id": "synthetic",
+      "title": "Second item"
+    },
+    {
+      "target_id": "target-a",
+      "url": "https://example.test/video/1?a=1&b=2",
+      "ordinal": 2,
+      "adapter_id": "synthetic",
+      "title": "First item repeated"
+    },
+    {
+      "target_id": "target-b",
+      "url": "https://example.test/video/2",
+      "ordinal": 0,
+      "adapter_id": "synthetic",
+      "title": "Second item from B"
+    }
+  ]
+}

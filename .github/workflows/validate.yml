@@ -47,7 +47,39 @@ jobs:
 
       - name: Compile Python entrypoints
         run: |
-          python -m py_compile             scripts/prompt_runtime.py             scripts/path_receipt.py             scripts/validate_runtime_handoff.py             vendor/prompt-invocation-upstream/prompt_invocation_resolver.py
+          python -m py_compile \
+            scripts/prompt_runtime.py \
+            scripts/path_receipt.py \
+            scripts/validate_runtime_handoff.py \
+            vendor/prompt-invocation-upstream/prompt_invocation_resolver.py \
+            capabilities/playlist-link-extraction/extract_links.py \
+            capabilities/playlist-link-extraction/core/normalize.py \
+            capabilities/playlist-link-extraction/core/artifact.py
+
+      - name: Build playlist-link synthetic artifact
+        run: |
+          mkdir -p Outputs
+          python capabilities/playlist-link-extraction/extract_links.py \
+            --batch capabilities/playlist-link-extraction/fixtures/synthetic-observation-batch.v1.json \
+            --output-json Outputs/playlist-link-artifact.json \
+            --output-csv Outputs/playlist-link-artifact.csv
+
+      - name: Validate playlist-link synthetic artifact receipt
+        run: |
+          python - <<'PY'
+          import csv
+          import json
+          from pathlib import Path
+
+          artifact = json.loads(Path("Outputs/playlist-link-artifact.json").read_text(encoding="utf-8"))
+          assert artifact["schema_version"] == "playlist-link-artifact/v1", artifact
+          assert artifact["capability_id"] == "playlist-link-extraction", artifact
+          assert artifact["receipt"]["occurrence_count"] == 4, artifact
+          assert artifact["receipt"]["unique_link_count"] == 2, artifact
+          with Path("Outputs/playlist-link-artifact.csv").open(encoding="utf-8", newline="") as handle:
+              rows = list(csv.DictReader(handle))
+          assert len(rows) == 4, rows
+          PY
 
       - name: Validate sanitized runtime handoff example
         run: |

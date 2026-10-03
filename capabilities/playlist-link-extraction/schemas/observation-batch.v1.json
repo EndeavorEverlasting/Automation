@@ -1,0 +1,24 @@
+{
+  "schema_version": "playlist-link-observation-batch/v1",
+  "description": "Adapter-facing observation batch consumed by the playlist-link-extraction reusable core. Adapters emit observations; the core owns normalization, occurrence ordering, uniqueness, and canonical artifacts.",
+  "required_fields": [
+    "schema_version",
+    "targets",
+    "observations"
+  ],
+  "target_required_fields": [
+    "target_id",
+    "source_ref"
+  ],
+  "observation_required_fields": [
+    "target_id",
+    "url",
+    "ordinal",
+    "adapter_id"
+  ],
+  "notes": [
+    "JSON is the machine-readable authority for adapter input into the core.",
+    "adapter_data may hold provider-specific namespaced facts; it must not redefine core identity fields.",
+    "Cookies, tokens, browser profiles, and session state must never appear in tracked batches."
+  ]
+}
