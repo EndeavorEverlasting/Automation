@@ -1,0 +1,175 @@
+{
+  "schema_version": "automation-seam-boundary-review/v1",
+  "contract_id": "seam-boundary-review",
+  "purpose": "Detect and repair leaky ownership/interface seams so reusable capabilities can be consumed without downstream knowledge of upstream implementation topology.",
+  "source_ideas": [
+    "PS-0050",
+    "PS-0051",
+    "PS-0052",
+    "PS-0053",
+    "PS-0054",
+    "PS-0055",
+    "PS-0056"
+  ],
+  "trigger_conditions": [
+    "creating or changing a shared interface, adapter, provider bridge, package boundary, repository dependency, scheduler boundary, data authority, generated artifact, CLI surface, or cross-repository contract",
+    "adding a second or later downstream workaround for the same upstream behavior",
+    "moving, renaming, converging, splitting, or replacing an upstream owner",
+    "a fresh consumer needs internal file paths, donor repositories, migration history, provider internals, or authority-selection logic to use a capability"
+  ],
+  "review_questions": [
+    {
+      "id": "SB01",
+      "name": "True owner",
+      "question": "What component actually owns the behavior, authority, lifecycle, and canonical truth?",
+      "pass_condition": "One canonical owner is explicit; downstream consumers do not become competing authorities."
+    },
+    {
+      "id": "SB02",
+      "name": "Consumer knowledge",
+      "question": "What must a normal consumer know to use the capability?",
+      "pass_condition": "Required knowledge is limited to domain inputs, stable contract identity/version, and documented outputs; upstream topology is not required."
+    },
+    {
+      "id": "SB03",
+      "name": "Internal leakage",
+      "question": "Does the consumer need upstream file layout, internal modules, donor locations, database tables, scheduler objects, migration history, provider-specific internals, or authority-routing rules?",
+      "pass_condition": "No upstream implementation topology is required by the normal consumer path."
+    },
+    {
+      "id": "SB04",
+      "name": "Semantic identity",
+      "question": "Is the consumer bound to a semantic contract identity/version rather than a repository slug, file path, provider endpoint, deployment location, or migration-era name?",
+      "pass_condition": "Physical locators are configuration/provenance; semantic contract identity survives moves and renames."
+    },
+    {
+      "id": "SB05",
+      "name": "Discoverability",
+      "question": "Can a fresh engineer or agent entering at the repository root identify the owner, stable contract, invocation path, and proof ceiling without broad search or memory?",
+      "pass_condition": "Root wayfinding points directly to the contract and normal consumer surface."
+    },
+    {
+      "id": "SB06",
+      "name": "Downstream duplication",
+      "question": "Are multiple consumers independently implementing source discovery, registry traversal, authority selection, fallback transport, migration awareness, or normalization?",
+      "pass_condition": "Shared behavior terminates upstream; downstreams use thin adapters or pinned/generated dependency artifacts."
+    },
+    {
+      "id": "SB07",
+      "name": "Distribution artifact",
+      "question": "Does upstream publish one stable machine-readable interface or distribution artifact appropriate to the capability?",
+      "pass_condition": "Consumers have one normal dependency surface with version/provenance and clear failure semantics."
+    },
+    {
+      "id": "SB08",
+      "name": "Provenance without topology leakage",
+      "question": "Can consumers verify source/version provenance without learning how upstream is internally composed?",
+      "pass_condition": "Provenance is preserved in receipts/manifests while internal composition remains upstream-owned."
+    },
+    {
+      "id": "SB09",
+      "name": "Isolated consumer canary",
+      "question": "Can a representative consumer succeed with only the advertised dependency/interface in an otherwise empty consumer context?",
+      "pass_condition": "Representative normal and edge cases work without upstream source tree, donor checkout, migration history, or model/chat memory."
+    },
+    {
+      "id": "SB10",
+      "name": "Obsolete workaround removal",
+      "question": "After the seam is repaired, were compensating downstream implementations removed and guarded against reintroduction?",
+      "pass_condition": "No parallel discovery/authority path remains unless explicitly justified as a separate contract."
+    }
+  ],
+  "anti_patterns": [
+    {
+      "id": "AP01",
+      "name": "Upstream by ownership, internal by interface",
+      "smell": "The correct repository owns the feature, but consumers must understand its internal registry/layout/modules to call it.",
+      "example": "A prompt resolver is canonically upstream, yet every consumer must parse internal registry files and product-boundary manifests.",
+      "repair": "Publish one stable consumer contract/artifact and move composition/routing behind the owner."
+    },
+    {
+      "id": "AP02",
+      "name": "Donor checkout dependency",
+      "smell": "A consumer must clone or locate another repository solely because upstream kept part of its routing implementation external.",
+      "example": "A normal consumer requires a Triage checkout to resolve a retained prompt.",
+      "repair": "Upstream distributes the retained result/provenance through its own stable interface while preserving original authority."
+    },
+    {
+      "id": "AP03",
+      "name": "Path-shaped API",
+      "smell": "Repository names, local filesystem paths, provider URLs, or deployment locations become the semantic identity of the dependency.",
+      "example": "Consumers bind to a repository slug and internal JSON path instead of a versioned contract identity.",
+      "repair": "Separate semantic contract identity from configurable locator/provenance."
+    },
+    {
+      "id": "AP04",
+      "name": "Adapter multiplication",
+      "smell": "Each downstream independently adds discovery, normalization, fallback, or authority-selection code for the same upstream concept.",
+      "example": "Three repositories each grow their own provider lookup and mirror logic.",
+      "repair": "Treat repeated workaround code as evidence of a missing upstream contract; repair once at the owner."
+    },
+    {
+      "id": "AP05",
+      "name": "Invisible contract",
+      "smell": "The right interface exists but a fresh consumer cannot find it from root documentation/governance.",
+      "example": "Agents search the repository and construct a new mechanism because the canonical resolver is buried in an internal scripts folder.",
+      "repair": "Add root wayfinding, canonical contract location, normal invocation, and proof ceiling."
+    },
+    {
+      "id": "AP06",
+      "name": "Cache becomes authority",
+      "smell": "A downstream cache, mirror, vendored copy, or generated artifact quietly becomes editable canonical truth.",
+      "example": "A copied registry is modified locally and then treated as the prompt authority.",
+      "repair": "Mark cache/distribution artifacts as derived/pinned, preserve upstream provenance, and route mutations to the canonical owner."
+    },
+    {
+      "id": "AP07",
+      "name": "Interface-only repair",
+      "smell": "A better upstream interface is added, but old downstream workaround logic remains available.",
+      "example": "A new catalog exists while the consumer still contains its custom registry traversal and fallback router.",
+      "repair": "Migrate one real consumer, delete duplicated machinery, and add regression tests preventing reintroduction."
+    },
+    {
+      "id": "AP08",
+      "name": "False portability",
+      "smell": "A boundary is called reusable because it works inside the owner repository, but no isolated consumer test exists.",
+      "example": "Tests import owner internals, so they never prove the advertised artifact is sufficient.",
+      "repair": "Run an isolated-consumer canary with only the published interface/artifact."
+    },
+    {
+      "id": "AP09",
+      "name": "Provider detail leakage",
+      "smell": "Consumers must understand transport/auth/provider-specific failure handling that should terminate at an adapter or upstream owner.",
+      "example": "Every consumer handles the same GitHub token scope/fallback behavior itself.",
+      "repair": "Encapsulate provider behavior behind the shared boundary and expose stable failure states."
+    },
+    {
+      "id": "AP10",
+      "name": "Ownership label as proof",
+      "smell": "Review stops after deciding which repo owns the code.",
+      "example": "The architecture says 'X owns it' but never checks what consumers must know or whether the contract is discoverable.",
+      "repair": "Run the full consumer-knowledge, discoverability, isolated-canary, and cleanup gates."
+    }
+  ],
+  "repair_sequence": [
+    "establish the true owner",
+    "define the normal consumer's minimal inputs and outputs",
+    "move topology, authority selection, routing, and provider internals behind that owner",
+    "publish one stable machine-readable contract/distribution surface",
+    "preserve provenance without requiring consumer topology knowledge",
+    "migrate one representative real consumer",
+    "run isolated-consumer normal and edge-case canaries",
+    "delete compensating downstream machinery",
+    "add regressions preventing obsolete paths from returning",
+    "roll the proven pattern outward"
+  ],
+  "outcome_states": [
+    "PASS",
+    "FAIL_LEAKY_BOUNDARY",
+    "BLOCKED_MISSING_OWNER",
+    "BLOCKED_MISSING_CONSUMER_CONTRACT",
+    "BLOCKED_UNPROVEN_PORTABILITY",
+    "NOT_APPLICABLE"
+  ],
+  "proof_ceiling": "This checklist can establish boundary design and consumer-portability evidence. It does not by itself prove runtime correctness, deployment, security, performance, or business suitability of the underlying capability."
+}
