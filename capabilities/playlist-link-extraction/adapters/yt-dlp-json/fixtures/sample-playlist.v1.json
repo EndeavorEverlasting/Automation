@@ -1,0 +1,36 @@
+{
+  "_type": "playlist",
+  "id": "PLSYNTHETIC001",
+  "title": "Synthetic yt-dlp playlist",
+  "webpage_url": "https://example.test/playlist/PLSYNTHETIC001",
+  "extractor": "generic",
+  "extractor_key": "Generic",
+  "entries": [
+    {
+      "id": "vid-1",
+      "title": "First item",
+      "webpage_url": "HTTPS://Example.TEST:443/video/1?b=2&a=1#frag",
+      "url": "https://example.test/video/1?b=2&a=1",
+      "ie_key": "Generic"
+    },
+    {
+      "id": "vid-2",
+      "title": "Second item",
+      "webpage_url": "https://example.test/video/2",
+      "ie_key": "Generic"
+    },
+    null,
+    {
+      "id": "vid-1-repeat",
+      "title": "First item repeated",
+      "webpage_url": "https://example.test/video/1?a=1&b=2",
+      "ie_key": "Generic"
+    },
+    {
+      "id": "vid-2-again",
+      "title": "Second item again",
+      "url": "https://example.test/video/2",
+      "ie_key": "Generic"
+    }
+  ]
+}

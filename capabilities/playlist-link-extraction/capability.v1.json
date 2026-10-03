@@ -22,6 +22,14 @@
     "Playwright integration",
     "provider-specific throttling, selectors, and failure translation"
   ],
+  "adapters": {
+    "yt-dlp-json": {
+      "path": "capabilities/playlist-link-extraction/adapters/yt-dlp-json",
+      "entrypoint": "capabilities/playlist-link-extraction/adapters/yt-dlp-json/adapt.py",
+      "mode": "offline",
+      "proof_ceiling": "Offline yt-dlp-style playlist JSON to observation-batch transformation proven with synthetic fixtures. Live yt-dlp execution, authenticated extraction, and production use remain unproven."
+    }
+  },
   "forbidden_core_assumptions": [
     "one repository layout",
     "one user profile or username",
@@ -40,6 +48,6 @@
   },
   "production_use_path": "UNDECLARED",
   "entrypoint": "capabilities/playlist-link-extraction/extract_links.py",
-  "proof_ceiling": "Core normalization/artifacts proven with synthetic fixtures; live adapters and production use remain unproven.",
-  "next_transition": "Admit the first live provider adapter behind capabilities/playlist-link-extraction/adapters/<adapter-id>/ and prove observation-batch parity against the synthetic seam."
+  "proof_ceiling": "Reusable core proven with synthetic fixtures. Offline yt-dlp-json adapter proven for provider-payload to observation-batch transformation. Live provider execution and production use remain unproven.",
+  "next_transition": "Prove an unauthenticated live yt-dlp capture path or admit another offline provider adapter; do not declare production use until a production/use path and promotion boundary are explicit."
 }

@@ -119,15 +119,16 @@ class PlaylistLinkExtractionCoreTests(unittest.TestCase):
         self.assertIn("extract_links.py", readme)
         self.assertIn("CORE_IMPLEMENTED_ADAPTERS_PENDING", readme)
 
-    def test_adapters_directory_does_not_claim_live_provider(self) -> None:
+    def test_adapters_directory_admits_offline_yt_dlp_json_only(self) -> None:
         adapter_readme = (CAPABILITY_DIR / "adapters/README.md").read_text(encoding="utf-8")
-        self.assertIn("No live provider adapter is admitted", adapter_readme)
-        live_dirs = [
-            path
+        self.assertIn("yt-dlp-json", adapter_readme)
+        self.assertIn("No live network or", adapter_readme)
+        adapter_dirs = sorted(
+            path.name
             for path in (CAPABILITY_DIR / "adapters").iterdir()
             if path.is_dir()
-        ]
-        self.assertEqual(live_dirs, [])
+        )
+        self.assertEqual(adapter_dirs, ["yt-dlp-json"])
 
 
 if __name__ == "__main__":
