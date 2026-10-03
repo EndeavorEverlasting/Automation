@@ -68,7 +68,12 @@
       "refresh_token",
       "password",
       "cookie",
-      "browser_profile_path"
+      "browser_profile_path",
+      "api_key",
+      "secret",
+      "credential",
+      "session",
+      "browser_state"
     ],
     "forbidden_string_patterns": [
       "drive.google.com/",
@@ -99,5 +104,17 @@
     "MERGED",
     "DEPLOYED",
     "PRODUCTION_VERIFIED"
+  ],
+  "list_fields": [
+    "required_capabilities",
+    "mutation_authority",
+    "owned_scope",
+    "forbidden_scope",
+    "evidence_inputs",
+    "dependencies",
+    "collision_surface",
+    "expected_artifacts",
+    "acceptance_gates",
+    "freshness_requirements"
   ]
 }
