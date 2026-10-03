@@ -81,6 +81,27 @@ No contract may assume a frontier model is executing it. Architecture or ownersh
 - Public tracked packets use semantic identities, repository-relative paths, sanitized evidence, and synthetic fixtures.
 - A private continuity store may reference public Automation; Automation must not require a backlink to that private store.
 
+## Idea → work continuity contract
+
+When an agent receives or discovers an execution-relevant idea, contract gap, required successor, or later consumer adoption that is not yet durably represented, read:
+
+- `capabilities/idea-work-continuity/CAPABILITY.md`
+- `harness/contracts/idea-work-continuity.v1.json`
+
+Before terminal handoff:
+
+1. Recover the existing canonical owner/plan before creating anything.
+2. An execution-relevant idea must leave a durable remote anchor; chat-only understanding is not completion.
+3. If a canonical plan already exists, bind to it, add one bounded iteration when safe, or persist `DEFERRED_ADOPTION`. Do not create a competing plan.
+4. If the target consumer is in active migration/convergence and collision safety is not explicitly `CLEAR`, do not mutate that consumer for this continuity transition. Persist the deferred adoption remotely instead.
+5. Never infer operator priority from timestamps, chronology, frequency, model judgment, or apparent urgency.
+6. Keep private intake/provider locators and raw idea text out of public Git; use semantic handles, hashes, sanitized evidence, and public owner anchors.
+7. This contract preserves obligation continuity only. Implementation/merge/deployment/production proof remains owned by the eventual consumer lane.
+
+Validate receipts with:
+
+`python scripts/validate_idea_work_continuity.py --receipt <receipt.json>`
+
 ## P92 canonical-path contract
 
 Before emitting path-sensitive mutation commands, read `harness/contracts/canonical-path.v1.json` and run:
