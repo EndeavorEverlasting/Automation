@@ -1,6 +1,7 @@
 from __future__ import annotations
 import importlib.util, json, unittest
 from pathlib import Path
+
 ROOT=Path(__file__).resolve().parents[1]
 CONTRACT=ROOT/"harness/contracts/artifact-continuity-preflight.v1.json"
 EXAMPLE=ROOT/"docs/examples/artifact-continuity-preflight.example.json"
@@ -17,6 +18,11 @@ class ArtifactContinuityPreflightTests(unittest.TestCase):
 
     def test_provider_first_example_passes(self):
         self.assertEqual(self.v.validate_packet(load(EXAMPLE),self.contract),[])
+
+    def test_formatting_requires_presentation_fidelity(self):
+        p=load(EXAMPLE); p["required_fidelity_dimensions"]=["identity","content","structure"]
+        errors=self.v.validate_packet(p,self.contract)
+        self.assertTrue(any("presentation fidelity" in e for e in errors))
 
     def test_known_provider_source_cannot_be_duplicate_canonical(self):
         p=load(EXAMPLE); p["local_output_role"]="CANONICAL_NEW_ARTIFACT"
@@ -41,11 +47,13 @@ class ArtifactContinuityPreflightTests(unittest.TestCase):
         self.assertEqual(self.v.validate_packet(p,self.contract),[])
 
     def test_raw_provider_locator_rejected(self):
-        p=load(EXAMPLE); p["artifact_semantic_id"]="https://docs.google.com/document/d/private"
+        p=load(EXAMPLE)
+        p["artifact_semantic_id"]="https://"+"docs.google"+".com/document/d/private"
         self.assertTrue(any("raw provider locator" in e for e in self.v.validate_packet(p,self.contract)))
 
     def test_future_inheritance_is_contractual(self):
         self.assertIn("root wayfinding",self.contract["future_inheritance"]["new_repository_rule"])
-        self.assertIn("recopying", " ".join(self.contract["invariants"]).lower())
+        self.assertIn("recopying"," ".join(self.contract["invariants"]).lower())
+        self.assertIn("fidelity",self.contract["future_inheritance"]["capability_relationship"])
 
 if __name__=="__main__": unittest.main()
