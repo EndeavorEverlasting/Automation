@@ -31,7 +31,7 @@ Track the files that repository-local agents interpret at runtime:
 
 Do **not** silently absorb user-level configuration into repository authority.
 
-Declare these surfaces in a `local-agent-readiness-profile/v1` profile.
+Declare these surfaces in a `local-agent-readiness-profile/v1` profile. Treat ignored/untracked files beneath declared projections as possible runtime shadows, and reject declared projection symlinks rather than allowing repository authority to escape through external targets.
 
 ### 3. Projection freshness before host blame
 
@@ -41,7 +41,7 @@ Before diagnosing Cursor, OpenCode, or another host:
 2. prove local `HEAD` contains that baseline;
 3. prove the selected agent's repository-owned projection matches the baseline.
 
-If either fails, classify the local projection first. Do not attribute the symptom to the host.
+If either fails, classify the local projection first. Do not attribute the symptom to the host. Recheck `HEAD` and projection parity before finalizing the readiness receipt so another local agent cannot change the checkout mid-assessment and inherit stale proof.
 
 ### 4. Live-host proof
 
