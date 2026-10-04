@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "document-formatting-google-docs-plan/v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "provider_id",
+    "source_ir_sha256",
+    "capability_report",
+    "phases",
+    "state",
+    "proof_ceiling",
+    "plan_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "document-formatting-google-docs-plan/v1"
+    },
+    "provider_id": {
+      "const": "google-docs"
+    },
+    "source_ir_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "capability_report": {
+      "type": "object"
+    },
+    "phases": {
+      "type": "array",
+      "minItems": 2
+    },
+    "state": {
+      "const": "ADAPTER_PLAN_READY"
+    },
+    "proof_ceiling": {
+      "type": "string"
+    },
+    "plan_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

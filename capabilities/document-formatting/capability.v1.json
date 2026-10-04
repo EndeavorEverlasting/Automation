@@ -1,7 +1,7 @@
 {
   "schema_version": "automation-capability/v1",
   "capability_id": "document-formatting",
-  "status": "CORE_IMPLEMENTED_PROVIDER_ADAPTERS_PENDING",
+  "status": "COMPILER_IR_PROTOTYPE_PROVEN_GOOGLE_DOCS_PLAN_ADAPTER_PROVEN",
   "purpose": "Provide repository-agnostic document-formatting orchestration, consumer-profile validation, proof-state ordering, and runtime placement without embedding one consumer's visual identity or provider assumptions.",
   "supported_use_cases": [
     "bootstrap deterministic document-formatting work for a consumer repository",
@@ -9,14 +9,22 @@
     "produce a provider-neutral execution and acceptance plan",
     "preserve separate provider/readback/visual/cross-platform/branding proof states"
   ],
-  "core_owner": "capabilities/document-formatting/core/contract.py",
-  "adapters": {},
+  "core_owner": "capabilities/document-formatting/core/compiler.py",
+  "adapters": {
+    "google-docs": "capabilities/document-formatting/adapters/google_docs.py"
+  },
   "entrypoints": {
-    "plan": "capabilities/document-formatting/plan.py"
+    "plan": "capabilities/document-formatting/plan.py",
+    "compile": "capabilities/document-formatting/compile.py"
   },
   "schemas": {
     "consumer_profile": "capabilities/document-formatting/schemas/consumer-profile.v1.json",
-    "plan": "capabilities/document-formatting/schemas/plan.v1.json"
+    "plan": "capabilities/document-formatting/schemas/plan.v1.json",
+    "design_spec": "capabilities/document-formatting/schemas/design-spec.v1.json",
+    "source": "capabilities/document-formatting/schemas/source.v1.json",
+    "ir": "capabilities/document-formatting/schemas/ir.v1.json",
+    "compiler_receipt": "capabilities/document-formatting/schemas/compiler-receipt.v1.json",
+    "google_docs_plan": "capabilities/document-formatting/schemas/google-docs-plan.v1.json"
   },
   "runtime_boundary": {
     "supported_execution": [
@@ -34,14 +42,17 @@
     "typed runtime-placement preservation",
     "proof-state anti-promotion ordering",
     "generic-lock-before-branding enforcement when selected",
-    "provider-neutral plan receipts"
+    "provider-neutral plan receipts",
+    "provider-neutral semantic document compiler and IR",
+    "content, structure, non-color, palette, and compiled fingerprints"
   ],
   "adapter_owns": [
     "provider request/application mechanics",
     "provider authentication",
     "provider readback translation",
     "provider-specific capability detection",
-    "provider-specific mutation receipts"
+    "provider-specific mutation receipts",
+    "provider capability negotiation and provider-specific phased operation planning"
   ],
   "consumer_owns": [
     "visual tokens and branding",
@@ -67,7 +78,7 @@
     "claim visual fidelity from static validation",
     "replace consumer-specific business logic"
   ],
-  "proof_ceiling": "Synthetic executable validation proves the reusable consumer-profile and plan contract only. Provider execution, document mutation/readback, visual fidelity, cross-platform acceptance, consumer adoption, and production use remain separately proven states.",
+  "proof_ceiling": "Executable P95 prototypes prove deterministic provider-neutral compilation, typed compiler failures, separate non-color/palette fingerprints, and a Google Docs phased adapter plan with fail-closed capability negotiation. Live provider mutation/readback, dynamic page-field insertion, rendered visual fidelity, Word/Office acceptance, consumer adoption, deployment, and production use remain separately proven states.",
   "production_use_path": "UNDECLARED",
-  "next_transition": "Admit reusable provider adapters where evidence supports portability, then migrate real consumers to thin profile/adoption layers without duplicating the core."
+  "next_transition": "P07 build sprint: harden the compiler/IR schema and implement Google Docs transport/readback execution behind the proved adapter seam; consumers then adopt through their profiles without forking the core."
 }

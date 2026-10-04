@@ -67,7 +67,10 @@ jobs:
             capabilities/social-publication/core/publication.py \
             capabilities/social-publication/adapters/linkedin.py \
             capabilities/document-formatting/plan.py \
-            capabilities/document-formatting/core/contract.py
+            capabilities/document-formatting/compile.py \
+            capabilities/document-formatting/core/contract.py \
+            capabilities/document-formatting/core/compiler.py \
+            capabilities/document-formatting/adapters/google_docs.py
 
       - name: Build playlist-link synthetic artifact
         run: |
@@ -154,6 +157,51 @@ jobs:
           serialized = json.dumps(plan).lower()
           forbidden = ("nyc health", "hospitals", "northwell", "hh-metropolitan")
           assert not any(item in serialized for item in forbidden), plan
+          PY
+
+      - name: Build document-formatting P95 compiler IR
+        run: |
+          mkdir -p Outputs
+          python capabilities/document-formatting/compile.py \
+            --source capabilities/document-formatting/fixtures/document-source.synthetic.v1.json \
+            --design capabilities/document-formatting/fixtures/design-spec.synthetic.v1.json \
+            --output Outputs/document-formatting-ir.json \
+            --receipt Outputs/document-formatting-compiler-receipt.json
+
+      - name: Build document-formatting Google Docs adapter plan
+        run: |
+          python capabilities/document-formatting/adapters/google_docs.py \
+            --ir Outputs/document-formatting-ir.json \
+            --required-feature semantic_headings \
+            --required-feature internal_navigation \
+            --required-feature named_external_links \
+            --required-feature inline_images \
+            --required-feature revision_readback \
+            --output Outputs/document-formatting-google-docs-plan.json
+
+      - name: Validate document-formatting P95 artifacts
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          ir = json.loads(Path("Outputs/document-formatting-ir.json").read_text(encoding="utf-8"))
+          receipt = json.loads(Path("Outputs/document-formatting-compiler-receipt.json").read_text(encoding="utf-8"))
+          plan = json.loads(Path("Outputs/document-formatting-google-docs-plan.json").read_text(encoding="utf-8"))
+          assert ir["schema_version"] == "document-formatting-ir/v1", ir
+          assert receipt["state"] == "COMPILED_PROVIDER_NEUTRAL_DOCUMENT", receipt
+          assert receipt["compiled_sha256"] == ir["fingerprints"]["compiled"], (receipt, ir)
+          assert plan["state"] == "ADAPTER_PLAN_READY", plan
+          assert [p["phase_id"] for p in plan["phases"]] == [
+              "CONSTRUCT_AND_STYLE",
+              "RESOLVE_HEADING_IDENTITIES",
+              "APPLY_INTERNAL_LINKS",
+              "FINAL_READBACK",
+          ], plan
+          assert not plan["capability_report"]["unsupported_features"], plan
+          serialized = json.dumps({"ir": ir, "plan": plan}).lower()
+          forbidden = ("nyc health", "hospitals", "northwell", "hh-metropolitan", "cc reader")
+          assert not any(item in serialized for item in forbidden), serialized
           PY
 
       - name: Build social-publication P95 success receipt

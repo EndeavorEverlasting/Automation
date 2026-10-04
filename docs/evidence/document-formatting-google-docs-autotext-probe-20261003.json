@@ -1,0 +1,30 @@
+{
+  "schema_version": "document-formatting-provider-capability-probe/v1",
+  "provider_id": "google-docs",
+  "observed_date": "2026-10-03",
+  "probe_scope": "DISPOSABLE_NATIVE_GOOGLE_DOC",
+  "tracked_provider_identity": false,
+  "baseline": {
+    "operation": "insertText",
+    "revision_control": true,
+    "result": "SUCCESS_AND_READBACK_VERIFIED"
+  },
+  "capability": {
+    "feature": "dynamic_page_fields",
+    "attempted_request_type": "insertAutoText",
+    "attempted_auto_text_type": "PAGE_NUMBER",
+    "result": "PROVEN_UNSUPPORTED_CURRENT_BATCHUPDATE_SURFACE",
+    "provider_error_class": "HTTP_400_INVALID_ARGUMENT",
+    "provider_error_summary": "Unknown name insertAutoText at requests[0]; cannot find field."
+  },
+  "cleanup": {
+    "disposable_document_deleted": true,
+    "result": "SUCCESS"
+  },
+  "corroborating_public_contract": {
+    "request_surface": "Google Docs API documents.batchUpdate Request",
+    "read_model": "Google Docs API ParagraphElement AutoText supports PAGE_NUMBER and PAGE_COUNT",
+    "interpretation": "Current public read model can represent page-number/page-count AutoText, but the current write request surface does not expose insertion of AutoText."
+  },
+  "proof_ceiling": "Proves the connected Google Docs API/batchUpdate surface observed on 2026-10-03 rejects insertAutoText while ordinary revision-controlled mutation works. It does not prove every Google UI/manual capability or future API behavior."
+}

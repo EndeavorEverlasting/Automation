@@ -1,0 +1,51 @@
+{
+  "schema_version": "document-formatting-source/v1",
+  "archetype": "evidence_packet",
+  "title": "Synthetic Evidence Packet",
+  "subtitle": "Portable document-formatting canary",
+  "metadata": [
+    {
+      "label": "Scope",
+      "value": "Synthetic only"
+    }
+  ],
+  "resources": [
+    {
+      "label": "Example Evidence Index",
+      "url": "https://example.test/evidence"
+    }
+  ],
+  "sections": [
+    {
+      "id": "summary",
+      "title": "Summary",
+      "level": 1,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "This packet proves a reusable compiler seam."
+        }
+      ]
+    },
+    {
+      "id": "evidence",
+      "title": "Evidence",
+      "level": 1,
+      "blocks": [
+        {
+          "type": "image",
+          "asset_ref": "asset://synthetic/screenshot-1",
+          "alt_text": "Synthetic screenshot",
+          "caption": "Figure 1"
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "Provider-neutral IR",
+            "Deterministic fingerprints"
+          ]
+        }
+      ]
+    }
+  ]
+}

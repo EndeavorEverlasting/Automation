@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "document-formatting-compiler-receipt/v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "state",
+    "spec_id",
+    "design_spec_sha256",
+    "source_sha256",
+    "compiled_sha256",
+    "proof_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "document-formatting-compiler-receipt/v1"
+    },
+    "state": {
+      "const": "COMPILED_PROVIDER_NEUTRAL_DOCUMENT"
+    },
+    "spec_id": {
+      "type": "string"
+    },
+    "design_spec_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "source_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "compiled_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "proof_ceiling": {
+      "type": "string"
+    }
+  }
+}

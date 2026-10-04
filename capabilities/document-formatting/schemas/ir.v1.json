@@ -1,0 +1,418 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "document-formatting-ir/v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "spec_id",
+    "archetype",
+    "page_mechanics",
+    "blocks",
+    "metrics",
+    "fingerprints"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "document-formatting-ir/v1"
+    },
+    "spec_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "archetype": {
+      "type": "string",
+      "minLength": 1
+    },
+    "page_mechanics": {
+      "type": "object"
+    },
+    "blocks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/headingBlock"
+          },
+          {
+            "$ref": "#/$defs/textBlock"
+          },
+          {
+            "$ref": "#/$defs/metadataBlock"
+          },
+          {
+            "$ref": "#/$defs/linkBlock"
+          },
+          {
+            "$ref": "#/$defs/bulletBlock"
+          },
+          {
+            "$ref": "#/$defs/tableBlock"
+          },
+          {
+            "$ref": "#/$defs/imageBlock"
+          }
+        ]
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "required": [
+        "navigation_required",
+        "internal_link_count",
+        "named_external_link_count",
+        "image_count",
+        "table_count"
+      ],
+      "properties": {
+        "navigation_required": {
+          "type": "boolean"
+        },
+        "internal_link_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "named_external_link_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "image_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "table_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "fingerprints": {
+      "type": "object",
+      "required": [
+        "content",
+        "structure",
+        "non_color_aesthetic",
+        "palette",
+        "compiled"
+      ],
+      "properties": {
+        "content": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "structure": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "non_color_aesthetic": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "palette": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "compiled": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "style": {
+      "type": "object",
+      "required": [
+        "role_id",
+        "mechanics",
+        "colors"
+      ],
+      "properties": {
+        "role_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mechanics": {
+          "type": "object"
+        },
+        "colors": {
+          "type": "object"
+        }
+      }
+    },
+    "base": {
+      "type": "object",
+      "required": [
+        "kind",
+        "component",
+        "style"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "component": {
+          "type": "string",
+          "minLength": 1
+        },
+        "style": {
+          "$ref": "#/$defs/style"
+        },
+        "section_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "anchor_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "headingBlock": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "text"
+          ],
+          "properties": {
+            "kind": {
+              "const": "heading"
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1
+            },
+            "level": {
+              "enum": [
+                1,
+                2
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "textBlock": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "text"
+          ],
+          "properties": {
+            "kind": {
+              "const": "text"
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    },
+    "metadataBlock": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "label",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "metadata"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1
+            },
+            "value": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    },
+    "linkBlock": {
+      "oneOf": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/base"
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "label",
+                "link_type",
+                "resource_url"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "link"
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "link_type": {
+                  "const": "external"
+                },
+                "resource_url": {
+                  "type": "string",
+                  "pattern": "^https?://[^\\\\s<>()]+$"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/base"
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "label",
+                "link_type",
+                "target_section_id"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "link"
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "link_type": {
+                  "const": "internal"
+                },
+                "target_section_id": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "bulletBlock": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "items"
+          ],
+          "properties": {
+            "kind": {
+              "const": "bullet_list"
+            },
+            "items": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "tableBlock": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "headers",
+            "rows"
+          ],
+          "properties": {
+            "kind": {
+              "const": "table"
+            },
+            "headers": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "rows": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "imageBlock": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "asset_ref",
+            "alt_text"
+          ],
+          "properties": {
+            "kind": {
+              "const": "image"
+            },
+            "asset_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "alt_text": {
+              "type": "string",
+              "minLength": 1
+            },
+            "caption": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    }
+  }
+}
