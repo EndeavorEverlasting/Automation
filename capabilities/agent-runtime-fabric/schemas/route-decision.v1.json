@@ -4,7 +4,14 @@
   "title": "Agent runtime route decision",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "state", "work_unit_id", "selected_adapter_id", "evaluations", "proof_ceiling"],
+  "required": [
+    "schema_version",
+    "state",
+    "work_unit_id",
+    "selected_adapter_id",
+    "evaluations",
+    "proof_ceiling"
+  ],
   "properties": {
     "schema_version": {"const": "agent-runtime-route-decision/v1"},
     "state": {"enum": ["SELECTED", "BLOCKED"]},
@@ -14,14 +21,74 @@
       "type": "array",
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "required": ["adapter_id", "profile", "admission"],
         "properties": {
           "adapter_id": {"type": "string", "minLength": 1},
-          "profile": {"type": "object"},
-          "admission": {"type": "object"}
+          "profile": {"$ref": "runtime-profile.v1.json"},
+          "admission": {"$ref": "#/$defs/admission"}
         }
       }
     },
     "proof_ceiling": {"type": "string", "minLength": 1}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"state": {"const": "SELECTED"}}, "required": ["state"]},
+      "then": {
+        "properties": {
+          "selected_adapter_id": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"state": {"const": "BLOCKED"}}, "required": ["state"]},
+      "then": {
+        "properties": {
+          "selected_adapter_id": {"const": null}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "numberMap": {
+      "type": "object",
+      "additionalProperties": {"type": "number", "minimum": 0}
+    },
+    "quotaCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "required"],
+      "properties": {
+        "state": {"enum": ["MISSING", "KNOWN", "UNLIMITED", "UNKNOWN"]},
+        "required": {"type": "number", "minimum": 0},
+        "remaining": {"type": ["number", "null"], "minimum": 0},
+        "unit": {"type": ["string", "null"]}
+      }
+    },
+    "admission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adapter_id",
+        "allowed",
+        "reasons",
+        "effective_limits",
+        "quota_checks"
+      ],
+      "properties": {
+        "adapter_id": {"type": "string", "minLength": 1},
+        "allowed": {"type": "boolean"},
+        "reasons": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "effective_limits": {"$ref": "#/$defs/numberMap"},
+        "quota_checks": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/quotaCheck"}
+        }
+      }
+    }
   }
 }
