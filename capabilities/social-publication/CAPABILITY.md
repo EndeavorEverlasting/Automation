@@ -81,6 +81,10 @@ The current official LinkedIn path for member publication is:
 
 Live OAuth, identity lookup, HTTP transport, and production publication are successor build work. They are not claimed by this P95 prototype.
 
+## Retry safety
+
+A transport exception or ambiguous provider response is not proof that publication failed. Those states require operator review before retry; the capability must not automatically issue a second mutating request.
+
 ## Proof ceiling
 
 Synthetic executable prototypes prove:
