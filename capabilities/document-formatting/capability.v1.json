@@ -1,0 +1,73 @@
+{
+  "schema_version": "automation-capability/v1",
+  "capability_id": "document-formatting",
+  "status": "CORE_IMPLEMENTED_PROVIDER_ADAPTERS_PENDING",
+  "purpose": "Provide repository-agnostic document-formatting orchestration, consumer-profile validation, proof-state ordering, and runtime placement without embedding one consumer's visual identity or provider assumptions.",
+  "supported_use_cases": [
+    "bootstrap deterministic document-formatting work for a consumer repository",
+    "validate a consumer-owned formatting profile",
+    "produce a provider-neutral execution and acceptance plan",
+    "preserve separate provider/readback/visual/cross-platform/branding proof states"
+  ],
+  "core_owner": "capabilities/document-formatting/core/contract.py",
+  "adapters": {},
+  "entrypoints": {
+    "plan": "capabilities/document-formatting/plan.py"
+  },
+  "schemas": {
+    "consumer_profile": "capabilities/document-formatting/schemas/consumer-profile.v1.json",
+    "plan": "capabilities/document-formatting/schemas/plan.v1.json"
+  },
+  "runtime_boundary": {
+    "supported_execution": [
+      "LOCAL_AGENT_RUNTIME",
+      "CI_OR_REMOTE_RUNNER"
+    ],
+    "provider_execution": "ADAPTER_DEPENDENT_AND_UNPROVEN",
+    "secrets": "Credentials, private provider IDs, authenticated sessions, and private document contents are runtime-only and must not be required by the reusable core.",
+    "consumer_configuration": "Project/domain styles, archetypes, exemplars, and branding remain consumer-owned inputs."
+  },
+  "core_owns": [
+    "consumer profile validation",
+    "canonical profile hashing",
+    "provider-neutral stage and dependency construction",
+    "typed runtime-placement preservation",
+    "proof-state anti-promotion ordering",
+    "generic-lock-before-branding enforcement when selected",
+    "provider-neutral plan receipts"
+  ],
+  "adapter_owns": [
+    "provider request/application mechanics",
+    "provider authentication",
+    "provider readback translation",
+    "provider-specific capability detection",
+    "provider-specific mutation receipts"
+  ],
+  "consumer_owns": [
+    "visual tokens and branding",
+    "artifact archetypes and project-specific section rules",
+    "operator-approved exemplars",
+    "required provider features",
+    "visual acceptance decisions",
+    "private provider identities and project data"
+  ],
+  "forbidden_core_assumptions": [
+    "NYC Health + Hospitals paths, naming, data, or branding",
+    "one document provider",
+    "Google Docs as the only editable surface",
+    "Microsoft Word as the only desktop surface",
+    "one repository layout",
+    "one operator identity",
+    "automatic proof promotion from repository validation to provider or visual acceptance"
+  ],
+  "non_goals": [
+    "own a consumer's brand identity",
+    "store private documents or credentials",
+    "claim provider mutation without an adapter",
+    "claim visual fidelity from static validation",
+    "replace consumer-specific business logic"
+  ],
+  "proof_ceiling": "Synthetic executable validation proves the reusable consumer-profile and plan contract only. Provider execution, document mutation/readback, visual fidelity, cross-platform acceptance, consumer adoption, and production use remain separately proven states.",
+  "production_use_path": "UNDECLARED",
+  "next_transition": "Admit reusable provider adapters where evidence supports portability, then migrate real consumers to thin profile/adoption layers without duplicating the core."
+}
