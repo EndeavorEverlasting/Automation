@@ -74,6 +74,7 @@ APPROVED(old_hash) + changed content
   -> BLOCKED_STALE_APPROVAL
 
 PROVIDER_REQUEST_READY
+  -> PROVIDER_RESPONSE_INCOMPLETE
   -> PROVIDER_AUTHORIZATION_FAILED
   -> PROVIDER_REJECTED
 ```
@@ -216,6 +217,10 @@ The post itself is the first live provider proof.
 **Leak found:** OAuth could have been passed through the provider request artifact. Repaired by making the request artifact declare a runtime-secret requirement while token injection remains transport-only.
 
 **Scope pressure found:** scheduling and content generation are adjacent but not required for the first post. They remain out of scope.
+
+**Proof gap found:** HTTP 201 alone is not enough terminal evidence. The core now requires a non-empty provider post ID before emitting PUBLISHED; 201 without that identifier becomes PROVIDER_RESPONSE_INCOMPLETE.
+
+**Approval-surface gap found:** the JSON schema forbids undeclared fields, but the first runtime validator did not. Unexpected top-level or content fields are now rejected so no publishable behavior can bypass the approved content projection.
 
 **Provider coupling check:** core tests can run without LinkedIn imports or LinkedIn identity. Provider topology terminates at the adapter.
 
