@@ -85,20 +85,13 @@ class LocalAgentReadinessTests(unittest.TestCase):
                 "baseline_branch": "main",
                 "remote_identity": None,
             },
-            "projection_sets": [
-                {"id": "shared", "paths": ["AGENTS.md"]},
-                {
-                    "id": "cursor",
-                    "paths": [".cursor/hooks.json", ".cursor/hooks"],
-                },
-                {
-                    "id": "opencode",
-                    "paths": ["opencode.json", ".opencode"],
-                },
-            ],
-            "agents": [
-                {
-                    "agent_id": "cursor",
+            "projection_sets": {
+                "shared": {"paths": ["AGENTS.md"]},
+                "cursor": {"paths": [".cursor/hooks.json", ".cursor/hooks"]},
+                "opencode": {"paths": ["opencode.json", ".opencode"]},
+            },
+            "agents": {
+                "cursor": {
                     "projection_sets": ["shared", "cursor"],
                     "required_gates": [
                         "REPOSITORY_CHECKOUT_CURRENT",
@@ -112,8 +105,7 @@ class LocalAgentReadinessTests(unittest.TestCase):
                         "HOOK_TRANSPORT_VERIFIED",
                     ],
                 },
-                {
-                    "agent_id": "opencode",
+                "opencode": {
                     "projection_sets": ["shared", "opencode"],
                     "required_gates": [
                         "REPOSITORY_CHECKOUT_CURRENT",
@@ -122,7 +114,7 @@ class LocalAgentReadinessTests(unittest.TestCase):
                     ],
                     "runtime_claims_required": ["PROJECT_CONFIGURATION_LOADED"],
                 },
-            ],
+            },
             "remote_write": {
                 "dry_run_namespace": "refs/heads/agent-readiness-canary"
             },
@@ -162,11 +154,7 @@ class LocalAgentReadinessTests(unittest.TestCase):
         floor_sha: str | None = None,
         profile_digest: str | None = None,
     ) -> Path:
-        required = next(
-            item["runtime_claims_required"]
-            for item in self.profile["agents"]
-            if item["agent_id"] == agent
-        )
+        required = self.profile["agents"][agent]["runtime_claims_required"]
         value = {
             "schema_version": "local-agent-runtime-observation/v1",
             "agent_id": agent,
@@ -308,6 +296,38 @@ class LocalAgentReadinessTests(unittest.TestCase):
             mismatched["gates"]["LOCAL_AGENT_RUNTIME_VERIFIED"]["state"], "FAIL"
         )
 
+    def test_pass_claim_without_evidence_is_rejected(self) -> None:
+        observation = self.write_observation(
+            "cursor", self.work / "cursor-no-evidence.json"
+        )
+        value = json.loads(observation.read_text(encoding="utf-8"))
+        value["claims"][0]["evidence_refs"] = []
+        observation.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
+
+        receipt = self.assess("cursor", runtime_observation=observation)
+        self.assertEqual(
+            receipt["gates"]["LOCAL_AGENT_RUNTIME_VERIFIED"]["state"], "FAIL"
+        )
+        self.assertIn(
+            "evidence_refs",
+            receipt["gates"]["LOCAL_AGENT_RUNTIME_VERIFIED"]["evidence"]["error"]
+            if "error" in receipt["gates"]["LOCAL_AGENT_RUNTIME_VERIFIED"]["evidence"]
+            else receipt["gates"]["LOCAL_AGENT_RUNTIME_VERIFIED"]["reason"],
+        )
+
+    def test_public_multi_agent_profile_fixture_loads(self) -> None:
+        fixture = CAP / "fixtures" / "profile.multi-agent.synthetic.v1.json"
+        profile = load_profile(fixture)
+        self.assertEqual(set(profile["agents"]), {"cursor", "opencode"})
+        self.assertEqual(
+            len(agent_profile_digest(profile, "cursor")),
+            64,
+        )
+        self.assertEqual(
+            len(agent_profile_digest(profile, "opencode")),
+            64,
+        )
+
     def test_projection_change_after_observation_invalidates_live_proof(self) -> None:
         floor = self.head()
         observation = self.write_observation(
@@ -373,7 +393,7 @@ class LocalAgentReadinessTests(unittest.TestCase):
 
     def test_unsafe_projection_path_is_rejected(self) -> None:
         broken = json.loads(self.profile_path.read_text(encoding="utf-8"))
-        broken["projection_sets"][0]["paths"] = ["../outside"]
+        broken["projection_sets"]["shared"]["paths"] = ["../outside"]
         path = self.profile_path.parent / "broken.json"
         path.write_text(json.dumps(broken), encoding="utf-8")
         with self.assertRaises(ReadinessError):
