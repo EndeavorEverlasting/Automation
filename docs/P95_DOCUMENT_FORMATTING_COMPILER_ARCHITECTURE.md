@@ -109,7 +109,7 @@ IR + required features
   -> no provider plan emitted
 ```
 
-`dynamic_page_fields` intentionally takes this path today.
+`dynamic_page_fields` takes this path unless the consumer explicitly admits the exact observed provider state through an accepted-degradation policy. A stale or broader degradation policy still blocks.
 
 ## Google Docs adapter model
 
@@ -156,6 +156,7 @@ Prototype evidence changed the initial design in three ways:
 4. **Published schemas were tightened to runtime parity.** Review found that permissive source/IR schemas could admit payloads the compiler/adapter rejected. Nested source blocks and IR block variants are now declared, and the adapter validates IR itself before translating.
 5. **CLI artifact publication became typed and rollback-safe.** Input/read/JSON/write failures are handled without tracebacks, and IR + receipt are staged as a pair so a receipt-write failure cannot leave a newly published success-looking IR.
 6. **Block-to-role mapping is single-role in v1.** Review proved that accepting multi-role mappings while emitting only one role would create split semantic truth. Multi-role composition is rejected until a concrete representation is designed and tested.
+7. **Provider feature policy gained an explicit degraded-success state.** The live page-field probe and the first H&H consumer exposed a mismatch between “required feature” and an operator-approved disclosed fallback. The profile/adapter now admit only an exact named provider state plus explicit fallback/disclosure semantics; unknown or changed states still fail closed.
 
 ## Proof ceiling
 
