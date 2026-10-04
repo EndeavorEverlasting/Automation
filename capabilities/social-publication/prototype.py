@@ -10,7 +10,7 @@ CAPABILITY_DIR = Path(__file__).resolve().parent
 if str(CAPABILITY_DIR) not in sys.path:
     sys.path.insert(0, str(CAPABILITY_DIR))
 
-from adapters.linkedin import build_text_post_request
+from adapters.linkedin import build_text_post_request, translate_post_response
 from core.publication import execute_approved_publication, prepare_preview
 
 
@@ -67,6 +67,7 @@ def run_prototype(
         approved_content_sha256=approval_hash,
         build_provider_request=build_request,
         send_provider_request=transport,
+        translate_provider_response=translate_post_response,
     )
     return receipt
 
