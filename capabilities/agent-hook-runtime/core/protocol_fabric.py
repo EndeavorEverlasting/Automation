@@ -211,6 +211,7 @@ def validate_profile(profile: Mapping[str, Any]) -> dict[str, Any]:
         if spec.get("encoder") not in {
             "cursor-native-prompt-v1",
             "cursor-native-stop-v1",
+            "cursor-native-session-start-v1",
             "claude-flat-decision-v1",
             "claude-nested-stop-v1",
             "codex-common-prompt-v1",
@@ -396,6 +397,8 @@ def negotiate(
         raise ProtocolFabricError(f"unsupported canonical event: {canonical_event}")
     if not isinstance(payload, Mapping):
         raise ProtocolFabricError("payload must be an object")
+    if host_version is None and isinstance(payload.get("cursor_version"), str):
+        host_version = payload["cursor_version"]
 
     validated = load_profiles(profiles)
     host_profiles = [item for item in validated if item["host_family"] == host_family]
@@ -538,6 +541,15 @@ def encode_decision(
             return {}
         if decision.action == "FOLLOW_UP":
             return {"followup_message": decision.message}
+        raise ProtocolFabricError(f"decision {decision.action} unsupported by {encoder}")
+
+    if encoder == "cursor-native-session-start-v1":
+        if canonical_event != "session.start":
+            raise ProtocolFabricError("cursor session-start encoder used for wrong event")
+        if decision.action == "ALLOW":
+            return {}
+        if decision.action == "CONTEXT":
+            return {"additional_context": decision.additional_context}
         raise ProtocolFabricError(f"decision {decision.action} unsupported by {encoder}")
 
     if encoder == "claude-flat-decision-v1":
