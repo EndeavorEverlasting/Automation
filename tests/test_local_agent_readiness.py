@@ -422,6 +422,31 @@ class LocalAgentReadinessTests(unittest.TestCase):
             receipt["gates"]["LOCAL_AGENT_RUNTIME_VERIFIED"]["state"], "FAIL"
         )
 
+    def test_change_and_revert_history_invalidates_live_observation(self) -> None:
+        floor = self.head()
+        observation = self.write_observation(
+            "cursor", self.work / "cursor-reverted-history.json", floor_sha=floor
+        )
+        target = self.work / ".cursor/hooks/p07.py"
+        original = target.read_text(encoding="utf-8")
+
+        target.write_text(original + "# transient projector\n", encoding="utf-8")
+        git(self.work, "add", ".cursor/hooks/p07.py")
+        git(self.work, "commit", "-m", "transient projector change")
+
+        target.write_text(original, encoding="utf-8")
+        git(self.work, "add", ".cursor/hooks/p07.py")
+        git(self.work, "commit", "-m", "restore projector bytes")
+
+        receipt = self.assess("cursor", runtime_observation=observation)
+        gate = receipt["gates"]["LOCAL_AGENT_RUNTIME_VERIFIED"]
+        self.assertEqual(gate["state"], "FAIL")
+        self.assertIn("history changed", gate["reason"])
+        self.assertEqual(
+            len(gate["evidence"]["projection_touch_commits"]),
+            2,
+        )
+
     def test_opencode_can_be_ready_without_push_gates_when_profile_does_not_require_them(self) -> None:
         observation = self.write_observation(
             "opencode", self.work / "opencode-observation.json"
@@ -483,11 +508,56 @@ class LocalAgentReadinessTests(unittest.TestCase):
             receipt["gates"]["REPOSITORY_CHECKOUT_CURRENT"]["state"], "FAIL"
         )
         self.assertEqual(
+            receipt["gates"]["REMOTE_WRITE_VERIFIED"]["state"], "NOT_RUN"
+        )
+        self.assertEqual(
+            receipt["gates"]["ACTUAL_PUSH_PROVEN"]["state"], "NOT_RUN"
+        )
+        self.assertEqual(
             receipt["diagnosis"], "CHECKOUT_CHANGED_DURING_ASSESSMENT"
         )
         self.assertNotEqual(
             receipt["local_head"],
             receipt["assessment_head_end"],
+        )
+
+    def test_head_change_invalidates_completed_push_proofs(self) -> None:
+        observation = self.write_observation(
+            "cursor", self.work / "cursor-push-race.json"
+        )
+        remote_ref = "refs/heads/readiness-race-proof"
+        git(self.work, "push", "origin", f"HEAD:{remote_ref}")
+
+        original = READINESS._actual_push_gate
+
+        def mutate_after_readback(*args, **kwargs):
+            result = original(*args, **kwargs)
+            race = self.work / "src" / "post-push-race.py"
+            race.write_text("print('post push race')\n", encoding="utf-8")
+            git(self.work, "add", "src/post-push-race.py")
+            git(self.work, "commit", "-m", "advance after push readback")
+            return result
+
+        READINESS._actual_push_gate = mutate_after_readback
+        try:
+            receipt = self.assess(
+                "cursor",
+                runtime_observation=observation,
+                probe_remote_write=True,
+                actual_push_ref=remote_ref,
+            )
+        finally:
+            READINESS._actual_push_gate = original
+
+        self.assertEqual(receipt["state"], "NOT_READY")
+        self.assertEqual(
+            receipt["gates"]["REMOTE_WRITE_VERIFIED"]["state"], "FAIL"
+        )
+        self.assertEqual(
+            receipt["gates"]["ACTUAL_PUSH_PROVEN"]["state"], "FAIL"
+        )
+        self.assertEqual(
+            receipt["diagnosis"], "CHECKOUT_CHANGED_DURING_ASSESSMENT"
         )
 
     def test_projection_change_during_assessment_is_rechecked(self) -> None:
