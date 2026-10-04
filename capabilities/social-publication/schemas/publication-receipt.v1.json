@@ -3,14 +3,15 @@
   "$id": "automation://social-publication/publication-receipt.v1",
   "title": "Social Publication Receipt v1",
   "type": "object",
-  "additionalProperties": true,
+  "additionalProperties": false,
   "required": [
     "schema_version",
     "request_id",
     "provider",
     "state",
     "content_sha256",
-    "provider_request_emitted"
+    "provider_request_state",
+    "provider_post_id"
   ],
   "properties": {
     "schema_version": {
@@ -18,11 +19,13 @@
     },
     "request_id": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "pattern": ".*\\S.*"
     },
     "provider": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "pattern": ".*\\S.*"
     },
     "state": {
       "type": "string",
@@ -30,9 +33,10 @@
         "PREVIEW_READY",
         "BLOCKED_APPROVAL_REQUIRED",
         "BLOCKED_STALE_APPROVAL",
-        "PROVIDER_REQUEST_READY",
-        "PUBLISHED",
+        "PROVIDER_REQUEST_BUILD_FAILED",
+        "PROVIDER_TRANSPORT_FAILED",
         "PROVIDER_RESPONSE_INCOMPLETE",
+        "PUBLISHED",
         "PROVIDER_AUTHORIZATION_FAILED",
         "PROVIDER_REJECTED"
       ]
@@ -41,14 +45,51 @@
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
     },
-    "provider_request_emitted": {
-      "type": "boolean"
+    "provider_request_state": {
+      "type": "string",
+      "enum": [
+        "NOT_EMITTED",
+        "EMITTED",
+        "UNKNOWN"
+      ]
     },
     "provider_post_id": {
       "type": [
         "string",
         "null"
       ]
+    },
+    "provider_status_code": {
+      "type": "integer"
+    },
+    "error_class": {
+      "type": "string",
+      "minLength": 1
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "PUBLISHED"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "provider_post_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "provider_request_state": {
+            "const": "EMITTED"
+          }
+        }
+      }
+    }
+  ]
 }
