@@ -30,5 +30,7 @@
     "replace local-agent-readiness live-host verification",
     "treat one product name as one universal execution capability"
   ],
-  "proof_ceiling": "Synthetic tests prove admission and fallback semantics only. Live provider limits, quota truth, native dispatch, and production behavior require adapter-specific runtime evidence."
+  "proof_ceiling": "Synthetic tests prove admission and fallback semantics only. Live provider limits, quota truth, native dispatch, and production behavior require adapter-specific runtime evidence.",
+  "portable_library": "capabilities/agent-runtime-fabric/core/fabric.py",
+  "portability_contract": "Consumers may vendor/pin the portable stdlib-only library file plus the machine-readable schemas; the isolated canary executes a copied-out library from a temporary consumer root."
 }
