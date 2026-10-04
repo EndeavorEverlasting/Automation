@@ -84,10 +84,10 @@ def load_profile(path: Path) -> dict[str, Any]:
 
     if not isinstance(repository, dict):
         raise ReadinessError("profile.repository must be an object")
-    if not isinstance(projection_sets, list) or not projection_sets:
-        raise ReadinessError("profile.projection_sets must be a non-empty array")
-    if not isinstance(agents, list) or not agents:
-        raise ReadinessError("profile.agents must be a non-empty array")
+    if not isinstance(projection_sets, dict) or not projection_sets:
+        raise ReadinessError("profile.projection_sets must be a non-empty object")
+    if not isinstance(agents, dict) or not agents:
+        raise ReadinessError("profile.agents must be a non-empty object")
     if not isinstance(remote_write, dict):
         raise ReadinessError("profile.remote_write must be an object")
 
@@ -100,17 +100,15 @@ def load_profile(path: Path) -> dict[str, Any]:
     ):
         raise ReadinessError("profile.repository.remote_identity must be null or non-empty")
 
-    set_ids: set[str] = set()
-    for item in projection_sets:
-        if not isinstance(item, dict):
-            raise ReadinessError("projection set must be an object")
-        set_id = item.get("id")
-        paths = item.get("paths")
-        if not isinstance(set_id, str) or not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", set_id):
+    set_ids = set(projection_sets)
+    for set_id, item in projection_sets.items():
+        if not isinstance(set_id, str) or not re.fullmatch(
+            r"[a-z0-9][a-z0-9._-]*", set_id
+        ):
             raise ReadinessError(f"invalid projection set id: {set_id!r}")
-        if set_id in set_ids:
-            raise ReadinessError(f"duplicate projection set id: {set_id}")
-        set_ids.add(set_id)
+        if not isinstance(item, dict):
+            raise ReadinessError(f"projection set {set_id} must be an object")
+        paths = item.get("paths")
         if not isinstance(paths, list) or not paths or not all(
             isinstance(path, str) and _path_is_safe(path) for path in paths
         ):
@@ -120,18 +118,13 @@ def load_profile(path: Path) -> dict[str, Any]:
         if len(paths) != len(set(paths)):
             raise ReadinessError(f"projection set {set_id} contains duplicate paths")
 
-    agent_ids: set[str] = set()
-    for agent in agents:
-        if not isinstance(agent, dict):
-            raise ReadinessError("agent profile must be an object")
-        agent_id = agent.get("agent_id")
+    for agent_id, agent in agents.items():
         if not isinstance(agent_id, str) or not re.fullmatch(
             r"[a-z0-9][a-z0-9._-]*", agent_id
         ):
             raise ReadinessError(f"invalid agent id: {agent_id!r}")
-        if agent_id in agent_ids:
-            raise ReadinessError(f"duplicate agent id: {agent_id}")
-        agent_ids.add(agent_id)
+        if not isinstance(agent, dict):
+            raise ReadinessError(f"agent {agent_id} profile must be an object")
 
         refs = agent.get("projection_sets")
         if not isinstance(refs, list) or not refs or not all(
@@ -173,19 +166,15 @@ def load_profile(path: Path) -> dict[str, Any]:
 
 
 def _agent(profile: dict[str, Any], agent_id: str) -> dict[str, Any]:
-    for agent in profile["agents"]:
-        if agent["agent_id"] == agent_id:
-            return agent
-    raise ReadinessError(f"agent {agent_id!r} is not defined by the profile")
-
-
-def _projection_sets_by_id(profile: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    return {item["id"]: item for item in profile["projection_sets"]}
+    agent = profile["agents"].get(agent_id)
+    if not isinstance(agent, dict):
+        raise ReadinessError(f"agent {agent_id!r} is not defined by the profile")
+    return agent
 
 
 def projection_paths(profile: dict[str, Any], agent_id: str) -> list[str]:
     agent = _agent(profile, agent_id)
-    sets = _projection_sets_by_id(profile)
+    sets = profile["projection_sets"]
     paths: list[str] = []
     for set_id in agent["projection_sets"]:
         paths.extend(sets[set_id]["paths"])
@@ -194,13 +183,17 @@ def projection_paths(profile: dict[str, Any], agent_id: str) -> list[str]:
 
 def agent_profile_digest(profile: dict[str, Any], agent_id: str) -> str:
     agent = _agent(profile, agent_id)
-    sets = _projection_sets_by_id(profile)
-    referenced = [sets[set_id] for set_id in agent["projection_sets"]]
+    sets = profile["projection_sets"]
+    referenced = {
+        set_id: sets[set_id]
+        for set_id in sorted(agent["projection_sets"])
+    }
     payload = {
         "schema_version": profile["schema_version"],
         "repository": profile["repository"],
+        "agent_id": agent_id,
         "agent": agent,
-        "projection_sets": sorted(referenced, key=lambda item: item["id"]),
+        "projection_sets": referenced,
         "remote_write": profile["remote_write"],
     }
     encoded = json.dumps(
