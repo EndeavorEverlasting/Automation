@@ -134,9 +134,15 @@ def validate_design_spec(spec: Any) -> list[str]:
     if set(block_map) != ALLOWED_BLOCK_TYPES:
         errors.append("block_component_map must cover exactly: " + ", ".join(sorted(ALLOWED_BLOCK_TYPES)))
     for block_type, role_value in block_map.items():
-        role_ids = role_value if isinstance(role_value, list) else [role_value]
-        if not role_ids or any(r not in roles for r in role_ids):
-            errors.append(f"block_component_map.{block_type} must reference known roles")
+        if not isinstance(role_value, str) or not role_value:
+            errors.append(
+                f"block_component_map.{block_type} must reference exactly one role"
+            )
+            continue
+        if role_value not in roles:
+            errors.append(
+                f"block_component_map.{block_type} references unknown role {role_value!r}"
+            )
 
     archetypes = spec.get("archetypes")
     if not isinstance(archetypes, dict) or not archetypes:
@@ -308,7 +314,7 @@ def validate_source(source: Any, spec: Mapping[str, Any]) -> None:
         present: set[str] = set()
         for block in matching[0]["blocks"]:
             mapped = spec["block_component_map"][block["type"]]
-            present.update(mapped if isinstance(mapped, list) else [mapped])
+            present.add(mapped)
         missing = sorted(set(required_roles) - present)
         if missing:
             _fail(
@@ -462,8 +468,7 @@ def compile_document(
         )
         for source_block in section["blocks"]:
             block_type = source_block["type"]
-            mapped = design_spec["block_component_map"][block_type]
-            component = mapped[0] if isinstance(mapped, list) else mapped
+            component = design_spec["block_component_map"][block_type]
             payload: dict[str, Any] = {"section_id": section["id"], "source_block_type": block_type}
             if block_type in TEXT_BLOCK_TYPES | {"command"}:
                 payload["text"] = source_block["text"]
