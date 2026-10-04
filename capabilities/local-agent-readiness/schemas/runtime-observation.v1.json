@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "local-agent-runtime-observation/v1",
+  "title": "Local agent runtime observation",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "agent_id",
+    "status",
+    "proof_class",
+    "observed_at",
+    "floor_sha",
+    "agent_profile_sha256",
+    "claims",
+    "raw_private_content_persisted",
+    "proof_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "local-agent-runtime-observation/v1"
+    },
+    "agent_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": ["PASS", "FAIL", "BLOCKED"]
+    },
+    "proof_class": {
+      "const": "LIVE_HOST_OBSERVATION"
+    },
+    "observed_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "floor_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "agent_profile_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "host_version": {
+      "type": ["string", "null"]
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "state", "evidence_refs"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "enum": ["PASS", "FAIL", "BLOCKED", "NOT_RUN"]
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "raw_private_content_persisted": {
+      "const": false
+    },
+    "proof_ceiling": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}
