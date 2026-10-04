@@ -81,6 +81,17 @@ class AgentHookRuntimeTests(unittest.TestCase):
         self.assertEqual(valid["state"], "VALID")
         self.assertEqual(neutral_response("beforeSubmitPrompt"), {"continue": True})
 
+    def test_cursor_before_submit_validates_attachment_items(self) -> None:
+        invalid = validate_event(
+            "beforeSubmitPrompt",
+            {"prompt": "hello", "attachments": [42, {"type": "other", "file_path": ""}]},
+        )
+        self.assertEqual(invalid["state"], "INVALID_EVENT_SCHEMA")
+        fields = {item["field"] for item in invalid["errors"]}
+        self.assertIn("attachments[0]", fields)
+        self.assertIn("attachments[1].type", fields)
+        self.assertIn("attachments[1].file_path", fields)
+
     def test_cursor_before_submit_does_not_require_conversation_id(self) -> None:
         result = validate_event("beforeSubmitPrompt", {"prompt": "hello"})
         self.assertEqual(result["state"], "VALID")
