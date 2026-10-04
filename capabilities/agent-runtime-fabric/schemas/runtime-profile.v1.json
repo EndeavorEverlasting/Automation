@@ -31,16 +31,32 @@
     "proof_ceiling": {"type": "string", "minLength": 1}
   },
   "$defs": {
-    "numberMap": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0}},
+    "numberMap": {
+      "type": "object",
+      "additionalProperties": {"type": "number", "minimum": 0}
+    },
     "quota": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["state", "remaining", "unit"],
+      "required": ["state", "unit"],
       "properties": {
         "state": {"enum": ["KNOWN", "UNLIMITED", "UNKNOWN"]},
         "remaining": {"type": ["number", "null"], "minimum": 0},
         "unit": {"type": "string", "minLength": 1}
-      }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"state": {"const": "KNOWN"}}, "required": ["state"]},
+          "then": {
+            "required": ["remaining"],
+            "properties": {"remaining": {"type": "number", "minimum": 0}}
+          }
+        },
+        {
+          "if": {"properties": {"state": {"enum": ["UNLIMITED", "UNKNOWN"]}}, "required": ["state"]},
+          "then": {"properties": {"remaining": {"type": "null"}}}
+        }
+      ]
     }
   }
 }
