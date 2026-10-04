@@ -104,6 +104,46 @@ class DocumentFormattingCompilerP95Tests(unittest.TestCase):
         self.assertIn("READABLE_EXISTING_NOT_CREATABLE", str(ctx.exception))
 
 
+
+    def test_design_spec_rejects_multi_role_block_mapping(self):
+        design = copy.deepcopy(self.design)
+        design["block_component_map"]["paragraph"] = ["BODY", "WARNING"]
+        errors = COMPILER.validate_design_spec(design)
+        self.assertTrue(
+            any("must reference exactly one role" in error for error in errors),
+            errors,
+        )
+        with self.assertRaises(COMPILER.DocumentCompileError) as ctx:
+            COMPILER.compile_document(self.source, design)
+        self.assertEqual("DF_DESIGN_SPEC", ctx.exception.code)
+
+    def test_google_docs_internal_links_preserve_ordered_placeholders(self):
+        ir, _ = COMPILER.compile_document(self.source, self.design)
+        plan = ADAPTER.build_plan(
+            ir,
+            required_features=[
+                "semantic_headings",
+                "internal_navigation",
+                "named_external_links",
+                "inline_images",
+                "revision_readback",
+            ],
+        )
+        construct = plan["phases"][0]["operations"]
+        placeholders = [
+            operation
+            for operation in construct
+            if operation["operation"] == "insert_internal_link_placeholder"
+        ]
+        bindings = plan["phases"][2]["operations"]
+        self.assertEqual(2, len(placeholders))
+        self.assertEqual(
+            [item["placeholder_id"] for item in placeholders],
+            [item["placeholder_id"] for item in bindings],
+        )
+        source_orders = [item["source_order"] for item in construct]
+        self.assertEqual(sorted(source_orders), source_orders)
+
     def test_adapter_rejects_malformed_ir_with_typed_error(self):
         ir, _ = COMPILER.compile_document(self.source, self.design)
         malformed = copy.deepcopy(ir)
