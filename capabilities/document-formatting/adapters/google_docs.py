@@ -299,7 +299,12 @@ def build_plan(
             "phase_id": "RESOLVE_HEADING_IDENTITIES",
             "depends_on": ["CONSTRUCT_AND_STYLE"],
             "operation": "provider_readback",
-            "readback_fields": ["revisionId", "heading identities", "body structure"],
+            "readback_fields": [
+                "revisionId",
+                "heading identities",
+                "internal link placeholder ranges",
+                "body structure",
+            ],
             "proof_ceiling": "HEADING_IDENTITIES_PLANNED_NOT_OBSERVED",
         })
         phases.append({
