@@ -67,6 +67,47 @@ class DocumentFormattingCapabilityTests(unittest.TestCase):
             any("provider_id must reference provider_adapters" in item for item in errors)
         )
 
+
+    def test_accepted_degradation_must_target_a_required_feature(self):
+        profile = self.load_fixture()
+        profile["provider_adapters"][0]["accepted_degradations"] = [
+            {
+                "feature": "dynamic_page_fields",
+                "accepted_state": "KNOWN_UNAVAILABLE",
+                "disclosure_required": True,
+                "fallback_semantics": "Use a static footer and disclose the gap.",
+            }
+        ]
+        errors = MOD.validate_profile(profile)
+        self.assertTrue(
+            any("must also appear in required_features" in item for item in errors),
+            errors,
+        )
+
+    def test_accepted_degradation_is_preserved_in_provider_stages(self):
+        profile = self.load_fixture()
+        profile["provider_adapters"][0]["required_features"].append(
+            "dynamic_page_fields"
+        )
+        degradation = {
+            "feature": "dynamic_page_fields",
+            "accepted_state": "READABLE_EXISTING_NOT_CREATABLE_VIA_CURRENT_BATCHUPDATE_SURFACE",
+            "disclosure_required": True,
+            "fallback_semantics": "Use a static footer and disclose the gap.",
+        }
+        profile["provider_adapters"][0]["accepted_degradations"] = [degradation]
+        self.assertEqual([], MOD.validate_profile(profile))
+        plan = MOD.build_plan(profile)
+        stages = {item["stage_id"]: item for item in plan["stages"]}
+        self.assertEqual(
+            [degradation],
+            stages["APPLY_PROVIDER::native-docs-provider"]["accepted_degradations"],
+        )
+        self.assertEqual(
+            [degradation],
+            stages["READBACK_PROVIDER::native-docs-provider"]["accepted_degradations"],
+        )
+
     def test_core_has_no_consumer_specific_hh_assumption(self):
         source = MODULE_PATH.read_text(encoding="utf-8").lower()
         forbidden = ("nyc health", "hospitals", "northwell", "hh-metropolitan")

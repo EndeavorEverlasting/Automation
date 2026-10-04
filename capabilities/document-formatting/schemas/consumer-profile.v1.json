@@ -71,6 +71,37 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          "accepted_degradations": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "feature",
+                "accepted_state",
+                "disclosure_required",
+                "fallback_semantics"
+              ],
+              "properties": {
+                "feature": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "accepted_state": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "disclosure_required": {
+                  "type": "boolean"
+                },
+                "fallback_semantics": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
           }
         }
       }

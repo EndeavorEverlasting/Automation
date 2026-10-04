@@ -18,6 +18,7 @@ COMPILE_CLI = ROOT / "capabilities" / "document-formatting" / "compile.py"
 ADAPTER_CLI = ROOT / "capabilities" / "document-formatting" / "adapters" / "google_docs.py"
 SOURCE_SCHEMA = ROOT / "capabilities" / "document-formatting" / "schemas" / "source.v1.json"
 IR_SCHEMA = ROOT / "capabilities" / "document-formatting" / "schemas" / "ir.v1.json"
+DEGRADATION_POLICY = ROOT / "capabilities" / "document-formatting" / "fixtures" / "google-docs-degradation-policy.synthetic.v1.json"
 
 def load_module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
@@ -283,6 +284,99 @@ class DocumentFormattingCompilerP95Tests(unittest.TestCase):
             self.assertIn("GDA_INPUT_JSON", completed.stderr)
             self.assertNotIn("Traceback", completed.stderr)
             self.assertFalse(output.exists())
+
+
+    def test_google_docs_adapter_accepts_exact_declared_degradation(self):
+        ir, _ = COMPILER.compile_document(self.source, self.design)
+        policy = json.loads(DEGRADATION_POLICY.read_text(encoding="utf-8"))
+        plan = ADAPTER.build_plan(
+            ir,
+            required_features=[
+                "semantic_headings",
+                "dynamic_page_fields",
+            ],
+            accepted_degradations=policy,
+        )
+        report = plan["capability_report"]
+        self.assertEqual("READY_WITH_ACCEPTED_DEGRADATION", report["state"])
+        self.assertEqual([], report["blocked_features"])
+        self.assertEqual(
+            ["dynamic_page_fields"],
+            [item["feature"] for item in report["accepted_degradations"]],
+        )
+        self.assertEqual(1, len(plan["required_disclosures"]))
+        self.assertEqual(
+            "dynamic_page_fields",
+            plan["required_disclosures"][0]["feature"],
+        )
+
+    def test_google_docs_adapter_rejects_stale_degradation_state(self):
+        ir, _ = COMPILER.compile_document(self.source, self.design)
+        policy = json.loads(DEGRADATION_POLICY.read_text(encoding="utf-8"))
+        policy[0]["accepted_state"] = "STALE_OR_WRONG_PROVIDER_STATE"
+        with self.assertRaises(ADAPTER.GoogleDocsAdapterError) as ctx:
+            ADAPTER.build_plan(
+                ir,
+                required_features=["dynamic_page_fields"],
+                accepted_degradations=policy,
+            )
+        self.assertEqual("GDA_UNSUPPORTED_FEATURE", ctx.exception.code)
+
+
+    def test_google_docs_adapter_never_accepts_generic_unknown_degradation(self):
+        ir, _ = COMPILER.compile_document(self.source, self.design)
+        policy = [
+            {
+                "feature": "future_unknown_feature",
+                "accepted_state": "UNSUPPORTED_BY_PROTOTYPE",
+                "disclosure_required": True,
+                "fallback_semantics": "Do something vague.",
+            }
+        ]
+        with self.assertRaises(ADAPTER.GoogleDocsAdapterError) as ctx:
+            ADAPTER.build_plan(
+                ir,
+                required_features=["future_unknown_feature"],
+                accepted_degradations=policy,
+            )
+        self.assertEqual("GDA_UNSUPPORTED_FEATURE", ctx.exception.code)
+
+    def test_google_docs_cli_emits_degraded_plan_with_disclosure(self):
+        ir, _ = COMPILER.compile_document(self.source, self.design)
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            ir_path = root / "ir.json"
+            output = root / "plan.json"
+            ir_path.write_text(
+                json.dumps(ir, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(ADAPTER_CLI),
+                    "--ir",
+                    str(ir_path),
+                    "--required-feature",
+                    "semantic_headings",
+                    "--required-feature",
+                    "dynamic_page_fields",
+                    "--degradation-policy",
+                    str(DEGRADATION_POLICY),
+                    "--output",
+                    str(output),
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(0, completed.returncode, completed.stderr)
+            plan = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(
+                "READY_WITH_ACCEPTED_DEGRADATION",
+                plan["capability_report"]["state"],
+            )
+            self.assertEqual(1, len(plan["required_disclosures"]))
 
     def test_core_has_no_hh_consumer_assumptions(self):
         source = COMPILER_PATH.read_text(encoding="utf-8").lower()

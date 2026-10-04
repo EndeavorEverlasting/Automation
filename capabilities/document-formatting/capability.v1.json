@@ -44,7 +44,8 @@
     "generic-lock-before-branding enforcement when selected",
     "provider-neutral plan receipts",
     "provider-neutral semantic document compiler and IR",
-    "content, structure, non-color, palette, and compiled fingerprints"
+    "content, structure, non-color, palette, and compiled fingerprints",
+    "explicit accepted-degradation policy with disclosure-bound fallbacks"
   ],
   "adapter_owns": [
     "provider request/application mechanics",
@@ -78,7 +79,7 @@
     "claim visual fidelity from static validation",
     "replace consumer-specific business logic"
   ],
-  "proof_ceiling": "Executable P95 prototypes prove deterministic provider-neutral compilation, typed compiler failures, separate non-color/palette fingerprints, and a Google Docs phased adapter plan with fail-closed capability negotiation. Live provider mutation/readback, dynamic page-field insertion, rendered visual fidelity, Word/Office acceptance, consumer adoption, deployment, and production use remain separately proven states.",
+  "proof_ceiling": "Executable P95 prototypes prove deterministic provider-neutral compilation, typed compiler failures, separate non-color/palette fingerprints, a Google Docs phased adapter plan, fail-closed capability negotiation, and explicit accepted-degradation policies that only admit exact observed provider states with declared fallback/disclosure semantics. Live provider mutation/readback, dynamic page-field insertion, rendered visual fidelity, Word/Office acceptance, consumer adoption, deployment, and production use remain separately proven states.",
   "production_use_path": "UNDECLARED",
   "next_transition": "P07 build sprint: harden the compiler/IR schema and implement Google Docs transport/readback execution behind the proved adapter seam; consumers then adopt through their profiles without forking the core."
 }

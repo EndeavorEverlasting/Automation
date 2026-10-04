@@ -70,10 +70,10 @@ def validate_profile(profile: Any) -> list[str]:
         if host not in HOSTS:
             errors.append(f"{prefix}.execution_environment is invalid: {host!r}")
         features = provider.get("required_features", [])
+        cleaned: list[str] = []
         if not isinstance(features, list):
             errors.append(f"{prefix}.required_features must be an array")
         else:
-            cleaned = []
             for feature_index, feature in enumerate(features):
                 if not _non_empty_string(feature):
                     errors.append(
@@ -83,6 +83,39 @@ def validate_profile(profile: Any) -> list[str]:
                     cleaned.append(feature)
             if len(cleaned) != len(set(cleaned)):
                 errors.append(f"{prefix}.required_features must not contain duplicates")
+
+        degradations = provider.get("accepted_degradations", [])
+        if not isinstance(degradations, list):
+            errors.append(f"{prefix}.accepted_degradations must be an array")
+            degradations = []
+        seen_degradations: set[str] = set()
+        for degradation_index, degradation in enumerate(degradations):
+            d_prefix = f"{prefix}.accepted_degradations[{degradation_index}]"
+            if not isinstance(degradation, dict):
+                errors.append(f"{d_prefix} must be an object")
+                continue
+            feature = degradation.get("feature")
+            accepted_state = degradation.get("accepted_state")
+            fallback_semantics = degradation.get("fallback_semantics")
+            disclosure_required = degradation.get("disclosure_required")
+            if not _non_empty_string(feature):
+                errors.append(f"{d_prefix}.feature must be a non-empty string")
+                continue
+            if feature not in cleaned:
+                errors.append(
+                    f"{d_prefix}.feature must also appear in required_features"
+                )
+            if feature in seen_degradations:
+                errors.append(f"{d_prefix}.feature must be unique")
+            seen_degradations.add(feature)
+            if not _non_empty_string(accepted_state):
+                errors.append(f"{d_prefix}.accepted_state must be a non-empty string")
+            if not _non_empty_string(fallback_semantics):
+                errors.append(
+                    f"{d_prefix}.fallback_semantics must be a non-empty string"
+                )
+            if not isinstance(disclosure_required, bool):
+                errors.append(f"{d_prefix}.disclosure_required must be boolean")
 
     surfaces = profile.get("visual_surfaces")
     surface_ids: set[str] = set()
@@ -182,6 +215,9 @@ def build_plan(profile: dict[str, Any]) -> dict[str, Any]:
                 "execution_environment": provider["execution_environment"],
                 "depends_on": ["COMPILE_PROVIDER_NEUTRAL_DOCUMENT"],
                 "required_features": list(provider.get("required_features", [])),
+                "accepted_degradations": [
+                    dict(item) for item in provider.get("accepted_degradations", [])
+                ],
                 "proof_ceiling": "PROVIDER_MUTATION_ATTEMPTED",
             }
         )
@@ -194,6 +230,9 @@ def build_plan(profile: dict[str, Any]) -> dict[str, Any]:
                     "execution_environment": provider["execution_environment"],
                     "depends_on": [apply_id],
                     "required_features": list(provider.get("required_features", [])),
+                    "accepted_degradations": [
+                        dict(item) for item in provider.get("accepted_degradations", [])
+                    ],
                     "proof_ceiling": "PROVIDER_READBACK_VERIFIED",
                 }
             )
