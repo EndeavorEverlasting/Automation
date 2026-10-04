@@ -23,6 +23,10 @@ _PROVIDER_OUTCOME_TO_STATE = {
 }
 
 
+class ApprovalError(ValueError):
+    """Compatibility export for approval-related caller handling."""
+
+
 def validate_intent(intent: Any) -> list[str]:
     errors: list[str] = []
     if not isinstance(intent, dict):
