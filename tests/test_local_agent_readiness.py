@@ -597,6 +597,17 @@ class LocalAgentReadinessTests(unittest.TestCase):
         self.assertEqual(before, after)
         self.assertEqual(local_note.read_text(encoding="utf-8"), "preserve me\n")
 
+    def test_malformed_required_gate_type_fails_with_readiness_error(self) -> None:
+        broken = json.loads(self.profile_path.read_text(encoding="utf-8"))
+        broken["agents"]["cursor"]["required_gates"] = [
+            "REPOSITORY_CHECKOUT_CURRENT",
+            {"not": "a string"},
+        ]
+        path = self.profile_path.parent / "broken-gates.json"
+        path.write_text(json.dumps(broken), encoding="utf-8")
+        with self.assertRaises(ReadinessError):
+            load_profile(path)
+
     def test_unsafe_projection_path_is_rejected(self) -> None:
         broken = json.loads(self.profile_path.read_text(encoding="utf-8"))
         broken["projection_sets"]["shared"]["paths"] = ["../outside"]
