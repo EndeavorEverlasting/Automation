@@ -61,6 +61,8 @@ jobs:
             capabilities/agent-hook-runtime/diagnose_cursor_hook.py \
             capabilities/agent-hook-runtime/core/transport.py \
             capabilities/agent-hook-runtime/adapters/cursor.py \
+            capabilities/local-agent-readiness/verify.py \
+            capabilities/local-agent-readiness/core/readiness.py \
             capabilities/social-publication/prototype.py \
             capabilities/social-publication/core/publication.py \
             capabilities/social-publication/adapters/linkedin.py
@@ -149,6 +151,20 @@ jobs:
           serialized = json.dumps(receipt).lower()
           assert not any(item in serialized for item in forbidden), receipt
           PY
+
+      - name: Validate local-agent readiness profile fixture
+        run: |
+          mkdir -p Outputs
+          python capabilities/local-agent-readiness/verify.py \
+            --repo-root . \
+            --profile capabilities/local-agent-readiness/fixtures/profile.multi-agent.synthetic.v1.json \
+            --agent cursor \
+            --print-agent-profile-sha256 > Outputs/local-agent-readiness.cursor-profile-sha256.txt
+          python capabilities/local-agent-readiness/verify.py \
+            --repo-root . \
+            --profile capabilities/local-agent-readiness/fixtures/profile.multi-agent.synthetic.v1.json \
+            --agent opencode \
+            --print-agent-profile-sha256 > Outputs/local-agent-readiness.opencode-profile-sha256.txt
 
       - name: Validate sanitized runtime handoff example
         run: |
