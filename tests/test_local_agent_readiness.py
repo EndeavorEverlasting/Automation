@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import subprocess
 import sys
@@ -9,14 +10,20 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CAP = ROOT / "capabilities" / "local-agent-readiness"
-sys.path.insert(0, str(CAP))
 
-from core.readiness import (  # noqa: E402
-    ReadinessError,
-    agent_profile_digest,
-    assess_readiness,
-    load_profile,
+SPEC = importlib.util.spec_from_file_location(
+    "automation_local_agent_readiness_core",
+    CAP / "core" / "readiness.py",
 )
+READINESS = importlib.util.module_from_spec(SPEC)
+assert SPEC.loader is not None
+sys.modules[SPEC.name] = READINESS
+SPEC.loader.exec_module(READINESS)
+
+ReadinessError = READINESS.ReadinessError
+agent_profile_digest = READINESS.agent_profile_digest
+assess_readiness = READINESS.assess_readiness
+load_profile = READINESS.load_profile
 
 
 def git(root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
