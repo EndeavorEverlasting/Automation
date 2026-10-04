@@ -42,7 +42,8 @@ The core exposes five independent gates:
    - the observation is tied to the current agent profile digest;
    - required runtime claims are PASS;
    - the observation floor is an ancestor of current `HEAD`;
-   - no selected projection surface was touched by committed history after that observation, even if later reverted to identical bytes;\n   - the verifier rechecks local `HEAD` and projection parity before emitting its final receipt, so concurrent local changes invalidate readiness.
+   - no selected projection surface was touched by committed history after that observation, even if later reverted to identical bytes;
+   - the verifier rechecks local `HEAD` and projection parity before emitting its final receipt, so concurrent local changes invalidate readiness.
 
 4. `REMOTE_WRITE_VERIFIED`
    - optional `git push --dry-run` proves a reachable/authenticated update path;
