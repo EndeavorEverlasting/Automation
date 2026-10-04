@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "document-formatting-consumer-profile/v1",
+  "title": "Document Formatting Consumer Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "consumer_id",
+    "profile_id",
+    "consumer_contract_ref",
+    "archetypes",
+    "provider_adapters",
+    "visual_surfaces",
+    "proof_policy",
+    "branding"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "document-formatting-consumer-profile/v1"
+    },
+    "consumer_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "profile_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "consumer_contract_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "archetypes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "provider_adapters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "provider_id",
+          "execution_environment",
+          "required_features"
+        ],
+        "properties": {
+          "provider_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "execution_environment": {
+            "enum": [
+              "CURRENT_CHAT_RUNTIME",
+              "LOCAL_AGENT_RUNTIME",
+              "CI_OR_REMOTE_RUNNER",
+              "OPERATOR_OR_PHYSICAL_RUNTIME",
+              "UNKNOWN_RUNTIME"
+            ]
+          },
+          "required_features": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "visual_surfaces": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "surface_id",
+          "execution_environment"
+        ],
+        "properties": {
+          "surface_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "execution_environment": {
+            "enum": [
+              "CURRENT_CHAT_RUNTIME",
+              "LOCAL_AGENT_RUNTIME",
+              "CI_OR_REMOTE_RUNNER",
+              "OPERATOR_OR_PHYSICAL_RUNTIME",
+              "UNKNOWN_RUNTIME"
+            ]
+          },
+          "provider_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "proof_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider_readback_required",
+        "prevent_proof_promotion",
+        "lock_non_color_before_branding"
+      ],
+      "properties": {
+        "provider_readback_required": {
+          "type": "boolean"
+        },
+        "prevent_proof_promotion": {
+          "type": "boolean"
+        },
+        "lock_non_color_before_branding": {
+          "type": "boolean"
+        }
+      }
+    },
+    "branding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
