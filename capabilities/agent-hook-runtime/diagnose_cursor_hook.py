@@ -15,7 +15,16 @@ from adapters.cursor import (
     session_identity_receipt,
     validate_event,
 )
+from core.protocol_fabric import load_profiles, negotiate
 from core.transport import read_json_object
+
+CAP_ROOT = Path(__file__).resolve().parent
+PROTOCOL_REGISTRY = CAP_ROOT / "profiles" / "current.v1.json"
+CANONICAL_EVENT = {
+    "beforeSubmitPrompt": "prompt.submit",
+    "stop": "session.stop",
+    "sessionStart": "session.start",
+}
 
 
 def _write_receipt(
@@ -68,6 +77,17 @@ def main(argv: list[str] | None = None) -> int:
         }
     )
     ok = transport["state"] == "PARSED" and validation["state"] == "VALID"
+    protocol_route = None
+    if payload is not None:
+        registry = json.loads(PROTOCOL_REGISTRY.read_text(encoding="utf-8"))
+        protocol_route = negotiate(
+            load_profiles(registry),
+            host_family="cursor",
+            canonical_event=CANONICAL_EVENT[args.event],
+            host_event=args.event,
+            payload=payload,
+            host_version=os.environ.get("CURSOR_VERSION"),
+        )
 
     receipt = {
         "schema_version": "agent-hook-runtime-observation/v1",
@@ -77,6 +97,7 @@ def main(argv: list[str] | None = None) -> int:
         "project_dir_present": bool(os.environ.get("CURSOR_PROJECT_DIR")),
         "transport": transport,
         "event_schema": validation,
+        "protocol_route": protocol_route,
         "session_identity": (
             session_identity_receipt(payload)
             if args.event == "sessionStart" and payload is not None and ok
@@ -88,8 +109,8 @@ def main(argv: list[str] | None = None) -> int:
         ),
         "failure_policy": args.failure_policy,
         "proof_ceiling": (
-            "Observes hook transport/schema only; does not prove agent-policy execution, "
-            "prompt resolution, or provider correctness."
+            "Observes hook transport/schema and protocol-shape negotiation only; does not "
+            "prove agent-policy execution, prompt resolution, host response acceptance, or provider correctness."
         ),
     }
     receipt_path, receipt_error = _write_receipt(args.receipt_dir, receipt)
