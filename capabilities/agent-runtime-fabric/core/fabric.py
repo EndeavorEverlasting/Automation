@@ -13,6 +13,30 @@ PROFILE_SCHEMA = "agent-runtime-profile/v1"
 REQUIREMENT_SCHEMA = "agent-runtime-work-requirement/v1"
 ROUTE_SCHEMA = "agent-runtime-route-decision/v1"
 
+PROFILE_FIELDS = {
+    "schema_version",
+    "adapter_id",
+    "harness_family",
+    "state",
+    "capabilities",
+    "admitted_roles",
+    "hard_limits",
+    "reserve",
+    "quotas",
+    "dispatch_costs",
+    "proof_ceiling",
+}
+REQUIREMENT_FIELDS = {
+    "schema_version",
+    "work_unit_id",
+    "required_role",
+    "required_capabilities",
+    "expected_usage",
+    "preferred_adapters",
+    "proof_ceiling",
+}
+QUOTA_FIELDS = {"state", "remaining", "unit"}
+
 
 class RuntimeFabricError(ValueError):
     """Raised when a profile or work requirement violates the public contract."""
@@ -83,6 +107,9 @@ def _number_map(value: Any, label: str) -> dict[str, float]:
 def validate_profile(profile: Mapping[str, Any]) -> None:
     if not isinstance(profile, Mapping):
         raise RuntimeFabricError("runtime profile must be an object")
+    extra = sorted(set(profile) - PROFILE_FIELDS)
+    if extra:
+        raise RuntimeFabricError(f"runtime profile contains unsupported fields: {extra}")
     if profile.get("schema_version") != PROFILE_SCHEMA:
         raise RuntimeFabricError(f"schema_version must be {PROFILE_SCHEMA}")
     _require_nonempty_string(profile.get("adapter_id"), "adapter_id")
@@ -112,6 +139,11 @@ def validate_profile(profile: Mapping[str, Any]) -> None:
         _require_nonempty_string(axis, "quota axis")
         if not isinstance(quota, Mapping):
             raise RuntimeFabricError(f"quotas.{axis} must be an object")
+        quota_extra = sorted(set(quota) - QUOTA_FIELDS)
+        if quota_extra:
+            raise RuntimeFabricError(
+                f"quotas.{axis} contains unsupported fields: {quota_extra}"
+            )
         state = quota.get("state")
         if state not in {"KNOWN", "UNLIMITED", "UNKNOWN"}:
             raise RuntimeFabricError(
@@ -139,6 +171,9 @@ def validate_profile(profile: Mapping[str, Any]) -> None:
 def validate_requirement(requirement: Mapping[str, Any]) -> None:
     if not isinstance(requirement, Mapping):
         raise RuntimeFabricError("work requirement must be an object")
+    extra = sorted(set(requirement) - REQUIREMENT_FIELDS)
+    if extra:
+        raise RuntimeFabricError(f"work requirement contains unsupported fields: {extra}")
     if requirement.get("schema_version") != REQUIREMENT_SCHEMA:
         raise RuntimeFabricError(f"schema_version must be {REQUIREMENT_SCHEMA}")
     _require_nonempty_string(requirement.get("work_unit_id"), "work_unit_id")
