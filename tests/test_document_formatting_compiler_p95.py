@@ -4,6 +4,9 @@ import copy
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
+import sys
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -11,6 +14,10 @@ COMPILER_PATH = ROOT / "capabilities" / "document-formatting" / "core" / "compil
 ADAPTER_PATH = ROOT / "capabilities" / "document-formatting" / "adapters" / "google_docs.py"
 DESIGN = ROOT / "capabilities" / "document-formatting" / "fixtures" / "design-spec.synthetic.v1.json"
 SOURCE = ROOT / "capabilities" / "document-formatting" / "fixtures" / "document-source.synthetic.v1.json"
+COMPILE_CLI = ROOT / "capabilities" / "document-formatting" / "compile.py"
+ADAPTER_CLI = ROOT / "capabilities" / "document-formatting" / "adapters" / "google_docs.py"
+SOURCE_SCHEMA = ROOT / "capabilities" / "document-formatting" / "schemas" / "source.v1.json"
+IR_SCHEMA = ROOT / "capabilities" / "document-formatting" / "schemas" / "ir.v1.json"
 
 def load_module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
@@ -95,6 +102,147 @@ class DocumentFormattingCompilerP95Tests(unittest.TestCase):
             ADAPTER.build_plan(ir, required_features=["dynamic_page_fields"])
         self.assertEqual("GDA_UNSUPPORTED_FEATURE", ctx.exception.code)
         self.assertIn("READABLE_EXISTING_NOT_CREATABLE", str(ctx.exception))
+
+
+    def test_adapter_rejects_malformed_ir_with_typed_error(self):
+        ir, _ = COMPILER.compile_document(self.source, self.design)
+        malformed = copy.deepcopy(ir)
+        del malformed["blocks"][0]["style"]
+        with self.assertRaises(ADAPTER.GoogleDocsAdapterError) as ctx:
+            ADAPTER.build_plan(malformed, required_features=["semantic_headings"])
+        self.assertEqual("GDA_IR_SCHEMA", ctx.exception.code)
+        self.assertIn("style must be an object", str(ctx.exception))
+
+    def test_published_schemas_encode_runtime_required_shapes(self):
+        source_schema = json.loads(SOURCE_SCHEMA.read_text(encoding="utf-8"))
+        ir_schema = json.loads(IR_SCHEMA.read_text(encoding="utf-8"))
+
+        metadata_items = source_schema["properties"]["metadata"]["items"]
+        resource_items = source_schema["properties"]["resources"]["items"]
+        section_items = source_schema["properties"]["sections"]["items"]
+        self.assertEqual(["label", "value"], metadata_items["required"])
+        self.assertEqual(["label", "url"], resource_items["required"])
+        self.assertEqual(["id", "title", "level", "blocks"], section_items["required"])
+        self.assertGreaterEqual(
+            len(section_items["properties"]["blocks"]["items"]["oneOf"]),
+            5,
+        )
+
+        ir_blocks = ir_schema["properties"]["blocks"]
+        self.assertEqual(1, ir_blocks["minItems"])
+        self.assertGreaterEqual(len(ir_blocks["items"]["oneOf"]), 7)
+        self.assertEqual(
+            ["role_id", "mechanics", "colors"],
+            ir_schema["$defs"]["style"]["required"],
+        )
+
+    def test_compile_cli_missing_or_invalid_input_fails_without_traceback(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            output = root / "ir.json"
+            receipt = root / "receipt.json"
+
+            missing = subprocess.run(
+                [
+                    sys.executable,
+                    str(COMPILE_CLI),
+                    "--source",
+                    str(root / "missing.json"),
+                    "--design",
+                    str(DESIGN),
+                    "--output",
+                    str(output),
+                    "--receipt",
+                    str(receipt),
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(2, missing.returncode)
+            self.assertIn("DF_INPUT_IO", missing.stderr)
+            self.assertNotIn("Traceback", missing.stderr)
+
+            invalid_source = root / "invalid.json"
+            invalid_source.write_text("{not-json", encoding="utf-8")
+            invalid = subprocess.run(
+                [
+                    sys.executable,
+                    str(COMPILE_CLI),
+                    "--source",
+                    str(invalid_source),
+                    "--design",
+                    str(DESIGN),
+                    "--output",
+                    str(output),
+                    "--receipt",
+                    str(receipt),
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(2, invalid.returncode)
+            self.assertIn("DF_INPUT_JSON", invalid.stderr)
+            self.assertNotIn("Traceback", invalid.stderr)
+            self.assertFalse(output.exists())
+            self.assertFalse(receipt.exists())
+
+    def test_compile_cli_receipt_staging_failure_leaves_no_ir_artifact(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            output = root / "ir.json"
+            blocked_parent = root / "not-a-directory"
+            blocked_parent.write_text("blocking file", encoding="utf-8")
+            receipt = blocked_parent / "receipt.json"
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(COMPILE_CLI),
+                    "--source",
+                    str(SOURCE),
+                    "--design",
+                    str(DESIGN),
+                    "--output",
+                    str(output),
+                    "--receipt",
+                    str(receipt),
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(2, completed.returncode)
+            self.assertIn("DF_OUTPUT_IO", completed.stderr)
+            self.assertNotIn("Traceback", completed.stderr)
+            self.assertFalse(output.exists())
+
+    def test_google_docs_cli_invalid_ir_json_is_typed(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            ir_path = root / "bad-ir.json"
+            ir_path.write_text("{bad-json", encoding="utf-8")
+            output = root / "plan.json"
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(ADAPTER_CLI),
+                    "--ir",
+                    str(ir_path),
+                    "--required-feature",
+                    "semantic_headings",
+                    "--output",
+                    str(output),
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(2, completed.returncode)
+            self.assertIn("GDA_INPUT_JSON", completed.stderr)
+            self.assertNotIn("Traceback", completed.stderr)
+            self.assertFalse(output.exists())
 
     def test_core_has_no_hh_consumer_assumptions(self):
         source = COMPILER_PATH.read_text(encoding="utf-8").lower()
