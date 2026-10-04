@@ -137,8 +137,14 @@ def load_profile(path: Path) -> dict[str, Any]:
             raise ReadinessError(f"agent {agent_id} has duplicate projection sets")
 
         required_gates = agent.get("required_gates")
-        if not isinstance(required_gates, list) or not required_gates:
-            raise ReadinessError(f"agent {agent_id} required_gates must be non-empty")
+        if (
+            not isinstance(required_gates, list)
+            or not required_gates
+            or not all(isinstance(gate, str) and gate.strip() for gate in required_gates)
+        ):
+            raise ReadinessError(
+                f"agent {agent_id} required_gates must be a non-empty array of strings"
+            )
         unknown_gates = sorted(set(required_gates) - set(GATE_ORDER))
         if unknown_gates:
             raise ReadinessError(
