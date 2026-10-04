@@ -322,6 +322,25 @@ class DocumentFormattingCompilerP95Tests(unittest.TestCase):
             )
         self.assertEqual("GDA_UNSUPPORTED_FEATURE", ctx.exception.code)
 
+
+    def test_google_docs_adapter_never_accepts_generic_unknown_degradation(self):
+        ir, _ = COMPILER.compile_document(self.source, self.design)
+        policy = [
+            {
+                "feature": "future_unknown_feature",
+                "accepted_state": "UNSUPPORTED_BY_PROTOTYPE",
+                "disclosure_required": True,
+                "fallback_semantics": "Do something vague.",
+            }
+        ]
+        with self.assertRaises(ADAPTER.GoogleDocsAdapterError) as ctx:
+            ADAPTER.build_plan(
+                ir,
+                required_features=["future_unknown_feature"],
+                accepted_degradations=policy,
+            )
+        self.assertEqual("GDA_UNSUPPORTED_FEATURE", ctx.exception.code)
+
     def test_google_docs_cli_emits_degraded_plan_with_disclosure(self):
         ir, _ = COMPILER.compile_document(self.source, self.design)
         with tempfile.TemporaryDirectory() as td:
