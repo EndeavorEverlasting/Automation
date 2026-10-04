@@ -60,7 +60,10 @@ jobs:
             capabilities/playlist-link-extraction/adapters/yt-dlp-json/convert.py \
             capabilities/agent-hook-runtime/diagnose_cursor_hook.py \
             capabilities/agent-hook-runtime/core/transport.py \
-            capabilities/agent-hook-runtime/adapters/cursor.py
+            capabilities/agent-hook-runtime/adapters/cursor.py \
+            capabilities/social-publication/prototype.py \
+            capabilities/social-publication/core/publication.py \
+            capabilities/social-publication/adapters/linkedin.py
 
       - name: Build playlist-link synthetic artifact
         run: |
@@ -120,6 +123,31 @@ jobs:
           with Path("Outputs/playlist-link-yt-dlp-artifact.csv").open(encoding="utf-8", newline="") as handle:
               rows = list(csv.DictReader(handle))
           assert len(rows) == 4, rows
+          PY
+
+      - name: Build social-publication P95 success receipt
+        run: |
+          mkdir -p Outputs
+          python capabilities/social-publication/prototype.py \
+            --intent capabilities/social-publication/fixtures/text-intent.synthetic.v1.json \
+            --mode success \
+            --output Outputs/social-publication-p95-receipt.json
+
+      - name: Validate social-publication P95 receipt
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          receipt = json.loads(Path("Outputs/social-publication-p95-receipt.json").read_text(encoding="utf-8"))
+          assert receipt["schema_version"] == "social-publication-receipt/v1", receipt
+          assert receipt["state"] == "PUBLISHED", receipt
+          assert receipt["provider"] == "linkedin", receipt
+          assert receipt["provider_request_state"] == "EMITTED", receipt
+          assert receipt["provider_post_id"] == "urn:li:share:synthetic-p95-proof", receipt
+          forbidden = ("authorization", "bearer ", "access_token", "refresh_token", "client_secret")
+          serialized = json.dumps(receipt).lower()
+          assert not any(item in serialized for item in forbidden), receipt
           PY
 
       - name: Validate sanitized runtime handoff example
