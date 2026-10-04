@@ -231,6 +231,13 @@ def validate_profile(profile: Mapping[str, Any]) -> dict[str, Any]:
             isinstance(item, str) and item for item in host_events
         ):
             raise ProtocolFabricError(f"{canonical_event}.host_events invalid")
+        event_name_field = event.get("event_name_field")
+        if event_name_field is not None and (
+            not isinstance(event_name_field, str) or not event_name_field.strip()
+        ):
+            raise ProtocolFabricError(
+                f"{canonical_event}.event_name_field must be a non-empty string when present"
+            )
         required_fields = event.get("required_fields", {})
         optional_fields = event.get("optional_fields", {})
         for name, fields in (("required_fields", required_fields), ("optional_fields", optional_fields)):
@@ -408,6 +415,50 @@ def negotiate(
         payload=payload,
         host_version=host_version,
     )
+
+    # A self-describing event field is stronger evidence than the caller's
+    # dispatch label. If the payload names an event outside the aliases admitted
+    # for this canonical event, fail to UNKNOWN_SHAPE instead of silently
+    # falling back to a looser/minimal profile.
+    event_name_fields: dict[str, set[str]] = {}
+    for profile in host_profiles:
+        event = profile["events"].get(canonical_event)
+        if not isinstance(event, Mapping):
+            continue
+        field = event.get("event_name_field")
+        if isinstance(field, str) and field:
+            event_name_fields.setdefault(field, set()).update(event["host_events"])
+
+    mismatched_event_fields = []
+    for field, allowed_values in event_name_fields.items():
+        observed_value = payload.get(field)
+        if observed_value is not None and (
+            not isinstance(observed_value, str) or observed_value not in allowed_values
+        ):
+            mismatched_event_fields.append(field)
+
+    if mismatched_event_fields:
+        return {
+            "schema_version": ROUTE_SCHEMA,
+            "state": "UNKNOWN_SHAPE",
+            "reason": "SELF_DESCRIBED_EVENT_MISMATCH",
+            "host_family": host_family,
+            "canonical_event": canonical_event,
+            "host_event": host_event,
+            "host_version": host_version,
+            "observation": observation,
+            "mismatch_fields": sorted(mismatched_event_fields),
+            "candidates": [],
+            "selected": None,
+            "fallbacks": [],
+            "safety": {
+                "policy_decision": "DEFER_TO_CONSUMER",
+                "rule": (
+                    "A payload that self-identifies as a different event must not be "
+                    "reinterpreted through a looser profile."
+                ),
+            },
+        }
 
     candidates: list[Candidate] = []
     for profile in host_profiles:
