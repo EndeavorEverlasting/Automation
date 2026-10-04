@@ -42,6 +42,7 @@ A READY handoff must be explicit enough for ordinary executors such as Cursor, O
 - [docs/RUNTIME_DISTRIBUTION.md](docs/RUNTIME_DISTRIBUTION.md)
 - [harness/contracts/runtime-execution-handoff.v1.json](harness/contracts/runtime-execution-handoff.v1.json)
 - [docs/PUBLIC_PRIVATE_BRIDGE.md](docs/PUBLIC_PRIVATE_BRIDGE.md)
+- [`agent-runtime-fabric`](capabilities/agent-runtime-fabric/CAPABILITY.md) admits an already-authorized work unit to a currently eligible runtime modality after placement; it does not become a competing planner or native executor.
 - `python scripts/validate_runtime_handoff.py --packet <packet.json> --require-ready`
 
 Tracked public handoffs fail closed on private continuity-store links, person-specific workstation paths, and secret-bearing fields. Private operator continuity may point to this public repository, but this repository must remain usable without private continuity access.
@@ -74,6 +75,8 @@ Admitted capabilities:
 
 - [`playlist-link-extraction`](capabilities/playlist-link-extraction/CAPABILITY.md) — status `CORE_IMPLEMENTED_ADAPTERS_PENDING`
 - [`agent-hook-runtime`](capabilities/agent-hook-runtime/CAPABILITY.md) — status `CORE_IMPLEMENTED_CURSOR_ADAPTER_DIAGNOSTIC_ONLY`; separates JSON-stdio host transport/schema proof from consumer policy and emits privacy-safe runtime receipts.
+- [`local-agent-readiness`](capabilities/local-agent-readiness/CAPABILITY.md) — host-neutral readiness classification for repository floor, projection parity, live runtime, remote-write, and actual-push proof.
+- [`agent-runtime-fabric`](capabilities/agent-runtime-fabric/CAPABILITY.md) — status `PROGRAM_DESIGN_ROUTING_PROTOTYPE_PROVEN`; modality-level admission across role/capability, host hard limits, workflow resource envelopes, provider quotas, and machine capacity without granting authority or performing native execution.
 - [`social-publication`](capabilities/social-publication/CAPABILITY.md) — status `PROGRAM_DESIGN_PROTOTYPE_PROVEN`; approval-bound, provider-neutral text publication with a LinkedIn adapter prototype. Live OAuth/network publication remains unproven.
 - [`document-formatting`](capabilities/document-formatting/CAPABILITY.md) — status `COMPILER_IR_PROTOTYPE_PROVEN_GOOGLE_DOCS_PLAN_ADAPTER_PROVEN`; reusable consumer profiles plus deterministic semantic compilation to provider-neutral IR and a fail-closed Google Docs adapter plan.
 
