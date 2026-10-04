@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent-runtime-profile/v1",
+  "title": "Agent runtime adapter profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "adapter_id",
+    "harness_family",
+    "state",
+    "capabilities",
+    "admitted_roles",
+    "hard_limits",
+    "reserve",
+    "quotas",
+    "dispatch_costs",
+    "proof_ceiling"
+  ],
+  "properties": {
+    "schema_version": {"const": "agent-runtime-profile/v1"},
+    "adapter_id": {"type": "string", "minLength": 1},
+    "harness_family": {"type": "string", "minLength": 1},
+    "state": {"enum": ["READY", "BLOCKED", "UNKNOWN"]},
+    "capabilities": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "admitted_roles": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "hard_limits": {"$ref": "#/$defs/numberMap"},
+    "reserve": {"$ref": "#/$defs/numberMap"},
+    "quotas": {"type": "object", "additionalProperties": {"$ref": "#/$defs/quota"}},
+    "dispatch_costs": {"$ref": "#/$defs/numberMap"},
+    "proof_ceiling": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "numberMap": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0}},
+    "quota": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "remaining", "unit"],
+      "properties": {
+        "state": {"enum": ["KNOWN", "UNLIMITED", "UNKNOWN"]},
+        "remaining": {"type": ["number", "null"], "minimum": 0},
+        "unit": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}
