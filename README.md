@@ -74,8 +74,19 @@ Admitted capabilities:
 
 - [`playlist-link-extraction`](capabilities/playlist-link-extraction/CAPABILITY.md) — status `CORE_IMPLEMENTED_ADAPTERS_PENDING`
 - [`agent-hook-runtime`](capabilities/agent-hook-runtime/CAPABILITY.md) — status `CORE_IMPLEMENTED_CURSOR_ADAPTER_DIAGNOSTIC_ONLY`; separates JSON-stdio host transport/schema proof from consumer policy and emits privacy-safe runtime receipts.
+- [`social-publication`](capabilities/social-publication/CAPABILITY.md) — status `PROGRAM_DESIGN_PROTOTYPE_PROVEN`; approval-bound, provider-neutral text publication with a LinkedIn adapter prototype. Live OAuth/network publication remains unproven.
 
-Reusable core entrypoint:
+Social-publication prototype:
+
+```powershell
+python capabilities/social-publication/prototype.py \
+  --intent capabilities/social-publication/fixtures/text-intent.synthetic.v1.json \
+  --mode success
+```
+
+See [P95 LinkedIn publication architecture](docs/P95_LINKEDIN_PUBLICATION_ARCHITECTURE.md) for the proved call stacks and live-launch boundary.
+
+Reusable playlist core entrypoint:
 
 ```powershell
 python capabilities/playlist-link-extraction/extract_links.py `

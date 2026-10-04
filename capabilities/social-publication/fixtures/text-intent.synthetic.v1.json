@@ -1,0 +1,10 @@
+{
+  "schema_version": "social-publication-intent/v1",
+  "request_id": "synthetic-linkedin-post-001",
+  "provider": "linkedin",
+  "content": {
+    "type": "text",
+    "text": "Synthetic publication fixture for Automation contract proof."
+  },
+  "visibility": "PUBLIC"
+}
