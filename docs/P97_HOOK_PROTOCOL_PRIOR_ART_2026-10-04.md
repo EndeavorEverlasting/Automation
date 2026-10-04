@@ -1,6 +1,6 @@
 # P97 — Hook Protocol Prior Art and Volatility Map (2026-10-04)
 
-Status: EVIDENCE RECOVERED; feeds P95 architecture and P04 factoring.
+Status: **EVIDENCE RECOVERED AND CONSUMED INTO THE INTEGRATED PROTOCOL FABRIC.**
 
 ## Question
 
@@ -224,3 +224,7 @@ This is valid because Cursor explicitly documents the response compatibility.
 ## Proof ceiling
 
 Public documentation proves supported/documented protocol surfaces, not what one installed workstation currently emits or accepts. Those bindings require live receipts/canaries.
+
+## Disposition closeout
+
+The prior-art findings were consumed rather than left as research: generated-schema/versioned-shape ideas informed Automation PR #19, and TokenCorridor PR #118 consumes that owner through a pinned protocol registry with live evidence gates. OpenCode callback/plugin transport remains a separate successor adapter rather than being forced through JSON-stdio.
