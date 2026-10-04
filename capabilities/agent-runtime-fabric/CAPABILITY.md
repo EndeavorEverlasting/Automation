@@ -61,6 +61,12 @@ A profile declares:
 
 The fabric never infers model intelligence or grants a role. A weaker or execution-only runtime can stay in the pool and remain useful for work that requires only its admitted role. A lane requiring a judgment role will fail closed unless some probed adapter is explicitly admitted for that role by upstream policy.
 
+## Portable consumer surface
+
+The capability manifest publishes `portable_library` as the stable source artifact for consumers that vendor/pin Automation capabilities. It is stdlib-only and can be copied into an isolated consumer root without the Automation checkout.
+
+Consumers should pin the owner commit/blob through their normal vendor manifest, copy only the advertised portable library plus the schemas they validate, and keep provider-native adapters in the consumer/integration layer. The isolated-consumer regression test executes the copied library from a temporary directory so owner-tree imports cannot accidentally satisfy the canary.
+
 ## Fail-closed rules
 
 Admission is denied when any of these is true:
