@@ -17,29 +17,37 @@
     },
     "request_id": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "pattern": ".*\\S.*"
     },
     "provider": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "pattern": ".*\\S.*"
     },
     "content": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type", "text"],
+      "required": [
+        "type",
+        "text"
+      ],
       "properties": {
         "type": {
           "const": "text"
         },
         "text": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "pattern": ".*\\S.*"
         }
       }
     },
     "visibility": {
       "type": "string",
-      "enum": ["PUBLIC"]
+      "enum": [
+        "PUBLIC"
+      ]
     }
   }
 }
