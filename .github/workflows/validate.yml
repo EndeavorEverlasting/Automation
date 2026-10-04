@@ -63,7 +63,9 @@ jobs:
             capabilities/agent-hook-runtime/adapters/cursor.py \
             capabilities/social-publication/prototype.py \
             capabilities/social-publication/core/publication.py \
-            capabilities/social-publication/adapters/linkedin.py
+            capabilities/social-publication/adapters/linkedin.py \
+            capabilities/document-formatting/plan.py \
+            capabilities/document-formatting/core/contract.py
 
       - name: Build playlist-link synthetic artifact
         run: |
@@ -123,6 +125,33 @@ jobs:
           with Path("Outputs/playlist-link-yt-dlp-artifact.csv").open(encoding="utf-8", newline="") as handle:
               rows = list(csv.DictReader(handle))
           assert len(rows) == 4, rows
+          PY
+
+      - name: Build document-formatting synthetic plan
+        run: |
+          mkdir -p Outputs
+          python capabilities/document-formatting/plan.py \
+            --profile capabilities/document-formatting/fixtures/consumer-profile.synthetic.v1.json \
+            --output Outputs/document-formatting-plan.json
+
+      - name: Validate document-formatting synthetic plan
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          plan = json.loads(Path("Outputs/document-formatting-plan.json").read_text(encoding="utf-8"))
+          assert plan["schema_version"] == "document-formatting-plan/v1", plan
+          assert plan["capability_id"] == "document-formatting", plan
+          assert plan["state"] == "PLAN_READY", plan
+          ids = [item["stage_id"] for item in plan["stages"]]
+          assert "CROSS_SURFACE_FIDELITY" in ids, ids
+          assert "LOCK_NON_COLOR_MECHANICS" in ids, ids
+          assert "APPLY_BRAND_OVERLAY" in ids, ids
+          assert plan["terminal_dependencies"] == ["APPLY_BRAND_OVERLAY"], plan
+          serialized = json.dumps(plan).lower()
+          forbidden = ("nyc health", "hospitals", "northwell", "hh-metropolitan")
+          assert not any(item in serialized for item in forbidden), plan
           PY
 
       - name: Build social-publication P95 success receipt
