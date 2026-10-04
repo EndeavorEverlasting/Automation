@@ -169,6 +169,18 @@ approved H
   -> no success receipt
 ```
 
+## Uncertain mutation outcomes
+
+A mutating provider call must never convert ambiguity into proof of failure.
+
+- request-build failure before transport is `NOT_EMITTED` and may be retried after repair;
+- a transport exception is `PROVIDER_TRANSPORT_FAILED` with request state `UNKNOWN`, because the request may have reached LinkedIn;
+- a malformed, missing-status, redirect, or 5xx LinkedIn response maps through the adapter to `PROVIDER_RESPONSE_INCOMPLETE`;
+- only an explicit provider client rejection maps to `PROVIDER_REJECTED`;
+- authorization failures remain `PROVIDER_AUTHORIZATION_FAILED`.
+
+`PROVIDER_TRANSPORT_FAILED` and `PROVIDER_RESPONSE_INCOMPLETE` require operator review before retry. Automatic retry is forbidden because a duplicate LinkedIn post is possible.
+
 ## Current LinkedIn platform facts
 
 As verified against current Microsoft Learn / LinkedIn documentation during this P95 sprint:
@@ -239,6 +251,8 @@ The post itself is the first live provider proof.
 **Portability-proof gap found:** owner-repository tests were insufficient to prove consumer portability. An isolated-consumer canary now copies only the published `social-publication` capability surface into an otherwise empty temporary context and exercises both success and stale-approval behavior.
 
 **Discoverability gap found:** the capability initially lacked root wayfinding. README now points directly to the capability, prototype invocation, P95 architecture, and proof ceiling.
+
+**Retry-safety gap found:** the first response translator treated all non-201/401/403 responses as rejection. LinkedIn 5xx, malformed, redirect, or missing-status responses are now classified as incomplete/uncertain, while transport exceptions retain UNKNOWN emission state. Both uncertain classes require operator review before retry to avoid duplicate publication.
 
 **Provider coupling check:** core tests can run without LinkedIn imports or LinkedIn identity. Provider topology terminates at the adapter.
 
