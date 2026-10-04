@@ -5,31 +5,27 @@
     "baseline_branch": "main",
     "remote_identity": null
   },
-  "projection_sets": [
-    {
-      "id": "shared-agent-contract",
+  "projection_sets": {
+    "shared-agent-contract": {
       "paths": [
         "AGENTS.md"
       ]
     },
-    {
-      "id": "cursor-project-runtime",
+    "cursor-project-runtime": {
       "paths": [
         ".cursor/hooks.json",
         ".cursor/hooks"
       ]
     },
-    {
-      "id": "opencode-project-runtime",
+    "opencode-project-runtime": {
       "paths": [
         "opencode.json",
         ".opencode"
       ]
     }
-  ],
-  "agents": [
-    {
-      "agent_id": "cursor",
+  },
+  "agents": {
+    "cursor": {
       "projection_sets": [
         "shared-agent-contract",
         "cursor-project-runtime"
@@ -46,8 +42,7 @@
         "HOOK_TRANSPORT_VERIFIED"
       ]
     },
-    {
-      "agent_id": "opencode",
+    "opencode": {
       "projection_sets": [
         "shared-agent-contract",
         "opencode-project-runtime"
@@ -61,7 +56,7 @@
         "PROJECT_CONFIGURATION_LOADED"
       ]
     }
-  ],
+  },
   "remote_write": {
     "dry_run_namespace": "refs/heads/agent-readiness-canary"
   }
