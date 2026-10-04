@@ -261,12 +261,32 @@ def build_plan(
 
     phase1: list[dict[str, Any]] = []
     internal_links: list[dict[str, Any]] = []
-    for block in ir.get("blocks", []):
+    for source_order, block in enumerate(ir["blocks"]):
         for operation in _operation_for_block(block):
             if operation["operation"] == "reserve_internal_link":
-                internal_links.append(operation)
+                placeholder_id = f"internal-link-{source_order:04d}"
+                phase1.append(
+                    {
+                        "operation": "insert_internal_link_placeholder",
+                        "source_order": source_order,
+                        "placeholder_id": placeholder_id,
+                        "component": operation["component"],
+                        "style": operation["style"],
+                        "label": operation["label"],
+                    }
+                )
+                internal_links.append(
+                    {
+                        "operation": "bind_internal_link",
+                        "placeholder_id": placeholder_id,
+                        "component": operation["component"],
+                        "style": operation["style"],
+                        "label": operation["label"],
+                        "target_logical_id": operation["target_logical_id"],
+                    }
+                )
             else:
-                phase1.append(operation)
+                phase1.append({"source_order": source_order, **operation})
 
     phases: list[dict[str, Any]] = [{
         "phase_id": "CONSTRUCT_AND_STYLE",
