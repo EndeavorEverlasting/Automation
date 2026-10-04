@@ -7,6 +7,14 @@ from typing import Any
 
 INTENT_SCHEMA = "social-publication-intent/v1"
 RECEIPT_SCHEMA = "social-publication-receipt/v1"
+_ALLOWED_INTENT_FIELDS = {
+    "schema_version",
+    "request_id",
+    "provider",
+    "content",
+    "visibility",
+}
+_ALLOWED_CONTENT_FIELDS = {"type", "text"}
 
 
 class ApprovalError(ValueError):
@@ -17,6 +25,12 @@ def validate_intent(intent: Any) -> list[str]:
     errors: list[str] = []
     if not isinstance(intent, dict):
         return ["intent root must be an object"]
+
+    unexpected = sorted(set(intent) - _ALLOWED_INTENT_FIELDS)
+    if unexpected:
+        errors.append(
+            "unexpected intent fields: " + ", ".join(unexpected)
+        )
 
     if intent.get("schema_version") != INTENT_SCHEMA:
         errors.append(f"schema_version must be {INTENT_SCHEMA!r}")
@@ -33,6 +47,12 @@ def validate_intent(intent: Any) -> list[str]:
     if not isinstance(content, dict):
         errors.append("content must be an object")
         return errors
+
+    unexpected_content = sorted(set(content) - _ALLOWED_CONTENT_FIELDS)
+    if unexpected_content:
+        errors.append(
+            "unexpected content fields: " + ", ".join(unexpected_content)
+        )
 
     if content.get("type") != "text":
         errors.append("content.type must be 'text' in v1")
@@ -136,12 +156,20 @@ def execute_approved_publication(
 
     if status_code == 201:
         post_id = headers.get("x-restli-id") or headers.get("X-RestLi-Id")
+        if isinstance(post_id, str) and post_id.strip():
+            return _receipt(
+                intent,
+                state="PUBLISHED",
+                provider_request_emitted=True,
+                provider_post_id=post_id,
+                provider_status_code=status_code,
+            )
         return _receipt(
             intent,
-            state="PUBLISHED",
+            state="PROVIDER_RESPONSE_INCOMPLETE",
             provider_request_emitted=True,
-            provider_post_id=post_id,
             provider_status_code=status_code,
+            error_class="MISSING_PROVIDER_POST_ID",
         )
 
     if status_code in (401, 403):
