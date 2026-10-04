@@ -803,6 +803,12 @@ def _diagnosis(
     remote_write = gates["REMOTE_WRITE_VERIFIED"]["state"]
     actual_push = gates["ACTUAL_PUSH_PROVEN"]["state"]
 
+    checkout_reason = gates["REPOSITORY_CHECKOUT_CURRENT"]["reason"]
+    if (
+        checkout == "FAIL"
+        and "changed during readiness assessment" in checkout_reason
+    ):
+        return "CHECKOUT_CHANGED_DURING_ASSESSMENT"
     if checkout == "FAIL" and projection == "FAIL":
         return "STALE_LOCAL_AGENT_PROJECTION"
     if checkout == "PASS" and projection == "FAIL":
@@ -871,6 +877,25 @@ def assess_readiness(
         ),
     }
 
+    assessment_head_end = _resolve(root, "HEAD")
+    if assessment_head_end != local_head:
+        gates["REPOSITORY_CHECKOUT_CURRENT"] = _gate(
+            "FAIL",
+            "Local HEAD changed during readiness assessment.",
+            assessment_head_start=local_head,
+            assessment_head_end=assessment_head_end,
+            remote_baseline_sha=baseline,
+        )
+    else:
+        final_projection = _projection_gate(
+            root,
+            baseline=baseline,
+            local_head=assessment_head_end,
+            paths=paths,
+        )
+        if final_projection["state"] != "PASS":
+            gates["AGENT_PROJECTION_MATCHES_BASELINE"] = final_projection
+
     required_gates = list(agent["required_gates"])
     ready = all(gates[gate]["state"] == "PASS" for gate in required_gates)
     return {
@@ -880,6 +905,7 @@ def assess_readiness(
         "diagnosis": _diagnosis(gates, required_gates),
         "required_gates": required_gates,
         "local_head": local_head,
+        "assessment_head_end": assessment_head_end,
         "remote_baseline_sha": baseline,
         "agent_profile_sha256": profile_digest,
         "remote_refresh": refresh,
