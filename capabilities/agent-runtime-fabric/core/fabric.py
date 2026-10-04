@@ -7,6 +7,7 @@ authority, execute the native runtime, or promote synthetic proof to live proof.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+import math
 from typing import Any, Mapping, MutableMapping, Protocol, Sequence, runtime_checkable
 
 PROFILE_SCHEMA = "agent-runtime-profile/v1"
@@ -82,12 +83,24 @@ def _require_nonempty_string(value: Any, label: str) -> str:
     return value.strip()
 
 
-def _string_set(value: Any, label: str) -> set[str]:
-    if not isinstance(value, list) or any(
-        not isinstance(item, str) or not item.strip() for item in value
-    ):
+def _string_list(value: Any, label: str) -> list[str]:
+    if not isinstance(value, list):
         raise RuntimeFabricError(f"{label} must be a list of non-empty strings")
-    return {item.strip() for item in value}
+    result: list[str] = []
+    seen: set[str] = set()
+    for index, item in enumerate(value):
+        normalized = _require_nonempty_string(item, f"{label}[{index}]")
+        if normalized in seen:
+            raise RuntimeFabricError(
+                f"{label} must not contain duplicate normalized values: {normalized!r}"
+            )
+        seen.add(normalized)
+        result.append(normalized)
+    return result
+
+
+def _string_set(value: Any, label: str) -> set[str]:
+    return set(_string_list(value, label))
 
 
 def _number_map(value: Any, label: str) -> dict[str, float]:
@@ -98,9 +111,12 @@ def _number_map(value: Any, label: str) -> dict[str, float]:
     result: dict[str, float] = {}
     for key, raw in value.items():
         _require_nonempty_string(key, f"{label} key")
-        if isinstance(raw, bool) or not isinstance(raw, (int, float)) or raw < 0:
-            raise RuntimeFabricError(f"{label}.{key} must be a non-negative number")
-        result[str(key)] = float(raw)
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+            raise RuntimeFabricError(f"{label}.{key} must be a finite non-negative number")
+        number = float(raw)
+        if not math.isfinite(number) or number < 0:
+            raise RuntimeFabricError(f"{label}.{key} must be a finite non-negative number")
+        result[str(key)] = number
     return result
 
 
@@ -110,6 +126,9 @@ def validate_profile(profile: Mapping[str, Any]) -> None:
     extra = sorted(set(profile) - PROFILE_FIELDS)
     if extra:
         raise RuntimeFabricError(f"runtime profile contains unsupported fields: {extra}")
+    missing = sorted(PROFILE_FIELDS - set(profile))
+    if missing:
+        raise RuntimeFabricError(f"runtime profile missing required fields: {missing}")
     if profile.get("schema_version") != PROFILE_SCHEMA:
         raise RuntimeFabricError(f"schema_version must be {PROFILE_SCHEMA}")
     _require_nonempty_string(profile.get("adapter_id"), "adapter_id")
@@ -121,9 +140,9 @@ def validate_profile(profile: Mapping[str, Any]) -> None:
     if not roles:
         raise RuntimeFabricError("admitted_roles must contain at least one role")
 
-    hard = _number_map(profile.get("hard_limits"), "hard_limits")
-    reserve = _number_map(profile.get("reserve"), "reserve")
-    _number_map(profile.get("dispatch_costs"), "dispatch_costs")
+    hard = _number_map(profile["hard_limits"], "hard_limits")
+    reserve = _number_map(profile["reserve"], "reserve")
+    _number_map(profile["dispatch_costs"], "dispatch_costs")
     for axis, amount in reserve.items():
         if axis not in hard:
             raise RuntimeFabricError(
@@ -132,7 +151,7 @@ def validate_profile(profile: Mapping[str, Any]) -> None:
         if amount > hard[axis]:
             raise RuntimeFabricError(f"reserve.{axis} exceeds hard limit")
 
-    quotas = profile.get("quotas", {})
+    quotas = profile["quotas"]
     if not isinstance(quotas, Mapping):
         raise RuntimeFabricError("quotas must be an object")
     for axis, quota in quotas.items():
@@ -155,6 +174,7 @@ def validate_profile(profile: Mapping[str, Any]) -> None:
             if (
                 isinstance(remaining, bool)
                 or not isinstance(remaining, (int, float))
+                or not math.isfinite(float(remaining))
                 or remaining < 0
             ):
                 raise RuntimeFabricError(
@@ -174,14 +194,16 @@ def validate_requirement(requirement: Mapping[str, Any]) -> None:
     extra = sorted(set(requirement) - REQUIREMENT_FIELDS)
     if extra:
         raise RuntimeFabricError(f"work requirement contains unsupported fields: {extra}")
+    missing = sorted(REQUIREMENT_FIELDS - set(requirement))
+    if missing:
+        raise RuntimeFabricError(f"work requirement missing required fields: {missing}")
     if requirement.get("schema_version") != REQUIREMENT_SCHEMA:
         raise RuntimeFabricError(f"schema_version must be {REQUIREMENT_SCHEMA}")
     _require_nonempty_string(requirement.get("work_unit_id"), "work_unit_id")
     _require_nonempty_string(requirement.get("required_role"), "required_role")
     _string_set(requirement.get("required_capabilities"), "required_capabilities")
-    _number_map(requirement.get("expected_usage"), "expected_usage")
-    preferred = requirement.get("preferred_adapters", [])
-    _string_set(preferred, "preferred_adapters")
+    _number_map(requirement["expected_usage"], "expected_usage")
+    _string_list(requirement["preferred_adapters"], "preferred_adapters")
     _require_nonempty_string(requirement.get("proof_ceiling"), "proof_ceiling")
 
 
@@ -193,24 +215,27 @@ def assess(
     validate_profile(profile)
     validate_requirement(requirement)
 
-    adapter_id = str(profile["adapter_id"])
+    adapter_id = _require_nonempty_string(profile["adapter_id"], "adapter_id")
     reasons: list[str] = []
     if profile["state"] != "READY":
         reasons.append(f"ADAPTER_{profile['state']}")
 
-    required_role = str(requirement["required_role"])
-    admitted_roles = set(profile["admitted_roles"])
+    required_role = _require_nonempty_string(
+        requirement["required_role"], "required_role"
+    )
+    admitted_roles = _string_set(profile["admitted_roles"], "admitted_roles")
     if required_role not in admitted_roles:
         reasons.append(f"ROLE_NOT_ADMITTED:{required_role}")
 
     missing = sorted(
-        set(requirement["required_capabilities"]) - set(profile["capabilities"])
+        _string_set(requirement["required_capabilities"], "required_capabilities")
+        - _string_set(profile["capabilities"], "capabilities")
     )
     reasons.extend(f"CAPABILITY_MISSING:{item}" for item in missing)
 
-    hard = _number_map(profile.get("hard_limits"), "hard_limits")
-    reserve = _number_map(profile.get("reserve"), "reserve")
-    expected = _number_map(requirement.get("expected_usage"), "expected_usage")
+    hard = _number_map(profile["hard_limits"], "hard_limits")
+    reserve = _number_map(profile["reserve"], "reserve")
+    expected = _number_map(requirement["expected_usage"], "expected_usage")
     effective = {
         axis: limit - reserve.get(axis, 0.0)
         for axis, limit in hard.items()
@@ -221,8 +246,8 @@ def assess(
                 f"HARD_LIMIT_EXCEEDED:{axis}:expected={amount:g}:effective={effective[axis]:g}"
             )
 
-    quotas = profile.get("quotas", {})
-    costs = _number_map(profile.get("dispatch_costs"), "dispatch_costs")
+    quotas = profile["quotas"]
+    costs = _number_map(profile["dispatch_costs"], "dispatch_costs")
     quota_checks: dict[str, dict[str, Any]] = {}
     for axis, cost in costs.items():
         quota = quotas.get(axis)
@@ -288,11 +313,15 @@ class AdapterRegistry:
         requirement: Mapping[str, Any],
     ) -> MutableMapping[str, Any]:
         validate_requirement(requirement)
-        preferred = list(requirement.get("preferred_adapters", []))
+        preferred = _string_list(
+            requirement["preferred_adapters"], "preferred_adapters"
+        )
         evaluations: list[dict[str, Any]] = []
         for adapter_id in self._route_order(preferred):
             profile = dict(self._adapters[adapter_id].probe())
-            if profile.get("adapter_id") != adapter_id:
+            if _require_nonempty_string(
+                profile.get("adapter_id"), "adapter_id"
+            ) != adapter_id:
                 raise RuntimeFabricError(
                     f"adapter {adapter_id} returned profile for "
                     f"{profile.get('adapter_id')!r}"
@@ -309,7 +338,9 @@ class AdapterRegistry:
                 return {
                     "schema_version": ROUTE_SCHEMA,
                     "state": "SELECTED",
-                    "work_unit_id": requirement["work_unit_id"],
+                    "work_unit_id": _require_nonempty_string(
+                        requirement["work_unit_id"], "work_unit_id"
+                    ),
                     "selected_adapter_id": adapter_id,
                     "evaluations": evaluations,
                     "proof_ceiling": (
@@ -321,7 +352,9 @@ class AdapterRegistry:
         return {
             "schema_version": ROUTE_SCHEMA,
             "state": "BLOCKED",
-            "work_unit_id": requirement["work_unit_id"],
+            "work_unit_id": _require_nonempty_string(
+                requirement["work_unit_id"], "work_unit_id"
+            ),
             "selected_adapter_id": None,
             "evaluations": evaluations,
             "proof_ceiling": (
