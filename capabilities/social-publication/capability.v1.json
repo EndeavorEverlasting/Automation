@@ -1,0 +1,68 @@
+{
+  "schema_version": "automation-capability/v1",
+  "capability_id": "social-publication",
+  "status": "PROGRAM_DESIGN_PROTOTYPE_PROVEN",
+  "purpose": "Prepare, approve, and publish reusable social content through provider adapters while binding approval to the exact publishable content and keeping provider credentials outside tracked artifacts.",
+  "supported_use_cases": [
+    "text-only member publication through a provider adapter",
+    "deterministic preview and content-hash approval binding",
+    "provider-neutral publication receipts",
+    "fail-closed handling when content changes after approval"
+  ],
+  "core_owner": "capabilities/social-publication/core/publication.py",
+  "adapters": {
+    "linkedin": "capabilities/social-publication/adapters/linkedin.py"
+  },
+  "entrypoints": {
+    "p95_prototype": "capabilities/social-publication/prototype.py"
+  },
+  "schemas": {
+    "intent": "capabilities/social-publication/schemas/publication-intent.v1.json",
+    "receipt": "capabilities/social-publication/schemas/publication-receipt.v1.json"
+  },
+  "runtime_boundary": {
+    "supported_execution": [
+      "LOCAL_AGENT_RUNTIME",
+      "CI_OR_REMOTE_RUNNER"
+    ],
+    "live_provider_execution": "UNPROVEN",
+    "secrets": "OAuth client secrets, access tokens, refresh tokens, authorization codes, cookies, and browser/session state are runtime-only and must never be persisted in tracked source, fixtures, previews, or receipts.",
+    "private_content": "Operator drafts may enter at runtime. Public fixtures use synthetic text only."
+  },
+  "core_owns": [
+    "publication intent validation",
+    "canonical publishable-content hashing",
+    "approval-to-content binding",
+    "provider-neutral lifecycle states",
+    "provider-neutral publication receipts",
+    "fail-closed stale-approval behavior"
+  ],
+  "adapter_owns": [
+    "provider author identity",
+    "provider request shape",
+    "provider API version/header requirements",
+    "OAuth/token injection at send time",
+    "provider response and error translation"
+  ],
+  "forbidden_core_assumptions": [
+    "LinkedIn-specific URNs",
+    "LinkedIn API paths or headers",
+    "one social provider",
+    "one user account",
+    "credentials or browser profiles",
+    "automatic publication without an explicit approval binding"
+  ],
+  "non_goals": [
+    "read member social history",
+    "engagement analytics",
+    "content generation strategy",
+    "scheduling",
+    "media upload",
+    "comments or reactions",
+    "browser automation",
+    "production publication in the P95 prototype"
+  ],
+  "proof_ceiling": "Executable P95 prototypes prove the provider-neutral approval seam, LinkedIn text-post request construction, success receipt, stale-approval failure, and provider-authorization failure using synthetic inputs and fake transport. Live OAuth, identity resolution, network publication, and production use remain unproven.",
+  "production_use_path": "UNDECLARED",
+  "next_transition": "P07 bounded implementation: add runtime OAuth/identity/HTTP transport behind the proved LinkedIn adapter seam, then perform one operator-approved controlled live text post."
+}
