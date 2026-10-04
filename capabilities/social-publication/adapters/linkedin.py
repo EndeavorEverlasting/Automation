@@ -84,8 +84,15 @@ def translate_post_response(response: Any) -> dict[str, Any]:
             "error_class": "AUTHORIZATION",
         }
 
+    if isinstance(status_code, int) and 400 <= status_code < 500:
+        return {
+            "outcome": "REJECTED",
+            "provider_status_code": status_code,
+            "error_class": "PROVIDER_REJECTION",
+        }
+
     return {
-        "outcome": "REJECTED",
+        "outcome": "INCOMPLETE",
         "provider_status_code": status_code if isinstance(status_code, int) else None,
-        "error_class": "PROVIDER_REJECTION",
+        "error_class": "AMBIGUOUS_PROVIDER_RESPONSE",
     }
