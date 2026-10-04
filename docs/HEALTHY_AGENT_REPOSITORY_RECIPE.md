@@ -47,7 +47,7 @@ If either fails, classify the local projection first. Do not attribute the sympt
 
 Repository tests cannot prove an installed local agent loaded or obeyed the intended projection.
 
-Each host adapter should emit a normalized:
+Because local agents can retain loaded state, a live-host observation expires if any selected projection path is touched by later committed history—even when endpoint bytes are restored.\n\nEach host adapter should emit a normalized:
 
 `local-agent-runtime-observation/v1`
 
