@@ -142,6 +142,51 @@ class AgentHookRuntimeTests(unittest.TestCase):
             self.assertEqual(receipt["cursor_version"], "test-version")
             self.assertFalse(receipt["transport"]["content_persisted"])
 
+    def test_probe_records_current_cursor_protocol_route_without_payload_values(self) -> None:
+        script = CAP / "diagnose_cursor_hook.py"
+        payload = {
+            "prompt": "private prompt",
+            "attachments": [],
+            "hook_event_name": "beforeSubmitPrompt",
+            "cursor_version": "9.99.1",
+            "workspace_roots": ["/private/repo"],
+            "conversation_id": "private-conversation",
+            "generation_id": "private-generation",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    str(script),
+                    "--event",
+                    "beforeSubmitPrompt",
+                    "--failure-policy",
+                    "allow",
+                    "--receipt-dir",
+                    tmp,
+                ],
+                input=json.dumps(payload),
+                text=True,
+                capture_output=True,
+                check=False,
+                env={**os.environ, "CURSOR_VERSION": "9.99.1"},
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertEqual(json.loads(proc.stdout), {"continue": True})
+            receipt_path = next(Path(tmp).glob("cursor-hook-beforeSubmitPrompt-*.json"))
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            route = receipt["protocol_route"]
+            self.assertEqual(route["state"], "MATCHED")
+            self.assertEqual(
+                route["selected"]["profile_id"],
+                "cursor-native-common-envelope-v2",
+            )
+            serialized = json.dumps(route)
+            self.assertNotIn("private prompt", serialized)
+            self.assertNotIn("private-conversation", serialized)
+            self.assertNotIn("private-generation", serialized)
+            self.assertNotIn("/private/repo", serialized)
+
     def test_probe_allow_mode_does_not_export_invalid_session(self) -> None:
         script = CAP / "diagnose_cursor_hook.py"
         proc = subprocess.run(
