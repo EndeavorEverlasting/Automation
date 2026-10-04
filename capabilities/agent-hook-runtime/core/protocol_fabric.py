@@ -448,7 +448,9 @@ def negotiate(
     selected = viable[0]
     profile = next(item for item in validated if item["profile_id"] == selected.profile_id)
     failed = set(failed_response_shapes)
-    response_shapes = list(selected.response_shapes)
+    declared_response_shapes = list(selected.response_shapes)
+    native_shape = declared_response_shapes[0]
+    response_shapes = list(declared_response_shapes)
 
     preference = list(preferred_response_shapes)
     if preference:
@@ -475,7 +477,6 @@ def negotiate(
         }
 
     response_shape = available[0]
-    native_shape = response_shapes[0]
     state = "MATCHED" if response_shape == native_shape else "HYBRIDIZED"
     return {
         "schema_version": ROUTE_SCHEMA,
