@@ -43,8 +43,11 @@ def sha256_json(value: Any) -> str:
     return hashlib.sha256(canonical_json_bytes(value)).hexdigest()
 
 
-def capability_report(required_features: Sequence[str]) -> dict[str, Any]:
-    normalized = []
+def capability_report(
+    required_features: Sequence[str],
+    accepted_degradations: Sequence[Mapping[str, Any]] = (),
+) -> dict[str, Any]:
+    normalized: list[str] = []
     for feature in required_features:
         if not isinstance(feature, str) or not feature.strip():
             raise GoogleDocsAdapterError(
@@ -54,21 +57,87 @@ def capability_report(required_features: Sequence[str]) -> dict[str, Any]:
         value = feature.strip()
         if value not in normalized:
             normalized.append(value)
-    unsupported = sorted(feature for feature in normalized if feature not in SUPPORTED_FEATURES)
-    detail = {
-        feature: CAPABILITY_STATES.get(feature, "UNSUPPORTED_BY_PROTOTYPE")
-        for feature in unsupported
-    }
+
+    policies: dict[str, dict[str, Any]] = {}
+    for index, degradation in enumerate(accepted_degradations):
+        if not isinstance(degradation, Mapping):
+            raise GoogleDocsAdapterError(
+                "GDA_DEGRADATION_POLICY",
+                f"accepted_degradations[{index}] must be an object",
+            )
+        feature = degradation.get("feature")
+        accepted_state = degradation.get("accepted_state")
+        fallback = degradation.get("fallback_semantics")
+        disclosure = degradation.get("disclosure_required")
+        if not isinstance(feature, str) or not feature.strip():
+            raise GoogleDocsAdapterError(
+                "GDA_DEGRADATION_POLICY",
+                f"accepted_degradations[{index}].feature must be non-empty",
+            )
+        feature = feature.strip()
+        if feature not in normalized:
+            raise GoogleDocsAdapterError(
+                "GDA_DEGRADATION_POLICY",
+                f"accepted degradation feature {feature!r} is not required",
+            )
+        if feature in policies:
+            raise GoogleDocsAdapterError(
+                "GDA_DEGRADATION_POLICY",
+                f"duplicate accepted degradation for {feature!r}",
+            )
+        if not isinstance(accepted_state, str) or not accepted_state.strip():
+            raise GoogleDocsAdapterError(
+                "GDA_DEGRADATION_POLICY",
+                f"accepted_degradations[{index}].accepted_state must be non-empty",
+            )
+        if not isinstance(fallback, str) or not fallback.strip():
+            raise GoogleDocsAdapterError(
+                "GDA_DEGRADATION_POLICY",
+                f"accepted_degradations[{index}].fallback_semantics must be non-empty",
+            )
+        if not isinstance(disclosure, bool):
+            raise GoogleDocsAdapterError(
+                "GDA_DEGRADATION_POLICY",
+                f"accepted_degradations[{index}].disclosure_required must be boolean",
+            )
+        policies[feature] = {
+            "feature": feature,
+            "accepted_state": accepted_state.strip(),
+            "disclosure_required": disclosure,
+            "fallback_semantics": fallback.strip(),
+        }
+
+    supported = sorted(feature for feature in normalized if feature in SUPPORTED_FEATURES)
+    unavailable = sorted(feature for feature in normalized if feature not in SUPPORTED_FEATURES)
+    accepted: list[dict[str, Any]] = []
+    blocked: list[str] = []
+    detail: dict[str, str] = {}
+    for feature in unavailable:
+        observed_state = CAPABILITY_STATES.get(feature, "UNSUPPORTED_BY_PROTOTYPE")
+        detail[feature] = observed_state
+        policy = policies.get(feature)
+        if policy and policy["accepted_state"] == observed_state:
+            accepted.append({**policy, "observed_state": observed_state})
+        else:
+            blocked.append(feature)
+
+    if blocked:
+        state = "BLOCKED_UNSUPPORTED_FEATURE"
+    elif accepted:
+        state = "READY_WITH_ACCEPTED_DEGRADATION"
+    else:
+        state = "READY"
+
     return {
         "provider_id": "google-docs",
         "required_features": normalized,
-        "supported_features": sorted(feature for feature in normalized if feature in SUPPORTED_FEATURES),
-        "unsupported_features": unsupported,
+        "supported_features": supported,
+        "unsupported_features": unavailable,
         "unsupported_detail": detail,
-        "state": "READY" if not unsupported else "BLOCKED_UNSUPPORTED_FEATURE",
+        "accepted_degradations": accepted,
+        "blocked_features": blocked,
+        "state": state,
     }
-
-
 
 def _require_text(value: Any, *, path: str) -> str:
     if not isinstance(value, str) or not value.strip():
@@ -245,14 +314,18 @@ def build_plan(
     ir: Mapping[str, Any],
     *,
     required_features: Sequence[str],
+    accepted_degradations: Sequence[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     validate_ir(ir)
 
-    capability = capability_report(required_features)
-    if capability["unsupported_features"]:
+    capability = capability_report(
+        required_features,
+        accepted_degradations=accepted_degradations,
+    )
+    if capability["blocked_features"]:
         detail = ", ".join(
             f"{name}={capability['unsupported_detail'][name]}"
-            for name in capability["unsupported_features"]
+            for name in capability["blocked_features"]
         )
         raise GoogleDocsAdapterError(
             "GDA_UNSUPPORTED_FEATURE",
@@ -327,6 +400,15 @@ def build_plan(
         "provider_id": "google-docs",
         "source_ir_sha256": sha256_json(ir),
         "capability_report": capability,
+        "required_disclosures": [
+            {
+                "feature": item["feature"],
+                "observed_state": item["observed_state"],
+                "fallback_semantics": item["fallback_semantics"],
+            }
+            for item in capability["accepted_degradations"]
+            if item["disclosure_required"]
+        ],
         "phases": phases,
         "state": "ADAPTER_PLAN_READY",
         "proof_ceiling": (
@@ -356,17 +438,32 @@ def _load(path: str) -> dict:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
+
+def _load_degradation_policy(path: str | None) -> list[dict[str, Any]]:
+    if not path:
+        return []
+    payload = _load(path)
+    if not isinstance(payload, list):
+        raise GoogleDocsAdapterError(
+            "GDA_DEGRADATION_POLICY",
+            "degradation policy file must contain a JSON array",
+        )
+    return payload
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Translate document-formatting IR into a Google Docs provider plan."
     )
     parser.add_argument("--ir", required=True)
     parser.add_argument("--required-feature", action="append", default=[])
+    parser.add_argument("--degradation-policy")
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
 
     try:
         ir = _load(args.ir)
+        degradation_policy = _load_degradation_policy(args.degradation_policy)
     except FileNotFoundError as exc:
         print(f"GDA_INPUT_IO: file not found: {exc.filename}", file=sys.stderr)
         return 2
@@ -379,9 +476,16 @@ def main() -> int:
             file=sys.stderr,
         )
         return 2
+    except GoogleDocsAdapterError as exc:
+        print(f"{exc.code}: {exc}", file=sys.stderr)
+        return 2
 
     try:
-        plan = build_plan(ir, required_features=args.required_feature)
+        plan = build_plan(
+            ir,
+            required_features=args.required_feature,
+            accepted_degradations=degradation_policy,
+        )
     except GoogleDocsAdapterError as exc:
         print(f"{exc.code}: {exc}", file=sys.stderr)
         return 2
