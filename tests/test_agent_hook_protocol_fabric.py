@@ -113,6 +113,43 @@ class HookProtocolFabricTests(unittest.TestCase):
         self.assertEqual(route["safety"]["policy_decision"], "DEFER_TO_CONSUMER")
         self.assertFalse(route["observation"]["content_persisted"])
 
+    def test_self_described_cursor_event_mismatch_cannot_fall_back_to_minimal_profile(self) -> None:
+        route = negotiate(
+            profiles(),
+            host_family="cursor",
+            canonical_event="prompt.submit",
+            host_event="beforeSubmitPrompt",
+            payload={
+                "prompt": "hello",
+                "hook_event_name": "stop",
+                "cursor_version": "10.0.0",
+                "workspace_roots": ["/repo"],
+            },
+        )
+        self.assertEqual(route["state"], "UNKNOWN_SHAPE")
+        self.assertEqual(route["reason"], "SELF_DESCRIBED_EVENT_MISMATCH")
+        self.assertEqual(route["mismatch_fields"], ["hook_event_name"])
+        self.assertIsNone(route["selected"])
+
+    def test_self_described_codex_event_mismatch_is_rejected(self) -> None:
+        route = negotiate(
+            profiles(),
+            host_family="codex",
+            canonical_event="prompt.submit",
+            host_event="UserPromptSubmit",
+            payload={
+                "cwd": "/repo",
+                "hook_event_name": "Stop",
+                "model": "gpt",
+                "permission_mode": "default",
+                "prompt": "hello",
+                "session_id": "session",
+                "turn_id": "turn",
+            },
+        )
+        self.assertEqual(route["state"], "UNKNOWN_SHAPE")
+        self.assertEqual(route["reason"], "SELF_DESCRIBED_EVENT_MISMATCH")
+
     def test_cursor_stop_can_fallback_to_documented_claude_flat_shape(self) -> None:
         payload = {
             "status": "completed",
