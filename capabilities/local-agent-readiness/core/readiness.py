@@ -278,6 +278,31 @@ def _local_symlinks(root: Path, paths: list[str]) -> list[str]:
     return sorted(symlinks)
 
 
+def _projection_history_commits(
+    root: Path,
+    *,
+    floor: str,
+    head: str,
+    paths: list[str],
+) -> tuple[bool, list[str]]:
+    proc = _git(
+        root,
+        "rev-list",
+        "--reverse",
+        f"{floor}..{head}",
+        "--",
+        *paths,
+    )
+    if proc.returncode != 0:
+        return False, []
+    commits = [
+        line.strip()
+        for line in proc.stdout.splitlines()
+        if re.fullmatch(r"[0-9a-f]{40}", line.strip())
+    ]
+    return True, commits
+
+
 def _baseline_files(root: Path, baseline: str, paths: list[str]) -> tuple[bool, list[str]]:
     proc = _git(root, "ls-tree", "-r", "--name-only", baseline, "--", *paths)
     if proc.returncode != 0:
@@ -659,6 +684,27 @@ def _runtime_gate(
             local_head=local_head,
         )
 
+    history_ok, touched_commits = _projection_history_commits(
+        root,
+        floor=floor,
+        head=local_head,
+        paths=paths,
+    )
+    if not history_ok:
+        return _gate(
+            "BLOCKED",
+            "Unable to inspect projection history after the live observation floor.",
+            floor_sha=floor,
+        )
+    if touched_commits:
+        return _gate(
+            "FAIL",
+            "Agent projection history changed after the live-host observation; rerun the host observation even if endpoint bytes were later restored.",
+            floor_sha=floor,
+            local_head=local_head,
+            projection_touch_commits=touched_commits,
+        )
+
     changes_ok, changes = _projection_changes(
         root, base=floor, head=local_head, paths=paths
     )
@@ -886,6 +932,21 @@ def assess_readiness(
             assessment_head_end=assessment_head_end,
             remote_baseline_sha=baseline,
         )
+        if gates["REMOTE_WRITE_VERIFIED"]["state"] == "PASS":
+            gates["REMOTE_WRITE_VERIFIED"] = _gate(
+                "FAIL",
+                "Remote-write dry-run proof applies to an earlier HEAD; checkout changed during readiness assessment.",
+                assessment_head_start=local_head,
+                assessment_head_end=assessment_head_end,
+            )
+        if gates["ACTUAL_PUSH_PROVEN"]["state"] == "PASS":
+            gates["ACTUAL_PUSH_PROVEN"] = _gate(
+                "FAIL",
+                "Actual-push readback proves an earlier HEAD, not the checkout current at assessment completion.",
+                assessment_head_start=local_head,
+                assessment_head_end=assessment_head_end,
+                remote_ref=actual_push_ref,
+            )
     else:
         final_projection = _projection_gate(
             root,
