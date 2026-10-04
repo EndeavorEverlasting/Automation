@@ -57,6 +57,17 @@ class SocialPublicationP95Tests(unittest.TestCase):
         changed["request_id"] = "different-bookkeeping-id"
         self.assertEqual(first, CORE.content_sha256(changed))
 
+    def test_unexpected_intent_fields_fail_closed(self) -> None:
+        changed = json.loads(json.dumps(self.intent))
+        changed["schedule_at"] = "future"
+        errors = CORE.validate_intent(changed)
+        self.assertTrue(any("unexpected intent fields" in error for error in errors))
+
+        changed = json.loads(json.dumps(self.intent))
+        changed["content"]["provider_hint"] = "not-approved"
+        errors = CORE.validate_intent(changed)
+        self.assertTrue(any("unexpected content fields" in error for error in errors))
+
     def test_stale_approval_blocks_before_provider_request(self) -> None:
         calls = []
 
@@ -151,6 +162,47 @@ class SocialPublicationP95Tests(unittest.TestCase):
         receipt = json.loads(proc.stdout)
         self.assertEqual(receipt["state"], "BLOCKED_STALE_APPROVAL")
         self.assertFalse(receipt["provider_request_emitted"])
+
+    def test_http_201_without_post_id_is_not_terminal_proof(self) -> None:
+        approved = CORE.content_sha256(self.intent)
+
+        def build(_intent):
+            return {"method": "POST"}
+
+        def send(_request):
+            return {"status_code": 201, "headers": {}}
+
+        receipt = CORE.execute_approved_publication(
+            self.intent,
+            approved_content_sha256=approved,
+            build_provider_request=build,
+            send_provider_request=send,
+        )
+        self.assertEqual(receipt["state"], "PROVIDER_RESPONSE_INCOMPLETE")
+        self.assertTrue(receipt["provider_request_emitted"])
+        self.assertIsNone(receipt["provider_post_id"])
+        self.assertEqual(receipt["error_class"], "MISSING_PROVIDER_POST_ID")
+
+    def test_missing_approval_blocks_before_provider_request(self) -> None:
+        calls = []
+
+        def build(_intent):
+            calls.append("build")
+            return {}
+
+        def send(_request):
+            calls.append("send")
+            return {"status_code": 201, "headers": {"x-restli-id": "unexpected"}}
+
+        receipt = CORE.execute_approved_publication(
+            self.intent,
+            approved_content_sha256=None,
+            build_provider_request=build,
+            send_provider_request=send,
+        )
+        self.assertEqual(receipt["state"], "BLOCKED_APPROVAL_REQUIRED")
+        self.assertFalse(receipt["provider_request_emitted"])
+        self.assertEqual(calls, [])
 
     def test_provider_authorization_failure_is_explicit_and_secret_free(self) -> None:
         proc = subprocess.run(
