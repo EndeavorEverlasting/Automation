@@ -28,6 +28,16 @@ def validate_event(event: str, payload: dict[str, Any]) -> dict[str, Any]:
         attachments = payload.get("attachments")
         if attachments is not None and not isinstance(attachments, list):
             errors.append(_error("attachments", "expected_array"))
+        elif isinstance(attachments, list):
+            for index, attachment in enumerate(attachments):
+                field = f"attachments[{index}]"
+                if not isinstance(attachment, dict):
+                    errors.append(_error(field, "expected_object"))
+                    continue
+                if attachment.get("type") not in {"file", "rule"}:
+                    errors.append(_error(f"{field}.type", "invalid_enum"))
+                if not isinstance(attachment.get("file_path"), str) or not attachment["file_path"]:
+                    errors.append(_error(f"{field}.file_path", "required_nonempty_string"))
 
     elif event == "stop":
         if payload.get("status") not in {"completed", "aborted", "error"}:
