@@ -13,6 +13,18 @@
     {
       "source": "https://learn.chatgpt.com/docs/hooks",
       "role": "Codex lifecycle hook event/output shapes"
+    },
+    {
+      "source": "https://github.com/openai/codex/blob/main/codex-rs/hooks/schema/generated/user-prompt-submit.command.input.schema.json",
+      "role": "Codex generated input schema evidence"
+    },
+    {
+      "source": "https://github.com/openai/codex/blob/main/codex-rs/hooks/schema/generated/user-prompt-submit.command.output.schema.json",
+      "role": "Codex generated output schema evidence"
+    },
+    {
+      "source": "https://github.com/anomalyco/opencode/blob/dev/specs/v2/instructions.md",
+      "role": "OpenCode V2 plugin hook conventions"
     }
   ],
   "profiles": [
@@ -209,7 +221,7 @@
       "schema_version": "agent-hook-protocol-profile/v1",
       "profile_id": "codex-lifecycle-user-prompt-v1",
       "host_family": "codex",
-      "shape_version": "codex/lifecycle-user-prompt-v1",
+      "shape_version": "codex/lifecycle-user-prompt-current-v1",
       "transport": "json_stdio",
       "config_shapes": [
         "claude-codex-group-config-v1"
@@ -235,12 +247,18 @@
             "UserPromptSubmit"
           ],
           "required_fields": {
-            "prompt": "string"
+            "cwd": "string",
+            "hook_event_name": "string",
+            "model": "string",
+            "permission_mode": "string",
+            "prompt": "string",
+            "session_id": "string",
+            "turn_id": "string"
           },
           "optional_fields": {
-            "turn_id": "string",
-            "permission_mode": "string",
-            "transcript_path": "string"
+            "transcript_path": "string",
+            "agent_id": "string",
+            "agent_type": "string"
           },
           "accepted_response_shapes": [
             "codex.common.prompt.v1",
@@ -248,7 +266,7 @@
           ]
         }
       },
-      "proof_ceiling": "Documented Codex prompt-hook shape only. Other Codex event profiles require separate tracked evidence."
+      "proof_ceiling": "Tracks the current open-source Codex UserPromptSubmit schema's required semantic/string fields; nullable transcript_path is treated as optional by this v1 type system. Live client binding remains separate."
     }
   ]
 }
