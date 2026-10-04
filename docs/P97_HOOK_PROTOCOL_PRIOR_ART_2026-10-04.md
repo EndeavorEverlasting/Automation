@@ -91,6 +91,75 @@ Source:
 
 This proves that `transport=json_stdio` itself must be an adapter dimension, not a universal assumption.
 
+## Open-source implementation references
+
+### OpenAI Codex — OBSERVED_IMPLEMENTED
+
+Repository: https://github.com/openai/codex
+
+Inspected surfaces:
+
+- `codex-rs/hooks/schema/generated/user-prompt-submit.command.input.schema.json`
+- `codex-rs/hooks/schema/generated/user-prompt-submit.command.output.schema.json`
+- `codex-rs/config/src/hook_config.rs`
+- `codex-rs/hooks/src/events/user_prompt_submit.rs`
+- `codex-rs/core/tests/suite/hooks.rs`
+
+Mechanisms worth emulating:
+
+- generated machine-readable hook schemas;
+- typed event enum separated from config serialization;
+- explicit input/output wire contracts;
+- real integration tests that write a hook config/script and exercise the event;
+- compatibility engine naming separated from consumer behavior.
+
+Disposition: **ADOPT** schema/profile fixtures and typed-event separation; **ADAPT** the Rust/ClaudeHooksEngine implementation into Automation's provider-neutral Python owner.
+
+### OpenCode V2 — OBSERVED_IMPLEMENTED / ACTIVE DESIGN
+
+Repository: https://github.com/anomalyco/opencode
+
+Inspected surfaces:
+
+- `specs/v2/instructions.md`
+- `packages/plugin/src/v2/effect/PLAN.md`
+
+Mechanisms worth emulating:
+
+- domain-oriented hook names;
+- purpose-built typed context objects;
+- ordered registration where later hooks see earlier modifications;
+- independently disposable registrations;
+- explicit rule that hooks should not become a dumping ground for transport/compatibility concerns.
+
+Disposition: **ADOPT** the separation between semantic hook context and transport; **ADAPT** because OpenCode's callback/plugin transport is not JSON-stdio.
+
+### Anthropic Claude Code — OBSERVED_CONFIG_IMPLEMENTATION
+
+Repository: https://github.com/anthropics/claude-code
+
+Inspected surface:
+
+- `plugins/security-guidance/hooks/hooks.json`
+
+The repository demonstrates real plugin hook configuration with grouped `SessionStart`, `UserPromptSubmit`, `PostToolUse`, and `Stop` handlers plus async behavior.
+
+Disposition: **AVAILABLE_TO_EMULATE_EXTERNALLY** for configuration dialect projection, not for blindly copying policy.
+
+## Solved baseline vs prioritized gap
+
+| Slice | Disposition |
+| --- | --- |
+| JSON-stdio bounded transport | ALREADY_SOLVED_INTERNALLY |
+| Cursor minimal event validator | ALREADY_SOLVED_INTERNALLY |
+| local-agent stale projection detection | ALREADY_SOLVED_INTERNALLY |
+| machine-readable per-shape profile registry | PROJECT_SPECIFIC_GAP -> implemented here |
+| host-version to shape evidence binding | PROJECT_SPECIFIC_GAP -> implemented here |
+| canonical event/decision IR | AVAILABLE_TO_EMULATE_EXTERNALLY -> adapted |
+| documented response-format fallback | AVAILABLE_TO_EMULATE_EXTERNALLY -> adapted |
+| callback/plugin transport adapter for OpenCode | PROJECT_SPECIFIC_GAP -> deferred successor |
+| live host auto-switch health ledger | EVIDENCE_GAP -> consumer canary required |
+
 ## P97 conclusions
 
 ### Rejected abstraction: one adapter per product
