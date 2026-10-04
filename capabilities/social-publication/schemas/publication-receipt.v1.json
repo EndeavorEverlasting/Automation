@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "automation://social-publication/publication-receipt.v1",
+  "title": "Social Publication Receipt v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "request_id",
+    "provider",
+    "state",
+    "content_sha256",
+    "provider_request_emitted"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "social-publication-receipt/v1"
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "provider": {
+      "type": "string",
+      "minLength": 1
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "PREVIEW_READY",
+        "BLOCKED_APPROVAL_REQUIRED",
+        "BLOCKED_STALE_APPROVAL",
+        "PROVIDER_REQUEST_READY",
+        "PUBLISHED",
+        "PROVIDER_AUTHORIZATION_FAILED",
+        "PROVIDER_REJECTED"
+      ]
+    },
+    "content_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "provider_request_emitted": {
+      "type": "boolean"
+    },
+    "provider_post_id": {
+      "type": ["string", "null"]
+    }
+  }
+}
