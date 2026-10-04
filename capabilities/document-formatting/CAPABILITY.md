@@ -1,6 +1,6 @@
 # Document Formatting
 
-Status: **CORE_IMPLEMENTED_PROVIDER_ADAPTERS_PENDING**
+Status: **COMPILER_IR_PROTOTYPE_PROVEN_GOOGLE_DOCS_PLAN_ADAPTER_PROVEN**
 
 `document-formatting` is the reusable owner for deterministic document-formatting orchestration across repositories and projects.
 
@@ -68,3 +68,46 @@ python capabilities/document-formatting/plan.py \
 The executable core proves portable profile validation, canonical hashing, stage ordering, runtime-placement preservation, and branding/proof guards using synthetic consumers.
 
 Provider mutation, visual fidelity, dynamic page fields, Microsoft Word/Office rendering, Google Docs readback, consumer adoption, deployment, and production use are separate proof states.
+
+
+## P95 compiler and adapter prototype
+
+The next reusable seam is now executable:
+
+```text
+semantic source + consumer design spec
+  -> document-formatting compiler
+  -> provider-neutral IR + fingerprints + receipt
+  -> provider adapter capability negotiation
+  -> provider-specific phased operation plan
+  -> live transport/readback (successor build work)
+```
+
+Compile the synthetic consumer:
+
+```powershell
+python capabilities/document-formatting/compile.py \
+  --source capabilities/document-formatting/fixtures/document-source.synthetic.v1.json \
+  --design capabilities/document-formatting/fixtures/design-spec.synthetic.v1.json \
+  --output Outputs/document-formatting-ir.json \
+  --receipt Outputs/document-formatting-compiler-receipt.json
+```
+
+Build the Google Docs plan:
+
+```powershell
+python capabilities/document-formatting/adapters/google_docs.py \
+  --ir Outputs/document-formatting-ir.json \
+  --required-feature semantic_headings \
+  --required-feature internal_navigation \
+  --required-feature named_external_links \
+  --required-feature inline_images \
+  --required-feature revision_readback \
+  --output Outputs/document-formatting-google-docs-plan.json
+```
+
+The Google Docs adapter is deliberately two-phase for internal navigation: construct/style first, read back heading identities, then bind internal links against the observed provider structure. It also fail-closes when a consumer requires an unsupported feature.
+
+Current Google Docs API evidence exposes page-number/page-count AutoText in read resources but no batchUpdate request that creates AutoText. Therefore `dynamic_page_fields` remains a typed unsupported creation capability rather than being approximated with static text.
+
+This P95 slice prototypes architecture. It does not claim live Google Docs mutation or visual fidelity.
