@@ -68,6 +68,31 @@ class SocialPublicationP95Tests(unittest.TestCase):
         errors = CORE.validate_intent(changed)
         self.assertTrue(any("unexpected content fields" in error for error in errors))
 
+    def test_whitespace_only_runtime_inputs_fail_closed(self) -> None:
+        for field in ("request_id", "provider"):
+            with self.subTest(field=field):
+                changed = json.loads(json.dumps(self.intent))
+                changed[field] = "   "
+                self.assertTrue(CORE.validate_intent(changed))
+
+        changed = json.loads(json.dumps(self.intent))
+        changed["content"]["text"] = "   "
+        self.assertTrue(CORE.validate_intent(changed))
+
+    def test_intent_schema_matches_runtime_non_whitespace_rule(self) -> None:
+        schema = json.loads(
+            (CAP / "schemas" / "publication-intent.v1.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertFalse(schema["additionalProperties"])
+        self.assertEqual(schema["properties"]["request_id"]["pattern"], r".*\S.*")
+        self.assertEqual(schema["properties"]["provider"]["pattern"], r".*\S.*")
+        self.assertEqual(
+            schema["properties"]["content"]["properties"]["text"]["pattern"],
+            r".*\S.*",
+        )
+
     def test_stale_approval_blocks_before_provider_request(self) -> None:
         calls = []
 
@@ -86,8 +111,63 @@ class SocialPublicationP95Tests(unittest.TestCase):
             send_provider_request=send,
         )
         self.assertEqual(receipt["state"], "BLOCKED_STALE_APPROVAL")
-        self.assertFalse(receipt["provider_request_emitted"])
+        self.assertEqual(receipt["provider_request_state"], "NOT_EMITTED")
         self.assertEqual(calls, [])
+
+    def test_missing_approval_blocks_before_provider_request(self) -> None:
+        calls = []
+
+        def build(_intent):
+            calls.append("build")
+            return {}
+
+        def send(_request):
+            calls.append("send")
+            return {"status_code": 201, "headers": {"x-restli-id": "unexpected"}}
+
+        receipt = CORE.execute_approved_publication(
+            self.intent,
+            approved_content_sha256=None,
+            build_provider_request=build,
+            send_provider_request=send,
+        )
+        self.assertEqual(receipt["state"], "BLOCKED_APPROVAL_REQUIRED")
+        self.assertEqual(receipt["provider_request_state"], "NOT_EMITTED")
+        self.assertEqual(calls, [])
+
+    def test_provider_request_build_exception_becomes_secret_free_receipt(self) -> None:
+        approved = CORE.content_sha256(self.intent)
+
+        def build(_intent):
+            raise ValueError("Bearer secret-should-never-escape")
+
+        receipt = CORE.execute_approved_publication(
+            self.intent,
+            approved_content_sha256=approved,
+            build_provider_request=build,
+            send_provider_request=lambda _request: {},
+        )
+        self.assertEqual(receipt["state"], "PROVIDER_REQUEST_BUILD_FAILED")
+        self.assertEqual(receipt["provider_request_state"], "NOT_EMITTED")
+        self.assertEqual(receipt["error_class"], "PROVIDER_REQUEST_BUILD")
+        self.assertNotIn("secret-should-never-escape", json.dumps(receipt))
+
+    def test_transport_exception_has_unknown_emission_state(self) -> None:
+        approved = CORE.content_sha256(self.intent)
+
+        def send(_request):
+            raise TimeoutError("access_token=secret-should-never-escape")
+
+        receipt = CORE.execute_approved_publication(
+            self.intent,
+            approved_content_sha256=approved,
+            build_provider_request=lambda _intent: {"method": "POST"},
+            send_provider_request=send,
+        )
+        self.assertEqual(receipt["state"], "PROVIDER_TRANSPORT_FAILED")
+        self.assertEqual(receipt["provider_request_state"], "UNKNOWN")
+        self.assertEqual(receipt["error_class"], "PROVIDER_TRANSPORT")
+        self.assertNotIn("secret-should-never-escape", json.dumps(receipt))
 
     def test_linkedin_adapter_builds_current_text_post_shape_without_token(self) -> None:
         request = LINKEDIN.build_text_post_request(
@@ -137,11 +217,12 @@ class SocialPublicationP95Tests(unittest.TestCase):
             self.assertEqual(proc.returncode, 0, proc.stderr)
             receipt = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(receipt["state"], "PUBLISHED")
-            self.assertTrue(receipt["provider_request_emitted"])
+            self.assertEqual(receipt["provider_request_state"], "EMITTED")
             self.assertEqual(
                 receipt["provider_post_id"],
                 "urn:li:share:synthetic-p95-proof",
             )
+            self.assertNotIn("prototype_mode", receipt)
 
     def test_stale_approval_prototype_is_non_mutating_failure(self) -> None:
         proc = subprocess.run(
@@ -161,48 +242,20 @@ class SocialPublicationP95Tests(unittest.TestCase):
         self.assertEqual(proc.returncode, 2)
         receipt = json.loads(proc.stdout)
         self.assertEqual(receipt["state"], "BLOCKED_STALE_APPROVAL")
-        self.assertFalse(receipt["provider_request_emitted"])
+        self.assertEqual(receipt["provider_request_state"], "NOT_EMITTED")
 
     def test_http_201_without_post_id_is_not_terminal_proof(self) -> None:
         approved = CORE.content_sha256(self.intent)
-
-        def build(_intent):
-            return {"method": "POST"}
-
-        def send(_request):
-            return {"status_code": 201, "headers": {}}
-
         receipt = CORE.execute_approved_publication(
             self.intent,
             approved_content_sha256=approved,
-            build_provider_request=build,
-            send_provider_request=send,
+            build_provider_request=lambda _intent: {"method": "POST"},
+            send_provider_request=lambda _request: {"status_code": 201, "headers": {}},
         )
         self.assertEqual(receipt["state"], "PROVIDER_RESPONSE_INCOMPLETE")
-        self.assertTrue(receipt["provider_request_emitted"])
+        self.assertEqual(receipt["provider_request_state"], "EMITTED")
         self.assertIsNone(receipt["provider_post_id"])
         self.assertEqual(receipt["error_class"], "MISSING_PROVIDER_POST_ID")
-
-    def test_missing_approval_blocks_before_provider_request(self) -> None:
-        calls = []
-
-        def build(_intent):
-            calls.append("build")
-            return {}
-
-        def send(_request):
-            calls.append("send")
-            return {"status_code": 201, "headers": {"x-restli-id": "unexpected"}}
-
-        receipt = CORE.execute_approved_publication(
-            self.intent,
-            approved_content_sha256=None,
-            build_provider_request=build,
-            send_provider_request=send,
-        )
-        self.assertEqual(receipt["state"], "BLOCKED_APPROVAL_REQUIRED")
-        self.assertFalse(receipt["provider_request_emitted"])
-        self.assertEqual(calls, [])
 
     def test_provider_authorization_failure_is_explicit_and_secret_free(self) -> None:
         proc = subprocess.run(
@@ -222,12 +275,64 @@ class SocialPublicationP95Tests(unittest.TestCase):
         self.assertEqual(proc.returncode, 2)
         receipt = json.loads(proc.stdout)
         self.assertEqual(receipt["state"], "PROVIDER_AUTHORIZATION_FAILED")
-        self.assertTrue(receipt["provider_request_emitted"])
+        self.assertEqual(receipt["provider_request_state"], "EMITTED")
         self.assertEqual(receipt["error_class"], "AUTHORIZATION")
         serialized = json.dumps(receipt).lower()
         self.assertNotIn("authorization:", serialized)
         self.assertNotIn("bearer ", serialized)
         self.assertNotIn("token", serialized)
+
+    def test_non_linkedin_prototype_returns_provider_neutral_build_failure(self) -> None:
+        changed = json.loads(json.dumps(self.intent))
+        changed["provider"] = "other-provider"
+        with tempfile.TemporaryDirectory() as tmp:
+            intent_path = Path(tmp) / "intent.json"
+            intent_path.write_text(json.dumps(changed), encoding="utf-8")
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    str(PROTOTYPE),
+                    "--intent",
+                    str(intent_path),
+                    "--mode",
+                    "success",
+                ],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+        self.assertEqual(proc.returncode, 2, proc.stderr)
+        receipt = json.loads(proc.stdout)
+        self.assertEqual(receipt["state"], "PROVIDER_REQUEST_BUILD_FAILED")
+        self.assertEqual(receipt["provider_request_state"], "NOT_EMITTED")
+
+    def test_receipt_schema_is_closed_and_published_requires_post_id(self) -> None:
+        schema = json.loads(
+            (CAP / "schemas" / "publication-receipt.v1.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertFalse(schema["additionalProperties"])
+        self.assertIn("provider_request_state", schema["required"])
+        self.assertIn("provider_post_id", schema["required"])
+        self.assertEqual(
+            schema["properties"]["provider_request_state"]["enum"],
+            ["NOT_EMITTED", "EMITTED", "UNKNOWN"],
+        )
+        published_rule = schema["allOf"][0]
+        self.assertEqual(
+            published_rule["if"]["properties"]["state"]["const"],
+            "PUBLISHED",
+        )
+        self.assertEqual(
+            published_rule["then"]["properties"]["provider_post_id"]["minLength"],
+            1,
+        )
+        self.assertEqual(
+            published_rule["then"]["properties"]["provider_request_state"]["const"],
+            "EMITTED",
+        )
 
     def test_design_doc_proves_alternatives_success_failure_and_terminal_value(self) -> None:
         doc = (ROOT / "docs" / "P95_LINKEDIN_PUBLICATION_ARCHITECTURE.md").read_text(
