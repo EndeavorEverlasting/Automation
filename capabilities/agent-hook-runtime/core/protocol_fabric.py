@@ -349,6 +349,7 @@ def _event_candidate(
         return None
 
     score = 100
+    score += 3 * len(required)
     score -= 60 * len(missing)
     score -= 50 * len(bad_type)
     score += 20 if host_event == event["host_events"][0] else 10
