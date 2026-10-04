@@ -1,0 +1,40 @@
+{
+  "schema_version": "document-formatting-consumer-profile/v1",
+  "consumer_id": "synthetic-consumer-repository",
+  "profile_id": "professional-docs-v1",
+  "consumer_contract_ref": "consumer://synthetic/professional-document-profile/v1",
+  "archetypes": [
+    "meeting_notes",
+    "evidence_packet"
+  ],
+  "provider_adapters": [
+    {
+      "provider_id": "native-docs-provider",
+      "execution_environment": "CURRENT_CHAT_RUNTIME",
+      "required_features": [
+        "internal_navigation",
+        "inline_images",
+        "revision_readback"
+      ]
+    }
+  ],
+  "visual_surfaces": [
+    {
+      "surface_id": "native-docs-render",
+      "execution_environment": "CURRENT_CHAT_RUNTIME",
+      "provider_id": "native-docs-provider"
+    },
+    {
+      "surface_id": "desktop-editor-render",
+      "execution_environment": "OPERATOR_OR_PHYSICAL_RUNTIME"
+    }
+  ],
+  "proof_policy": {
+    "provider_readback_required": true,
+    "prevent_proof_promotion": true,
+    "lock_non_color_before_branding": true
+  },
+  "branding": {
+    "enabled": true
+  }
+}
