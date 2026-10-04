@@ -1,0 +1,63 @@
+{
+  "schema_version": "local-agent-readiness-profile/v1",
+  "repository": {
+    "remote": "origin",
+    "baseline_branch": "main",
+    "remote_identity": null
+  },
+  "projection_sets": {
+    "shared-agent-contract": {
+      "paths": [
+        "AGENTS.md"
+      ]
+    },
+    "cursor-project-runtime": {
+      "paths": [
+        ".cursor/hooks.json",
+        ".cursor/hooks"
+      ]
+    },
+    "opencode-project-runtime": {
+      "paths": [
+        "opencode.json",
+        ".opencode"
+      ]
+    }
+  },
+  "agents": {
+    "cursor": {
+      "projection_sets": [
+        "shared-agent-contract",
+        "cursor-project-runtime"
+      ],
+      "required_gates": [
+        "REPOSITORY_CHECKOUT_CURRENT",
+        "AGENT_PROJECTION_MATCHES_BASELINE",
+        "LOCAL_AGENT_RUNTIME_VERIFIED",
+        "REMOTE_WRITE_VERIFIED",
+        "ACTUAL_PUSH_PROVEN"
+      ],
+      "runtime_claims_required": [
+        "PROJECT_CONFIGURATION_LOADED",
+        "HOOK_TRANSPORT_VERIFIED"
+      ]
+    },
+    "opencode": {
+      "projection_sets": [
+        "shared-agent-contract",
+        "opencode-project-runtime"
+      ],
+      "required_gates": [
+        "REPOSITORY_CHECKOUT_CURRENT",
+        "AGENT_PROJECTION_MATCHES_BASELINE",
+        "LOCAL_AGENT_RUNTIME_VERIFIED"
+      ],
+      "runtime_claims_required": [
+        "PROJECT_CONFIGURATION_LOADED"
+      ]
+    }
+  },
+  "remote_write": {
+    "dry_run_namespace": "refs/heads/agent-readiness-canary"
+  }
+}

@@ -76,6 +76,17 @@ machine-readable artifact / receipt / result
 
 Provider-specific adapters may exist here when they expose a reusable capability. Their provider-specific assumptions must not leak into unrelated core modules.
 
+## Healthy local-agent projections
+
+A repository can be healthy remotely while a local agent still executes stale or divergent repository-owned configuration.
+
+Automation's reusable prevention surface is:
+
+- `capabilities/local-agent-readiness/`
+- `docs/HEALTHY_AGENT_REPOSITORY_RECIPE.md`
+
+Use it to keep checkout freshness, per-agent projection parity, live-host proof, remote-write reachability, and actual-push readback as separate evidence states. The capability diagnoses repository-owned projections; it does not rewrite Cursor, OpenCode, or other local-agent configuration.
+
 ## Compatibility philosophy
 
 "Ubiquitous" is an architectural direction, not an excuse to pretend every environment is identical.

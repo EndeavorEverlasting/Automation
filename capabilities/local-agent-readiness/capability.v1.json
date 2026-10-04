@@ -1,0 +1,34 @@
+{
+  "schema_version": "automation-capability/v1",
+  "capability_id": "local-agent-readiness",
+  "status": "CORE_IMPLEMENTED_PROFILE_DRIVEN_ADAPTERS_PENDING",
+  "purpose": "Classify whether a local agent may be trusted for a repository without conflating remote integration, checkout freshness, agent projection parity, live host runtime proof, remote-write reachability, or actual push proof.",
+  "core_owner": "capabilities/local-agent-readiness/core/readiness.py",
+  "entrypoints": {
+    "verify": "capabilities/local-agent-readiness/verify.py"
+  },
+  "artifacts": {
+    "profile_schema": "capabilities/local-agent-readiness/schemas/profile.v1.json",
+    "runtime_observation_schema": "capabilities/local-agent-readiness/schemas/runtime-observation.v1.json",
+    "readiness_receipt_schema": "capabilities/local-agent-readiness/schemas/readiness-receipt.v1.json"
+  },
+  "runtime_boundary": {
+    "default_mutation": "NONE",
+    "optional_remote_refresh": "git fetch only; no working-tree mutation",
+    "optional_remote_write_probe": "git push --dry-run only; no ref mutation",
+    "actual_push": "NEVER_PERFORMED_BY_CAPABILITY",
+    "supported_execution": [
+      "LOCAL_AGENT_RUNTIME",
+      "CI_OR_REMOTE_RUNNER_FOR_SYNTHETIC_CLASSIFIER_TESTS"
+    ]
+  },
+  "non_goals": [
+    "rewrite or install local-agent configuration",
+    "own host-specific business policy",
+    "replace agent-hook-runtime transport normalization",
+    "replace canonical-path checkout identity",
+    "perform a real Git push",
+    "promote CI proof to workstation proof"
+  ],
+  "proof_ceiling": "Synthetic isolated-consumer tests prove classifier semantics. Workstation readiness requires consumer-provided live-host and Git/provider evidence."
+}

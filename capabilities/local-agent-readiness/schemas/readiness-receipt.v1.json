@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "local-agent-readiness-receipt/v1",
+  "title": "Local agent readiness receipt",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "agent_id",
+    "state",
+    "diagnosis",
+    "required_gates",
+    "local_head",
+    "assessment_head_end",
+    "remote_baseline_sha",
+    "agent_profile_sha256",
+    "gates",
+    "proof_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "local-agent-readiness-receipt/v1"
+    },
+    "agent_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "state": {
+      "enum": [
+        "READY",
+        "NOT_READY"
+      ]
+    },
+    "diagnosis": {
+      "type": "string",
+      "minLength": 1
+    },
+    "required_gates": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "local_head": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "remote_baseline_sha": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "agent_profile_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gates": {
+      "type": "object"
+    },
+    "proof_ceiling": {
+      "type": "string",
+      "minLength": 1
+    },
+    "assessment_head_end": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": true
+}
