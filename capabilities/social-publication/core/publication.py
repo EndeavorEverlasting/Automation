@@ -17,10 +17,6 @@ _ALLOWED_INTENT_FIELDS = {
 _ALLOWED_CONTENT_FIELDS = {"type", "text"}
 
 
-class ApprovalError(ValueError):
-    """Raised when publication approval is absent or stale."""
-
-
 def validate_intent(intent: Any) -> list[str]:
     errors: list[str] = []
     if not isinstance(intent, dict):
@@ -28,9 +24,7 @@ def validate_intent(intent: Any) -> list[str]:
 
     unexpected = sorted(set(intent) - _ALLOWED_INTENT_FIELDS)
     if unexpected:
-        errors.append(
-            "unexpected intent fields: " + ", ".join(unexpected)
-        )
+        errors.append("unexpected intent fields: " + ", ".join(unexpected))
 
     if intent.get("schema_version") != INTENT_SCHEMA:
         errors.append(f"schema_version must be {INTENT_SCHEMA!r}")
@@ -50,9 +44,7 @@ def validate_intent(intent: Any) -> list[str]:
 
     unexpected_content = sorted(set(content) - _ALLOWED_CONTENT_FIELDS)
     if unexpected_content:
-        errors.append(
-            "unexpected content fields: " + ", ".join(unexpected_content)
-        )
+        errors.append("unexpected content fields: " + ", ".join(unexpected_content))
 
     if content.get("type") != "text":
         errors.append("content.type must be 'text' in v1")
@@ -92,7 +84,7 @@ def _receipt(
     intent: dict[str, Any],
     *,
     state: str,
-    provider_request_emitted: bool,
+    provider_request_state: str,
     provider_post_id: str | None = None,
     provider_status_code: int | None = None,
     error_class: str | None = None,
@@ -103,7 +95,7 @@ def _receipt(
         "provider": intent["provider"],
         "state": state,
         "content_sha256": content_sha256(intent),
-        "provider_request_emitted": provider_request_emitted,
+        "provider_request_state": provider_request_state,
         "provider_post_id": provider_post_id,
     }
     if provider_status_code is not None:
@@ -120,7 +112,7 @@ def prepare_preview(intent: dict[str, Any]) -> dict[str, Any]:
     return _receipt(
         intent,
         state="PREVIEW_READY",
-        provider_request_emitted=False,
+        provider_request_state="NOT_EMITTED",
     )
 
 
@@ -140,19 +132,47 @@ def execute_approved_publication(
         return _receipt(
             intent,
             state="BLOCKED_APPROVAL_REQUIRED",
-            provider_request_emitted=False,
+            provider_request_state="NOT_EMITTED",
         )
     if approved_content_sha256 != current_hash:
         return _receipt(
             intent,
             state="BLOCKED_STALE_APPROVAL",
-            provider_request_emitted=False,
+            provider_request_state="NOT_EMITTED",
         )
 
-    request = build_provider_request(intent)
-    response = send_provider_request(request)
+    try:
+        request = build_provider_request(intent)
+    except Exception:
+        return _receipt(
+            intent,
+            state="PROVIDER_REQUEST_BUILD_FAILED",
+            provider_request_state="NOT_EMITTED",
+            error_class="PROVIDER_REQUEST_BUILD",
+        )
+
+    try:
+        response = send_provider_request(request)
+    except Exception:
+        return _receipt(
+            intent,
+            state="PROVIDER_TRANSPORT_FAILED",
+            provider_request_state="UNKNOWN",
+            error_class="PROVIDER_TRANSPORT",
+        )
+
+    if not isinstance(response, dict):
+        return _receipt(
+            intent,
+            state="PROVIDER_RESPONSE_INCOMPLETE",
+            provider_request_state="EMITTED",
+            error_class="INVALID_PROVIDER_RESPONSE",
+        )
+
     status_code = response.get("status_code")
     headers = response.get("headers") or {}
+    if not isinstance(headers, dict):
+        headers = {}
 
     if status_code == 201:
         post_id = headers.get("x-restli-id") or headers.get("X-RestLi-Id")
@@ -160,14 +180,14 @@ def execute_approved_publication(
             return _receipt(
                 intent,
                 state="PUBLISHED",
-                provider_request_emitted=True,
+                provider_request_state="EMITTED",
                 provider_post_id=post_id,
                 provider_status_code=status_code,
             )
         return _receipt(
             intent,
             state="PROVIDER_RESPONSE_INCOMPLETE",
-            provider_request_emitted=True,
+            provider_request_state="EMITTED",
             provider_status_code=status_code,
             error_class="MISSING_PROVIDER_POST_ID",
         )
@@ -176,7 +196,7 @@ def execute_approved_publication(
         return _receipt(
             intent,
             state="PROVIDER_AUTHORIZATION_FAILED",
-            provider_request_emitted=True,
+            provider_request_state="EMITTED",
             provider_status_code=status_code,
             error_class="AUTHORIZATION",
         )
@@ -184,7 +204,7 @@ def execute_approved_publication(
     return _receipt(
         intent,
         state="PROVIDER_REJECTED",
-        provider_request_emitted=True,
+        provider_request_state="EMITTED",
         provider_status_code=status_code if isinstance(status_code, int) else None,
         error_class="PROVIDER_REJECTION",
     )
