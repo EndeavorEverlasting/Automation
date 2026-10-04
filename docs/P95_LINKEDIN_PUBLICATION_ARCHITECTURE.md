@@ -74,9 +74,11 @@ APPROVED(old_hash) + changed content
   -> BLOCKED_STALE_APPROVAL
 
 PROVIDER_REQUEST_READY
-  -> PROVIDER_RESPONSE_INCOMPLETE
-  -> PROVIDER_AUTHORIZATION_FAILED
-  -> PROVIDER_REJECTED
+  -> PROVIDER_REQUEST_BUILD_FAILED (NOT_EMITTED)
+  -> PROVIDER_TRANSPORT_FAILED (UNKNOWN)
+  -> PROVIDER_RESPONSE_INCOMPLETE (EMITTED)
+  -> PROVIDER_AUTHORIZATION_FAILED (EMITTED)
+  -> PROVIDER_REJECTED (EMITTED)
 ```
 
 The state owner is the publication core. Provider adapters translate provider responses into the core's terminal states.
@@ -221,6 +223,14 @@ The post itself is the first live provider proof.
 **Proof gap found:** HTTP 201 alone is not enough terminal evidence. The core now requires a non-empty provider post ID before emitting PUBLISHED; 201 without that identifier becomes PROVIDER_RESPONSE_INCOMPLETE.
 
 **Approval-surface gap found:** the JSON schema forbids undeclared fields, but the first runtime validator did not. Unexpected top-level or content fields are now rejected so no publishable behavior can bypass the approved content projection.
+
+**Transport-state gap found:** a transport exception cannot prove whether the remote service received the request. The first boolean emission field could not represent that uncertainty. It is replaced by `provider_request_state = NOT_EMITTED | EMITTED | UNKNOWN`; request-build failures are NOT_EMITTED and transport exceptions are UNKNOWN.
+
+**Receipt-boundary gap found:** a permissive receipt schema could validate secret-bearing extra fields. The receipt schema is now closed, and `PUBLISHED` additionally requires a non-empty provider post ID and `EMITTED` request state.
+
+**Provider mismatch gap found:** adapter request-build errors now become provider-neutral `PROVIDER_REQUEST_BUILD_FAILED` receipts instead of uncaught exceptions.
+
+**Schema/runtime mismatch found:** v1 schema strings now reject whitespace-only request IDs, provider names, and text exactly as runtime validation does.
 
 **Provider coupling check:** core tests can run without LinkedIn imports or LinkedIn identity. Provider topology terminates at the adapter.
 
