@@ -49,3 +49,43 @@ def build_text_post_request(
             "OAuth access token with w_member_social"
         ],
     }
+
+
+def translate_post_response(response: Any) -> dict[str, Any]:
+    if not isinstance(response, dict):
+        return {
+            "outcome": "INCOMPLETE",
+            "error_class": "INVALID_PROVIDER_RESPONSE",
+        }
+
+    status_code = response.get("status_code")
+    headers = response.get("headers") or {}
+    if not isinstance(headers, dict):
+        headers = {}
+
+    if status_code == 201:
+        post_id = headers.get("x-restli-id") or headers.get("X-RestLi-Id")
+        if isinstance(post_id, str) and post_id.strip():
+            return {
+                "outcome": "PUBLISHED",
+                "provider_post_id": post_id,
+                "provider_status_code": status_code,
+            }
+        return {
+            "outcome": "INCOMPLETE",
+            "provider_status_code": status_code,
+            "error_class": "MISSING_PROVIDER_POST_ID",
+        }
+
+    if status_code in (401, 403):
+        return {
+            "outcome": "AUTHORIZATION_FAILED",
+            "provider_status_code": status_code,
+            "error_class": "AUTHORIZATION",
+        }
+
+    return {
+        "outcome": "REJECTED",
+        "provider_status_code": status_code if isinstance(status_code, int) else None,
+        "error_class": "PROVIDER_REJECTION",
+    }
