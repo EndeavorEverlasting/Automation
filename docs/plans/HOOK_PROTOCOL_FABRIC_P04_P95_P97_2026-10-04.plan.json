@@ -1,0 +1,99 @@
+{
+  "schema_version": "hook-protocol-fabric-p04-plan/v1",
+  "date": "2026-10-04",
+  "repository": "EndeavorEverlasting/Automation",
+  "floor_sha": "5d0f363f1e98d0e4227b7abc7caf4162661ca1a6",
+  "branch": "feat/p04-p95-p97-hook-protocol-fabric-20261004",
+  "capability": "agent-hook-runtime",
+  "prompts": {
+    "P04": "[PARALLEL] Repo-Aware Sprint + Harness Factoring Distributor",
+    "P95": "Program Design & Call-Stack Prototype Architect",
+    "P97": "Open-Source Prior-Art & Gap Analyst"
+  },
+  "ownership": {
+    "reusable_owner": "Automation/agent-hook-runtime",
+    "current_consumer": "TokenCorridor",
+    "consumer_policy_owner": "TokenCorridor P07/runtime continuity",
+    "host_native_mechanics": "provider adapters"
+  },
+  "collision_control": {
+    "open_pr_18": "agent-runtime-fabric + shared README/AGENTS/validate workflow",
+    "this_lane_forbidden": [
+      "capabilities/agent-runtime-fabric/**",
+      "README.md",
+      "AGENTS.md",
+      ".github/workflows/validate.yml"
+    ],
+    "shared_ref_mutations": "serialized"
+  },
+  "lanes": [
+    {
+      "id": "HP-0",
+      "state": "COMPLETE",
+      "owner": "Automation/P97",
+      "mission": "external hook prior art"
+    },
+    {
+      "id": "HP-1",
+      "state": "COMPLETE",
+      "owner": "Automation/P95",
+      "mission": "canonical IR + negotiation architecture"
+    },
+    {
+      "id": "HP-2",
+      "state": "IMPLEMENTED",
+      "owner": "Automation",
+      "mission": "protocol fabric, profiles, tests"
+    },
+    {
+      "id": "HP-3",
+      "state": "IMPLEMENTED",
+      "owner": "Automation",
+      "mission": "Cursor shadow negotiation"
+    },
+    {
+      "id": "HP-4",
+      "state": "PENDING",
+      "owner": "Automation",
+      "mission": "exact-head CI + integration"
+    },
+    {
+      "id": "HP-5",
+      "state": "BLOCKED_ON_HP_4",
+      "owner": "TokenCorridor",
+      "mission": "pin/vendor owner + consumer parity"
+    },
+    {
+      "id": "HP-6",
+      "state": "PENDING_LOCAL_RUNTIME",
+      "owner": "TokenCorridor/Cursor",
+      "mission": "live version-shape binding + response canaries"
+    }
+  ],
+  "graph": {
+    "width": 1,
+    "parallel_execution": "NOT_APPLICABLE",
+    "reason": "Owner code, registry, diagnostic integration, and contract share one capability acceptance boundary; PR #18 collision surfaces are explicitly avoided."
+  },
+  "acceptance": [
+    "legacy Cursor minimal shape routes",
+    "current Cursor common-envelope shape wins when present",
+    "additive unknown fields do not break routing",
+    "breaking semantic change returns UNKNOWN_SHAPE",
+    "Cursor Stop can fallback to documented Claude-compatible response shapes",
+    "Codex prompt hook uses its own profile",
+    "config dialects render independently from policy",
+    "cross-host matching is forbidden",
+    "shape observations persist no payload values",
+    "full Automation suite passes"
+  ],
+  "rollout": [
+    "DISCOVERED",
+    "PROFILED",
+    "SYNTHETIC_PROVEN",
+    "SHADOW_OBSERVED",
+    "CANARY_ACCEPTED",
+    "AUTO_SWITCH_ELIGIBLE"
+  ],
+  "proof_ceiling": "Repository proof cannot establish live host acceptance; auto-switch requires consumer canary evidence."
+}
