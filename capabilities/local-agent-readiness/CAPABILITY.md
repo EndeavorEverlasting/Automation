@@ -42,7 +42,7 @@ The core exposes five independent gates:
    - the observation is tied to the current agent profile digest;
    - required runtime claims are PASS;
    - the observation floor is an ancestor of current `HEAD`;
-   - no selected projection surface changed after that observation;\n   - the verifier rechecks local `HEAD` and projection parity before emitting its final receipt, so concurrent local changes invalidate readiness.
+   - no selected projection surface was touched by committed history after that observation, even if later reverted to identical bytes;\n   - the verifier rechecks local `HEAD` and projection parity before emitting its final receipt, so concurrent local changes invalidate readiness.
 
 4. `REMOTE_WRITE_VERIFIED`
    - optional `git push --dry-run` proves a reachable/authenticated update path;
@@ -53,6 +53,15 @@ The core exposes five independent gates:
    - the capability never performs the real push itself.
 
 A profile chooses which gates are required for a particular agent role. A read-only local analyzer does not need to pretend it has push authority; an implementation agent may require all five.
+
+## Projection integrity
+
+Projection parity is deliberately stricter than a normal Git endpoint diff:
+
+- ordinary and ignored untracked files beneath declared projection paths are runtime shadows and fail parity;
+- symlinks within declared projection surfaces fail parity rather than being followed outside repository authority;
+- a live observation is invalidated by any later commit touching its selected projection paths, even if a subsequent commit restores identical bytes;
+- final readiness rechecks both `HEAD` and projection parity so concurrent local agents cannot inherit proof gathered for an earlier checkout state.
 
 ## Non-destructive boundary
 
