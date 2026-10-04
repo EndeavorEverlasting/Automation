@@ -35,7 +35,8 @@
     "approval-to-content binding",
     "provider-neutral lifecycle states",
     "provider-neutral publication receipts",
-    "fail-closed stale-approval behavior"
+    "fail-closed stale-approval behavior",
+    "provider-request emission certainty"
   ],
   "adapter_owns": [
     "provider author identity",
@@ -62,7 +63,7 @@
     "browser automation",
     "production publication in the P95 prototype"
   ],
-  "proof_ceiling": "Executable P95 prototypes prove the provider-neutral approval seam, LinkedIn text-post request construction, success receipt, stale-approval failure, and provider-authorization failure using synthetic inputs and fake transport. Live OAuth, identity resolution, network publication, and production use remain unproven.",
+  "proof_ceiling": "Executable P95 prototypes prove the provider-neutral approval seam, LinkedIn text-post request construction, success receipt, stale-approval failure, request-build failure, transport-uncertainty failure, incomplete-provider-response failure, and provider-authorization failure using synthetic inputs and fake transport. Live OAuth, identity resolution, network publication, and production use remain unproven.",
   "production_use_path": "UNDECLARED",
   "next_transition": "P07 bounded implementation: add runtime OAuth/identity/HTTP transport behind the proved LinkedIn adapter seam, then perform one operator-approved controlled live text post."
 }
