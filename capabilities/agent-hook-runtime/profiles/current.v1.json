@@ -38,6 +38,9 @@
         },
         "cursor.native.stop.v1": {
           "encoder": "cursor-native-stop-v1"
+        },
+        "cursor.native.session-start.v1": {
+          "encoder": "cursor-native-session-start-v1"
         }
       },
       "events": {
@@ -80,7 +83,7 @@
             "composer_mode": "string"
           },
           "accepted_response_shapes": [
-            "cursor.native.prompt.v1"
+            "cursor.native.session-start.v1"
           ]
         }
       },
@@ -115,6 +118,9 @@
         },
         "claude.nested.stop.v1": {
           "encoder": "claude-nested-stop-v1"
+        },
+        "cursor.native.session-start.v1": {
+          "encoder": "cursor-native-session-start-v1"
         }
       },
       "events": {
@@ -193,7 +199,7 @@
             "transcript_path": "string"
           },
           "accepted_response_shapes": [
-            "cursor.native.prompt.v1"
+            "cursor.native.session-start.v1"
           ]
         }
       },
