@@ -17,7 +17,8 @@ publication intent
   -> explicit approval bound to that SHA-256
   -> provider adapter request
   -> provider transport
-  -> publication/failure receipt
+  -> provider adapter response translation
+  -> provider-neutral publication/failure receipt
 ```
 
 If the content changes after approval, the attempt fails closed before provider request construction or network mutation.
@@ -38,7 +39,8 @@ LinkedIn adapter:
 - owns Person URN input;
 - owns LinkedIn Posts API request shape;
 - owns required LinkedIn/Rest.li version headers;
-- will own OAuth token injection and LinkedIn error translation in the build sprint.
+- owns raw LinkedIn response translation into provider-neutral outcomes;
+- will own OAuth token injection at send time in the build sprint.
 
 The P95 prototype never persists OAuth credentials or an Authorization header.
 
