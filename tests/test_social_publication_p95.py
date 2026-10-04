@@ -207,6 +207,22 @@ class SocialPublicationP95Tests(unittest.TestCase):
         self.assertEqual(auth["outcome"], "AUTHORIZATION_FAILED")
         self.assertEqual(auth["error_class"], "AUTHORIZATION")
 
+    def test_linkedin_server_error_is_uncertain_not_rejected(self) -> None:
+        result = LINKEDIN.translate_post_response(
+            {"status_code": 503, "headers": {}}
+        )
+        self.assertEqual(result["outcome"], "INCOMPLETE")
+        self.assertEqual(
+            result["error_class"], "AMBIGUOUS_PROVIDER_RESPONSE"
+        )
+
+    def test_linkedin_explicit_client_error_is_rejected(self) -> None:
+        result = LINKEDIN.translate_post_response(
+            {"status_code": 400, "headers": {}}
+        )
+        self.assertEqual(result["outcome"], "REJECTED")
+        self.assertEqual(result["error_class"], "PROVIDER_REJECTION")
+
     def test_core_consumes_provider_neutral_result_not_linkedin_headers(self) -> None:
         approved = CORE.content_sha256(self.intent)
         neutral_result = {
