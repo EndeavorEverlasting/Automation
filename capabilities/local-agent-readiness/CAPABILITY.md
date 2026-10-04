@@ -35,14 +35,14 @@ The core exposes five independent gates:
 
 2. `AGENT_PROJECTION_MATCHES_BASELINE`
    - the selected agent's tracked projection sets match refreshed baseline;
-   - committed divergence, staged/unstaged changes, missing tracked files, and untracked shadow files under declared projection paths are all visible.
+   - committed divergence, staged/unstaged changes, missing tracked files, ordinary or ignored untracked shadow files, and symlinks under declared projection paths are all visible;
 
 3. `LOCAL_AGENT_RUNTIME_VERIFIED`
    - a normalized live-host observation exists for the selected agent;
    - the observation is tied to the current agent profile digest;
    - required runtime claims are PASS;
    - the observation floor is an ancestor of current `HEAD`;
-   - no selected projection surface changed after that observation.
+   - no selected projection surface changed after that observation;\n   - the verifier rechecks local `HEAD` and projection parity before emitting its final receipt, so concurrent local changes invalidate readiness.
 
 4. `REMOTE_WRITE_VERIFIED`
    - optional `git push --dry-run` proves a reachable/authenticated update path;
@@ -81,7 +81,7 @@ Profiles define:
 - required live-runtime claims;
 - dry-run canary namespace.
 
-Projection paths are repository-relative tracked files/directories. User-level configuration is intentionally outside scope unless a repository explicitly chooses to model it.
+Projection paths are repository-relative tracked files/directories. Declared projection symlinks are rejected rather than followed because their effective bytes may live outside repository authority. Ignored local files under a declared projection are still treated as runtime shadows. User-level configuration is intentionally outside scope unless a repository explicitly chooses to model it.
 
 Shared surfaces such as `AGENTS.md` may belong to multiple agents. Agent-specific surfaces remain isolated. A Cursor-only projector change therefore must not invalidate an OpenCode profile unless both profiles declare that surface.
 
