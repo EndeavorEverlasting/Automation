@@ -496,12 +496,58 @@ def _load_runtime_observation(path: Path) -> dict[str, Any]:
         )
     if observation["schema_version"] != "local-agent-runtime-observation/v1":
         raise ReadinessError("unsupported runtime observation schema")
+    if not isinstance(observation["agent_id"], str) or not observation["agent_id"].strip():
+        raise ReadinessError("runtime observation agent_id must be non-empty")
+    if observation["status"] not in {"PASS", "FAIL", "BLOCKED"}:
+        raise ReadinessError("runtime observation status is unsupported")
     if observation["proof_class"] != "LIVE_HOST_OBSERVATION":
         raise ReadinessError("runtime observation proof_class must be LIVE_HOST_OBSERVATION")
+    if not isinstance(observation["observed_at"], str) or not observation["observed_at"].strip():
+        raise ReadinessError("runtime observation observed_at must be non-empty")
+    if (
+        not isinstance(observation["floor_sha"], str)
+        or not re.fullmatch(r"[0-9a-f]{40}", observation["floor_sha"])
+    ):
+        raise ReadinessError("runtime observation floor_sha must be lowercase 40-hex")
+    if (
+        not isinstance(observation["agent_profile_sha256"], str)
+        or not re.fullmatch(r"[0-9a-f]{64}", observation["agent_profile_sha256"])
+    ):
+        raise ReadinessError(
+            "runtime observation agent_profile_sha256 must be lowercase 64-hex"
+        )
     if observation["raw_private_content_persisted"] is not False:
         raise ReadinessError("runtime observation must not persist raw private content")
+    if not isinstance(observation["proof_ceiling"], str) or not observation["proof_ceiling"].strip():
+        raise ReadinessError("runtime observation proof_ceiling must be non-empty")
     if not isinstance(observation["claims"], list):
         raise ReadinessError("runtime observation claims must be an array")
+
+    seen_claims: set[str] = set()
+    allowed_states = {"PASS", "FAIL", "BLOCKED", "NOT_RUN"}
+    for claim in observation["claims"]:
+        if not isinstance(claim, dict):
+            raise ReadinessError("runtime observation claim must be an object")
+        claim_id = claim.get("id")
+        state = claim.get("state")
+        evidence_refs = claim.get("evidence_refs")
+        if not isinstance(claim_id, str) or not claim_id.strip():
+            raise ReadinessError("runtime observation claim id must be non-empty")
+        if claim_id in seen_claims:
+            raise ReadinessError(f"runtime observation duplicate claim id: {claim_id}")
+        seen_claims.add(claim_id)
+        if state not in allowed_states:
+            raise ReadinessError(
+                f"runtime observation claim {claim_id} has unsupported state"
+            )
+        if (
+            not isinstance(evidence_refs, list)
+            or not evidence_refs
+            or not all(isinstance(ref, str) and ref.strip() for ref in evidence_refs)
+        ):
+            raise ReadinessError(
+                f"runtime observation claim {claim_id} requires non-empty evidence_refs"
+            )
     return observation
 
 
