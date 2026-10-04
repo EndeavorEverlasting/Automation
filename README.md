@@ -75,6 +75,17 @@ Admitted capabilities:
 - [`playlist-link-extraction`](capabilities/playlist-link-extraction/CAPABILITY.md) — status `CORE_IMPLEMENTED_ADAPTERS_PENDING`
 - [`agent-hook-runtime`](capabilities/agent-hook-runtime/CAPABILITY.md) — status `CORE_IMPLEMENTED_CURSOR_ADAPTER_DIAGNOSTIC_ONLY`; separates JSON-stdio host transport/schema proof from consumer policy and emits privacy-safe runtime receipts.
 - [`social-publication`](capabilities/social-publication/CAPABILITY.md) — status `PROGRAM_DESIGN_PROTOTYPE_PROVEN`; approval-bound, provider-neutral text publication with a LinkedIn adapter prototype. Live OAuth/network publication remains unproven.
+- [`document-formatting`](capabilities/document-formatting/CAPABILITY.md) — status `CORE_IMPLEMENTED_PROVIDER_ADAPTERS_PENDING`; reusable consumer-profile validation, execution/acceptance planning, proof-state ordering, and branding guards without embedding any one repository's document identity.
+
+Document-formatting portable plan:
+
+```powershell
+python capabilities/document-formatting/plan.py \
+  --profile capabilities/document-formatting/fixtures/consumer-profile.synthetic.v1.json \
+  --output Outputs/document-formatting-plan.json
+```
+
+Consumers keep their own tokens, archetypes, exemplars, branding, and private provider identities; Automation owns the reusable orchestration contract.
 
 Social-publication prototype:
 
