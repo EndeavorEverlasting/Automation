@@ -240,15 +240,42 @@ def _projection_changes(
     ok_untracked, untracked = _changed(
         root, ["ls-files", "--others", "--exclude-standard", "--", *paths]
     )
+    ok_ignored, ignored_untracked = _changed(
+        root,
+        [
+            "ls-files",
+            "--others",
+            "--ignored",
+            "--exclude-standard",
+            "--",
+            *paths,
+        ],
+    )
     return (
-        all((ok_committed, ok_staged, ok_unstaged, ok_untracked)),
+        all((ok_committed, ok_staged, ok_unstaged, ok_untracked, ok_ignored)),
         {
             "committed": committed,
             "staged": staged,
             "unstaged": unstaged,
             "untracked": untracked,
+            "ignored_untracked": ignored_untracked,
         },
     )
+
+
+def _local_symlinks(root: Path, paths: list[str]) -> list[str]:
+    symlinks: set[str] = set()
+    for rel in paths:
+        candidate = root / rel
+        if candidate.is_symlink():
+            symlinks.add(rel)
+            continue
+        if not candidate.is_dir():
+            continue
+        for child in candidate.rglob("*"):
+            if child.is_symlink():
+                symlinks.add(child.relative_to(root).as_posix())
+    return sorted(symlinks)
 
 
 def _baseline_files(root: Path, baseline: str, paths: list[str]) -> tuple[bool, list[str]]:
@@ -404,6 +431,7 @@ def _projection_gate(
             projection_paths=paths,
         )
 
+    symlinks = _local_symlinks(root, paths)
     missing = [name for name in baseline_files if not (root / name).is_file()]
     changes_ok, changes = _projection_changes(
         root, base=baseline, head=local_head, paths=paths
@@ -421,7 +449,9 @@ def _projection_gate(
             + changes["staged"]
             + changes["unstaged"]
             + changes["untracked"]
+            + changes["ignored_untracked"]
             + missing
+            + symlinks
         )
     )
     if changed_paths:
@@ -432,6 +462,7 @@ def _projection_gate(
             changed_paths=changed_paths,
             changes=changes,
             missing_tracked_files=missing,
+            symlink_paths=symlinks,
         )
 
     return _gate(
