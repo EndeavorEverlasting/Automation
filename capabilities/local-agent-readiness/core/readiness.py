@@ -48,7 +48,7 @@ def _load_json(path: Path) -> dict[str, Any]:
 
 
 def _path_is_safe(path: str) -> bool:
-    if not path or "\" in path:
+    if not path or chr(92) in path:
         return False
     candidate = Path(path)
     if candidate.is_absolute():
