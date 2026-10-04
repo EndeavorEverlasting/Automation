@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CORE = ROOT / "capabilities/agent-runtime-fabric/core/fabric.py"
 FIXTURES = ROOT / "capabilities/agent-runtime-fabric/fixtures"
+SCHEMAS = ROOT / "capabilities/agent-runtime-fabric/schemas"
 
 spec = importlib.util.spec_from_file_location("agent_runtime_fabric", CORE)
 assert spec is not None and spec.loader is not None
@@ -130,12 +131,40 @@ class AgentRuntimeFabricTests(unittest.TestCase):
         profile = load("cloud-capped-executor.synthetic.v1.json")
         profile["quotas"]["cloud_agent_launches"] = {
             "state": "UNKNOWN",
-            "remaining": None,
             "unit": "launch",
         }
         decision = fabric.assess(profile, requirement())
         self.assertFalse(decision.allowed)
         self.assertIn("QUOTA_UNKNOWN:cloud_agent_launches", decision.reasons)
+
+    def test_runtime_and_schema_strictness_reject_unknown_fields(self) -> None:
+        profile = load("cloud-capped-executor.synthetic.v1.json")
+        profile["unexpected"] = True
+        with self.assertRaises(fabric.RuntimeFabricError):
+            fabric.validate_profile(profile)
+
+        req = requirement()
+        req["unexpected"] = True
+        with self.assertRaises(fabric.RuntimeFabricError):
+            fabric.validate_requirement(req)
+
+    def test_quota_objects_reject_unknown_fields(self) -> None:
+        profile = load("cloud-capped-executor.synthetic.v1.json")
+        profile["quotas"]["cloud_agent_launches"]["unexpected"] = 1
+        with self.assertRaises(fabric.RuntimeFabricError):
+            fabric.validate_profile(profile)
+
+    def test_route_schema_binds_state_and_evidence_shapes(self) -> None:
+        schema = json.loads(
+            (SCHEMAS / "route-decision.v1.json").read_text(encoding="utf-8")
+        )
+        evaluation = schema["properties"]["evaluations"]["items"]
+        self.assertEqual(
+            evaluation["properties"]["profile"]["$ref"],
+            "runtime-profile.v1.json",
+        )
+        self.assertFalse(evaluation["properties"]["admission"]["$ref"] == "")
+        self.assertGreaterEqual(len(schema["allOf"]), 2)
 
     def test_duplicate_adapter_registration_fails_closed(self) -> None:
         profile = load("cloud-capped-executor.synthetic.v1.json")
