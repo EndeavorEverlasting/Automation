@@ -179,6 +179,32 @@ jobs:
             --required-feature revision_readback \
             --output Outputs/document-formatting-google-docs-plan.json
 
+      - name: Build document-formatting accepted-degradation plan
+        run: |
+          python capabilities/document-formatting/adapters/google_docs.py \
+            --ir Outputs/document-formatting-ir.json \
+            --required-feature semantic_headings \
+            --required-feature dynamic_page_fields \
+            --degradation-policy capabilities/document-formatting/fixtures/google-docs-degradation-policy.synthetic.v1.json \
+            --output Outputs/document-formatting-google-docs-degraded-plan.json
+
+      - name: Validate document-formatting accepted-degradation plan
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          plan = json.loads(Path("Outputs/document-formatting-google-docs-degraded-plan.json").read_text(encoding="utf-8"))
+          report = plan["capability_report"]
+          assert report["state"] == "READY_WITH_ACCEPTED_DEGRADATION", plan
+          assert report["blocked_features"] == [], plan
+          assert [item["feature"] for item in report["accepted_degradations"]] == ["dynamic_page_fields"], plan
+          assert len(plan["required_disclosures"]) == 1, plan
+          disclosure = plan["required_disclosures"][0]
+          assert disclosure["feature"] == "dynamic_page_fields", disclosure
+          assert "static" in disclosure["fallback_semantics"].lower(), disclosure
+          PY
+
       - name: Validate document-formatting P95 artifacts
         run: |
           python - <<'PY'
