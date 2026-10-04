@@ -1,0 +1,136 @@
+{
+  "schema_version": "automation-artifact-continuity-preflight/v1",
+  "contract_id": "artifact-continuity-preflight",
+  "packet_schema_version": "automation-artifact-continuity-preflight-packet/v1",
+  "purpose": "Make provider-backed artifact continuity and required representation fidelity a repository/workflow inheritance rule rather than a repeatedly rediscovered per-repository judgment.",
+  "trigger_conditions": [
+    "entering or creating a repository/workflow that references provider-backed artifacts",
+    "a task reads, edits, reformats, exports, or creates a document/spreadsheet/presentation/file",
+    "a known artifact mapping or canonical cloud source is already available",
+    "an agent is about to return a downloadable/local artifact for work that has a provider-backed source",
+    "handoff or closeout would otherwise leave a provider-backed mutation or requested representation change unsynchronized"
+  ],
+  "required_fields": [
+    "schema_version",
+    "work_unit_id",
+    "artifact_semantic_id",
+    "artifact_action",
+    "required_fidelity_dimensions",
+    "execution_environment",
+    "known_provider_source",
+    "exact_source_binding_state",
+    "provider_access_state",
+    "provider_write_state",
+    "local_output_role",
+    "provider_link_policy",
+    "sync_obligation",
+    "result_state",
+    "proof_ceiling"
+  ],
+  "artifact_actions": [
+    "read",
+    "edit",
+    "format",
+    "export",
+    "create"
+  ],
+  "fidelity_dimensions": [
+    "identity",
+    "content",
+    "structure",
+    "presentation"
+  ],
+  "execution_environments": [
+    "CURRENT_CHAT_RUNTIME",
+    "LOCAL_AGENT_RUNTIME",
+    "CI_OR_REMOTE_RUNNER",
+    "OPERATOR_OR_PHYSICAL_RUNTIME",
+    "UNKNOWN_RUNTIME"
+  ],
+  "exact_source_binding_states": [
+    "RESOLVED",
+    "UNRESOLVED",
+    "NOT_APPLICABLE"
+  ],
+  "provider_access_states": [
+    "AVAILABLE",
+    "BLOCKED",
+    "UNAVAILABLE",
+    "UNKNOWN",
+    "NOT_APPLICABLE"
+  ],
+  "provider_write_states": [
+    "AUTHORIZED",
+    "READ_ONLY",
+    "UNAVAILABLE",
+    "UNKNOWN",
+    "NOT_APPLICABLE"
+  ],
+  "local_output_roles": [
+    "NO_LOCAL_OUTPUT",
+    "EPHEMERAL_DERIVATIVE",
+    "PERSISTENT_EXPLICIT_EXPORT",
+    "CANONICAL_LOCAL",
+    "CANONICAL_NEW_ARTIFACT"
+  ],
+  "provider_link_policies": [
+    "PRIMARY_WHEN_AVAILABLE",
+    "NOT_APPLICABLE"
+  ],
+  "sync_obligations": [
+    "NONE_PENDING",
+    "PENDING_PROVIDER_SYNC",
+    "PENDING_SOURCE_RESOLUTION"
+  ],
+  "result_states": [
+    "READY_PROVIDER_FIRST",
+    "READY_LOCAL_WITH_SYNC_OBLIGATION",
+    "READY_NO_PROVIDER_SOURCE",
+    "BLOCKED_SOURCE_RESOLUTION",
+    "BLOCKED_PROVIDER_WRITE",
+    "BLOCKED_PROVIDER_ACCESS"
+  ],
+  "invariants": [
+    "Known provider-backed source identity must be considered before creating a new local canonical artifact.",
+    "Requested fidelity dimensions are part of the acceptance contract; synchronization is not just identity/link parity.",
+    "Formatting work requires presentation fidelity in addition to preserving applicable content and structure.",
+    "When an exact provider source is resolved and accessible, provider authority is checked before consuming or mutating a derivative.",
+    "When a provider write is authorized for edit/format work, the provider source is the completion target; a local-only derivative is not completion.",
+    "A local derivative that visually differs from an unchanged authoritative provider source is not a synchronized formatting result.",
+    "A local file generated from a provider-backed source is ephemeral by default. A persistent derivative requires explicit export intent.",
+    "When provider access or write authority is unavailable, safe local work may continue only with an explicit unresolved synchronization obligation and must not be reported as synchronized.",
+    "When a verified provider link is available, return it as the primary artifact reference.",
+    "Filename/title search is discovery only. Once exact source identity is known, normal execution uses the exact binding.",
+    "Current-runtime provider work stays in CURRENT_CHAT_RUNTIME when that runtime has the required provider access and authority.",
+    "Local executors consume sanitized semantic evidence and exact READY handoffs; they do not choose provider authority, invent locators, or downgrade requested fidelity.",
+    "A new repository inherits this semantic contract by version/reference; recopying the principle into each repository is migration debt."
+  ],
+  "future_inheritance": {
+    "new_repository_rule": "Repository/bootstrap tooling should expose artifact-continuity-preflight/v1 from root wayfinding or a pinned shared dependency before artifact-producing work begins.",
+    "existing_repository_rule": "Migrate representative existing consumers by archetype; do not require blanket handwritten duplication.",
+    "capability_relationship": "The preflight decides when artifact continuity applies and which fidelity dimensions are required. capabilities/artifact-sync owns synchronization mechanics and verification once a binding is selected."
+  },
+  "privacy": {
+    "forbidden_key_fragments": [
+      "drive_file_id",
+      "google_drive_id",
+      "access_token",
+      "refresh_token",
+      "password",
+      "cookie",
+      "api_key",
+      "secret",
+      "credential",
+      "authorization"
+    ],
+    "forbidden_string_patterns": [
+      "drive.google.com/",
+      "docs.google.com/document/",
+      "docs.google.com/spreadsheets/",
+      "docs.google.com/presentation/",
+      "://"
+    ],
+    "rule": "Tracked preflight packets use semantic identities and sanitized state only; URL-shaped values and raw private provider locators remain in protected provider transport."
+  },
+  "proof_ceiling": "Deterministic artifact-authority and required-fidelity routing from supplied evidence only; provider authentication, live source mutation, rendered visual comparison, deployment, and production behavior remain separate proof."
+}

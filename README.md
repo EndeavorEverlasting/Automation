@@ -119,6 +119,25 @@ python capabilities/playlist-link-extraction/adapters/yt-dlp-json/adapt.py `
 
 Live provider execution remains unproven; status stays `CORE_IMPLEMENTED_ADAPTERS_PENDING`.
 
+
+### Artifact continuity before synchronization
+
+Before artifact-producing work decides to create a local file, use the repository-wide [artifact continuity preflight](docs/ARTIFACT_CONTINUITY_PREFLIGHT.md) and its [machine-readable contract](harness/contracts/artifact-continuity-preflight.v1.json).
+
+`artifact-continuity-preflight/v1` is the activation/inheritance layer: it makes existing provider source authority, current-runtime provider work, local derivative role, provider-link delivery, and unresolved sync obligations explicit. `artifact-sync` remains the mechanics layer.
+
+### Artifact synchronization
+
+- [`artifact-sync`](capabilities/artifact-sync/CAPABILITY.md) — status `CONTRACT_DEFINED_RUST_IMPLEMENTATION_PENDING`
+
+Provider-backed artifact edits must not silently stop at local-only derivatives. The admitted v1 contract uses semantic bindings, exact provider identity resolved only from protected runtime state, ephemeral-by-default local materialization, fail-closed conflicts, provider-native mutation for native workspace documents, and read-back verification before a mutation can report `SYNCED`.
+
+See:
+- [binding contract](capabilities/artifact-sync/schemas/binding.v1.json)
+- [receipt contract](capabilities/artifact-sync/schemas/receipt.v1.json)
+- [P04 factoring plan](docs/plans/P04_ARTIFACT_SYNC_FACTORING_2026-10-03.md)
+- [READY Cursor handoff](docs/examples/runtime-handoff.artifact-sync-rust-cli.json)
+
 ## Existing experiments
 
 This repository began as a small automation sandbox. Early experiments may predate the current charter. New work should follow the charter rather than treating historical layout as the architectural model.

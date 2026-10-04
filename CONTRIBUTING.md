@@ -130,3 +130,28 @@ A contribution should distinguish:
 - production verified.
 
 Never collapse those states into one completion claim.
+
+
+## Provider-backed artifact changes
+
+Reusable provider-backed file/document synchronization belongs behind the `artifact-sync` capability rather than in one consumer's ad hoc script.
+
+For new or modified provider-backed artifact flows:
+
+- bind by semantic identity plus a private runtime locator handle, never a tracked provider URL or raw provider file ID;
+- default local materialization to ephemeral; persistent mirrors require an explicit bounded storage budget;
+- do not treat local-only output as successful completion of a provider-backed mutation;
+- fail closed when both sides changed since the last verified common state;
+- use provider-native mutation APIs for native documents/spreadsheets/presentations and raw byte replacement only for blob files;
+- require provider write plus read-back verification before reporting `SYNCED`;
+- keep authentication, tokens, account context, and private locator maps outside Git;
+- route semantic changes to the artifact-sync contract owner rather than asking a lower-capability executor to invent policy.
+
+
+## Artifact continuity is a bootstrap/inheritance concern
+
+Do not solve provider-backed artifact continuity by adding a fresh handwritten rule to each repository.
+
+Repositories/workflows that may consume or produce provider-backed artifacts should consume `artifact-continuity-preflight/v1` through root wayfinding, a pinned shared dependency, or repository/bootstrap tooling.
+
+The preflight determines known provider source, exact identity, runtime/provider ownership, local derivative role, provider-link delivery, and unresolved sync obligations. `artifact-sync` owns synchronization mechanics after the preflight selects a binding.
