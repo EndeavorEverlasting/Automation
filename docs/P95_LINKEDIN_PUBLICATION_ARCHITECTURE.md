@@ -134,7 +134,9 @@ operator-approved post text
   -> linkedin.build_text_post_request
   -> runtime HTTP transport injects OAuth token
   -> POST /rest/posts
-  -> HTTP 201 + x-restli-id
+  -> raw LinkedIn response
+  -> linkedin.translate_post_response
+  -> provider-neutral result
   -> core PublicationReceipt(state=PUBLISHED)
   -> terminal value: post exists + provider post ID captured
 ```
@@ -231,6 +233,12 @@ The post itself is the first live provider proof.
 **Provider mismatch gap found:** adapter request-build errors now become provider-neutral `PROVIDER_REQUEST_BUILD_FAILED` receipts instead of uncaught exceptions.
 
 **Schema/runtime mismatch found:** v1 schema strings now reject whitespace-only request IDs, provider names, and text exactly as runtime validation does.
+
+**Provider-response leakage found:** the first prototype let the reusable core interpret LinkedIn-specific HTTP 201 and `x-restli-id`. Response translation now terminates in `linkedin.translate_post_response`; the core accepts only provider-neutral outcomes.
+
+**Portability-proof gap found:** owner-repository tests were insufficient to prove consumer portability. An isolated-consumer canary now copies only the published `social-publication` capability surface into an otherwise empty temporary context and exercises both success and stale-approval behavior.
+
+**Discoverability gap found:** the capability initially lacked root wayfinding. README now points directly to the capability, prototype invocation, P95 architecture, and proof ceiling.
 
 **Provider coupling check:** core tests can run without LinkedIn imports or LinkedIn identity. Provider topology terminates at the adapter.
 
