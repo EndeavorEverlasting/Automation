@@ -530,8 +530,19 @@ def _runtime_gate(
             return _gate("FAIL", "Live-host observation contains a malformed claim.")
         claim_id = claim.get("id")
         state = claim.get("state")
+        evidence_refs = claim.get("evidence_refs")
         if not isinstance(claim_id, str) or not isinstance(state, str):
             return _gate("FAIL", "Live-host observation contains a malformed claim.")
+        if (
+            not isinstance(evidence_refs, list)
+            or not evidence_refs
+            or not all(isinstance(ref, str) and ref.strip() for ref in evidence_refs)
+        ):
+            return _gate(
+                "FAIL",
+                "Live-host observation claims require non-empty evidence_refs.",
+                claim_id=claim_id,
+            )
         claim_states[claim_id] = state
 
     missing_claims = [
