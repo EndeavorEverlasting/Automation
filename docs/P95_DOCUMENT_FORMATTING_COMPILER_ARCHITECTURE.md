@@ -116,8 +116,8 @@ IR + required features
 Internal navigation cannot be treated as a one-shot precomputed mutation because heading identities are provider-owned. The prototype therefore uses:
 
 1. `CONSTRUCT_AND_STYLE` — content/style plan under revision control.
-2. `RESOLVE_HEADING_IDENTITIES` — provider readback.
-3. `APPLY_INTERNAL_LINKS` — bind links against observed heading identities under revision control.
+2. `RESOLVE_HEADING_IDENTITIES` — provider readback resolves heading identities **and the ranges of the ordered internal-link placeholders emitted in phase 1**.
+3. `APPLY_INTERNAL_LINKS` — bind each placeholder to its observed target heading under revision control.
 4. `FINAL_READBACK` — provider evidence boundary.
 
 This is deeper than a direct `source -> batchUpdate` mapper because it hides volatile provider identity mechanics behind the adapter.
@@ -151,8 +151,11 @@ No weaker state promotes itself to a stronger one.
 Prototype evidence changed the initial design in three ways:
 
 1. **Images became a first-class source/IR block.** The accepted evidence-packet consumer requires this; hiding images in provider code would leak archetype semantics.
-2. **Internal links became explicitly multi-phase.** Provider heading identities are not safely precomputable.
+2. **Internal links became explicitly multi-phase and position-preserving.** Provider heading identities are not safely precomputable, so construction emits ordered placeholders; readback resolves both heading identities and placeholder ranges; the later binding phase targets those explicit placeholders.
 3. **Palette and non-color mechanics remain separate data owners.** This preserves the existing generic-lock-before-branding contract and lets consumers change color without accidentally proving geometry stability.
+4. **Published schemas were tightened to runtime parity.** Review found that permissive source/IR schemas could admit payloads the compiler/adapter rejected. Nested source blocks and IR block variants are now declared, and the adapter validates IR itself before translating.
+5. **CLI artifact publication became typed and rollback-safe.** Input/read/JSON/write failures are handled without tracebacks, and IR + receipt are staged as a pair so a receipt-write failure cannot leave a newly published success-looking IR.
+6. **Block-to-role mapping is single-role in v1.** Review proved that accepting multi-role mappings while emitting only one role would create split semantic truth. Multi-role composition is rejected until a concrete representation is designed and tested.
 
 ## Proof ceiling
 
