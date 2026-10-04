@@ -11,7 +11,7 @@ if str(CAPABILITY_DIR) not in sys.path:
     sys.path.insert(0, str(CAPABILITY_DIR))
 
 from adapters.linkedin import build_text_post_request
-from core.publication import content_sha256, execute_approved_publication, prepare_preview
+from core.publication import execute_approved_publication, prepare_preview
 
 
 def _load_intent(path: Path) -> dict[str, Any]:
@@ -68,8 +68,6 @@ def run_prototype(
         build_provider_request=build_request,
         send_provider_request=transport,
     )
-    receipt["prototype_mode"] = mode
-    receipt["preview_content_sha256"] = content_sha256(intent)
     return receipt
 
 
