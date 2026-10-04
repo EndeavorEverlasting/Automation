@@ -273,6 +273,72 @@ class LocalAgentReadinessTests(unittest.TestCase):
             opencode["gates"]["AGENT_PROJECTION_MATCHES_BASELINE"]["state"], "PASS"
         )
 
+    def test_ignored_untracked_shadow_is_visible(self) -> None:
+        ignore = self.work / ".gitignore"
+        ignore.write_text(".cursor/hooks/ignored-shadow.py\n", encoding="utf-8")
+        git(self.work, "add", ".gitignore")
+        git(self.work, "commit", "-m", "ignore local cursor shadow")
+
+        shadow = self.work / ".cursor/hooks/ignored-shadow.py"
+        shadow.write_text("print('ignored shadow')\n", encoding="utf-8")
+
+        cursor = self.assess("cursor")
+        opencode = self.assess("opencode")
+
+        self.assertEqual(
+            cursor["gates"]["AGENT_PROJECTION_MATCHES_BASELINE"]["state"], "FAIL"
+        )
+        self.assertIn(
+            ".cursor/hooks/ignored-shadow.py",
+            cursor["gates"]["AGENT_PROJECTION_MATCHES_BASELINE"]["evidence"]["changes"]["ignored_untracked"],
+        )
+        self.assertEqual(
+            opencode["gates"]["AGENT_PROJECTION_MATCHES_BASELINE"]["state"], "PASS"
+        )
+
+    def test_declared_projection_symlink_is_rejected(self) -> None:
+        external = Path(self.tmp.name) / "external-hook.py"
+        external.write_text("print('external')\n", encoding="utf-8")
+        link = self.seed / ".cursor" / "symlink-hook.py"
+        try:
+            link.symlink_to(external)
+        except OSError as exc:
+            self.skipTest(f"symlink unavailable: {exc}")
+        git(self.seed, "add", ".cursor/symlink-hook.py")
+        git(self.seed, "commit", "-m", "add tracked projection symlink")
+        git(self.seed, "push", "origin", "main")
+        self.update_work()
+
+        profile = json.loads(self.profile_path.read_text(encoding="utf-8"))
+        profile["projection_sets"]["symlink"] = {
+            "paths": [".cursor/symlink-hook.py"]
+        }
+        profile["agents"]["symlink-agent"] = {
+            "projection_sets": ["symlink"],
+            "required_gates": [
+                "REPOSITORY_CHECKOUT_CURRENT",
+                "AGENT_PROJECTION_MATCHES_BASELINE",
+            ],
+            "runtime_claims_required": [],
+        }
+        profile_path = self.profile_path.parent / "symlink-profile.json"
+        profile_path.write_text(json.dumps(profile, indent=2) + "\n", encoding="utf-8")
+        loaded = load_profile(profile_path)
+
+        receipt = assess_readiness(
+            self.work,
+            loaded,
+            agent_id="symlink-agent",
+            refresh_remote=True,
+        )
+        self.assertEqual(
+            receipt["gates"]["AGENT_PROJECTION_MATCHES_BASELINE"]["state"], "FAIL"
+        )
+        self.assertIn(
+            ".cursor/symlink-hook.py",
+            receipt["gates"]["AGENT_PROJECTION_MATCHES_BASELINE"]["evidence"]["symlink_paths"],
+        )
+
     def test_live_observation_is_agent_specific_and_profile_bound(self) -> None:
         cursor_obs = self.write_observation("cursor", self.work / "cursor-observation.json")
 
@@ -328,6 +394,19 @@ class LocalAgentReadinessTests(unittest.TestCase):
             64,
         )
 
+    def test_invalid_runtime_claim_state_is_rejected(self) -> None:
+        observation = self.write_observation(
+            "cursor", self.work / "cursor-invalid-state.json"
+        )
+        value = json.loads(observation.read_text(encoding="utf-8"))
+        value["claims"][0]["state"] = "MAYBE"
+        observation.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
+
+        receipt = self.assess("cursor", runtime_observation=observation)
+        gate = receipt["gates"]["LOCAL_AGENT_RUNTIME_VERIFIED"]
+        self.assertEqual(gate["state"], "FAIL")
+        self.assertIn("unsupported state", gate["evidence"]["error"])
+
     def test_projection_change_after_observation_invalidates_live_proof(self) -> None:
         floor = self.head()
         observation = self.write_observation(
@@ -379,6 +458,63 @@ class LocalAgentReadinessTests(unittest.TestCase):
         self.assertEqual(full["gates"]["ACTUAL_PUSH_PROVEN"]["state"], "PASS")
         self.assertEqual(full["state"], "READY")
         self.assertEqual(full["diagnosis"], "LOCAL_AGENT_READY")
+
+    def test_head_change_during_assessment_prevents_ready_receipt(self) -> None:
+        observation = self.write_observation(
+            "opencode", self.work / "opencode-race.json"
+        )
+        original = READINESS._actual_push_gate
+
+        def mutate_head(*args, **kwargs):
+            race = self.work / "src" / "race.py"
+            race.write_text("print('race')\n", encoding="utf-8")
+            git(self.work, "add", "src/race.py")
+            git(self.work, "commit", "-m", "concurrent head advance")
+            return original(*args, **kwargs)
+
+        READINESS._actual_push_gate = mutate_head
+        try:
+            receipt = self.assess("opencode", runtime_observation=observation)
+        finally:
+            READINESS._actual_push_gate = original
+
+        self.assertEqual(receipt["state"], "NOT_READY")
+        self.assertEqual(
+            receipt["gates"]["REPOSITORY_CHECKOUT_CURRENT"]["state"], "FAIL"
+        )
+        self.assertEqual(
+            receipt["diagnosis"], "CHECKOUT_CHANGED_DURING_ASSESSMENT"
+        )
+        self.assertNotEqual(
+            receipt["local_head"],
+            receipt["assessment_head_end"],
+        )
+
+    def test_projection_change_during_assessment_is_rechecked(self) -> None:
+        observation = self.write_observation(
+            "cursor", self.work / "cursor-projection-race.json"
+        )
+        original = READINESS._actual_push_gate
+
+        def mutate_projection(*args, **kwargs):
+            target = self.work / ".cursor" / "hooks" / "p07.py"
+            target.write_text(
+                target.read_text(encoding="utf-8") + "# concurrent local drift\n",
+                encoding="utf-8",
+            )
+            return original(*args, **kwargs)
+
+        READINESS._actual_push_gate = mutate_projection
+        try:
+            receipt = self.assess("cursor", runtime_observation=observation)
+        finally:
+            READINESS._actual_push_gate = original
+
+        self.assertEqual(receipt["state"], "NOT_READY")
+        self.assertEqual(
+            receipt["gates"]["AGENT_PROJECTION_MATCHES_BASELINE"]["state"], "FAIL"
+        )
+        self.assertEqual(receipt["diagnosis"], "LOCAL_AGENT_PROJECTION_DRIFT")
 
     def test_assessment_does_not_modify_worktree_configuration(self) -> None:
         local_note = self.work / "local-note.txt"
