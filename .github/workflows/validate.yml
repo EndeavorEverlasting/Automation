@@ -152,9 +152,10 @@ jobs:
           assert not any(item in serialized for item in forbidden), receipt
           PY
 
-      - name: Validate local-agent readiness profile fixture
+      - name: Validate local-agent readiness capability
         run: |
           mkdir -p Outputs
+          python -m unittest tests.test_local_agent_readiness -v
           python capabilities/local-agent-readiness/verify.py \
             --repo-root . \
             --profile capabilities/local-agent-readiness/fixtures/profile.multi-agent.synthetic.v1.json \
