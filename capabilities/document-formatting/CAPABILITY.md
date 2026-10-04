@@ -111,3 +111,23 @@ The Google Docs adapter is deliberately two-phase for internal navigation: const
 Current Google Docs API evidence exposes page-number/page-count AutoText in read resources but no batchUpdate request that creates AutoText. Therefore `dynamic_page_fields` remains a typed unsupported creation capability rather than being approximated with static text.
 
 This P95 slice prototypes architecture. It does not claim live Google Docs mutation or visual fidelity.
+
+
+## Accepted provider degradations
+
+A consumer may require a feature while explicitly accepting **one exact known provider limitation**.
+
+The provider profile may add `accepted_degradations` entries containing:
+
+- `feature` — must also appear in `required_features`;
+- `accepted_state` — exact adapter-observed capability state;
+- `disclosure_required` — whether the resulting plan must surface the limitation;
+- `fallback_semantics` — the precise behavior allowed instead.
+
+This is not a generic best-effort switch. If the provider state differs from the declared state, the adapter still fails closed.
+
+For the current Google Docs page-field boundary, the synthetic P95 control accepts only:
+
+`READABLE_EXISTING_NOT_CREATABLE_VIA_CURRENT_BATCHUPDATE_SURFACE`
+
+with a static document-identity footer and explicit capability-gap disclosure.
