@@ -185,9 +185,13 @@ class HookProtocolFabricTests(unittest.TestCase):
             canonical_event="prompt.submit",
             host_event="UserPromptSubmit",
             payload={
-                "prompt": "deploy",
-                "turn_id": "turn-secret",
+                "cwd": "/repo",
+                "hook_event_name": "UserPromptSubmit",
+                "model": "gpt",
                 "permission_mode": "default",
+                "prompt": "deploy",
+                "session_id": "session-secret",
+                "turn_id": "turn-secret",
             },
             host_version="synthetic-codex-1",
         )
