@@ -1,0 +1,8 @@
+[
+  {
+    "feature": "dynamic_page_fields",
+    "accepted_state": "READABLE_EXISTING_NOT_CREATABLE_VIA_CURRENT_BATCHUPDATE_SURFACE",
+    "disclosure_required": true,
+    "fallback_semantics": "Use a static document-identity footer and explicitly disclose that dynamic page numbering was not created."
+  }
+]
