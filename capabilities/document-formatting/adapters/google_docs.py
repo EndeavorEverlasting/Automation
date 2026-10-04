@@ -116,7 +116,12 @@ def capability_report(
         observed_state = CAPABILITY_STATES.get(feature, "UNSUPPORTED_BY_PROTOTYPE")
         detail[feature] = observed_state
         policy = policies.get(feature)
-        if policy and policy["accepted_state"] == observed_state:
+        known_provider_state = feature in CAPABILITY_STATES
+        if (
+            known_provider_state
+            and policy
+            and policy["accepted_state"] == observed_state
+        ):
             accepted.append({**policy, "observed_state": observed_state})
         else:
             blocked.append(feature)
