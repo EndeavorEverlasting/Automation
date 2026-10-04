@@ -69,6 +69,109 @@ def capability_report(required_features: Sequence[str]) -> dict[str, Any]:
     }
 
 
+
+def _require_text(value: Any, *, path: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise GoogleDocsAdapterError("GDA_IR_SCHEMA", f"{path} must be non-empty text")
+    return value
+
+
+def validate_ir(ir: Any) -> None:
+    if not isinstance(ir, Mapping) or ir.get("schema_version") != IR_SCHEMA:
+        raise GoogleDocsAdapterError(
+            "GDA_IR_SCHEMA",
+            f"IR schema must be {IR_SCHEMA!r}",
+        )
+    blocks = ir.get("blocks")
+    if not isinstance(blocks, list) or not blocks:
+        raise GoogleDocsAdapterError("GDA_IR_SCHEMA", "IR blocks must be a non-empty array")
+
+    for index, block in enumerate(blocks):
+        path = f"blocks[{index}]"
+        if not isinstance(block, Mapping):
+            raise GoogleDocsAdapterError("GDA_IR_SCHEMA", f"{path} must be an object")
+        kind = _require_text(block.get("kind"), path=f"{path}.kind")
+        _require_text(block.get("component"), path=f"{path}.component")
+        style = block.get("style")
+        if not isinstance(style, Mapping):
+            raise GoogleDocsAdapterError("GDA_IR_SCHEMA", f"{path}.style must be an object")
+        _require_text(style.get("role_id"), path=f"{path}.style.role_id")
+        if not isinstance(style.get("mechanics"), Mapping):
+            raise GoogleDocsAdapterError(
+                "GDA_IR_SCHEMA", f"{path}.style.mechanics must be an object"
+            )
+        if not isinstance(style.get("colors"), Mapping):
+            raise GoogleDocsAdapterError(
+                "GDA_IR_SCHEMA", f"{path}.style.colors must be an object"
+            )
+
+        if kind in {"heading", "text"}:
+            _require_text(block.get("text"), path=f"{path}.text")
+            continue
+        if kind == "metadata":
+            _require_text(block.get("label"), path=f"{path}.label")
+            _require_text(block.get("value"), path=f"{path}.value")
+            continue
+        if kind == "bullet_list":
+            items = block.get("items")
+            if not isinstance(items, list) or not items:
+                raise GoogleDocsAdapterError(
+                    "GDA_IR_SCHEMA", f"{path}.items must be a non-empty array"
+                )
+            for item_index, item in enumerate(items):
+                _require_text(item, path=f"{path}.items[{item_index}]")
+            continue
+        if kind == "table":
+            headers = block.get("headers")
+            rows = block.get("rows")
+            if not isinstance(headers, list) or not headers:
+                raise GoogleDocsAdapterError(
+                    "GDA_IR_SCHEMA", f"{path}.headers must be a non-empty array"
+                )
+            for header_index, header in enumerate(headers):
+                _require_text(header, path=f"{path}.headers[{header_index}]")
+            if not isinstance(rows, list):
+                raise GoogleDocsAdapterError(
+                    "GDA_IR_SCHEMA", f"{path}.rows must be an array"
+                )
+            for row_index, row in enumerate(rows):
+                if not isinstance(row, list) or len(row) != len(headers):
+                    raise GoogleDocsAdapterError(
+                        "GDA_IR_SCHEMA",
+                        f"{path}.rows[{row_index}] must contain {len(headers)} cells",
+                    )
+                for col_index, cell in enumerate(row):
+                    _require_text(cell, path=f"{path}.rows[{row_index}][{col_index}]")
+            continue
+        if kind == "image":
+            _require_text(block.get("asset_ref"), path=f"{path}.asset_ref")
+            _require_text(block.get("alt_text"), path=f"{path}.alt_text")
+            caption = block.get("caption")
+            if caption is not None:
+                _require_text(caption, path=f"{path}.caption")
+            continue
+        if kind == "link":
+            _require_text(block.get("label"), path=f"{path}.label")
+            link_type = block.get("link_type")
+            if link_type == "external":
+                _require_text(block.get("resource_url"), path=f"{path}.resource_url")
+                continue
+            if link_type == "internal":
+                _require_text(
+                    block.get("target_section_id"),
+                    path=f"{path}.target_section_id",
+                )
+                continue
+            raise GoogleDocsAdapterError(
+                "GDA_IR_SCHEMA",
+                f"{path}.link_type must be 'internal' or 'external'",
+            )
+        raise GoogleDocsAdapterError(
+            "GDA_IR_SCHEMA",
+            f"{path}.kind is unsupported: {kind!r}",
+        )
+
+
 def _operation_for_block(block: Mapping[str, Any]) -> list[dict[str, Any]]:
     kind = block["kind"]
     logical_id = block.get("anchor_id") or block.get("section_id")
@@ -143,11 +246,7 @@ def build_plan(
     *,
     required_features: Sequence[str],
 ) -> dict[str, Any]:
-    if not isinstance(ir, Mapping) or ir.get("schema_version") != IR_SCHEMA:
-        raise GoogleDocsAdapterError(
-            "GDA_IR_SCHEMA",
-            f"IR schema must be {IR_SCHEMA!r}",
-        )
+    validate_ir(ir)
 
     capability = capability_report(required_features)
     if capability["unsupported_features"]:
@@ -242,14 +341,36 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        plan = build_plan(_load(args.ir), required_features=args.required_feature)
+        ir = _load(args.ir)
+    except FileNotFoundError as exc:
+        print(f"GDA_INPUT_IO: file not found: {exc.filename}", file=sys.stderr)
+        return 2
+    except (OSError, UnicodeError) as exc:
+        print(f"GDA_INPUT_IO: {exc}", file=sys.stderr)
+        return 2
+    except json.JSONDecodeError as exc:
+        print(
+            f"GDA_INPUT_JSON: invalid JSON at line {exc.lineno} column {exc.colno}",
+            file=sys.stderr,
+        )
+        return 2
+
+    try:
+        plan = build_plan(ir, required_features=args.required_feature)
     except GoogleDocsAdapterError as exc:
         print(f"{exc.code}: {exc}", file=sys.stderr)
         return 2
 
     path = Path(args.output)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(plan, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(plan, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+    except OSError as exc:
+        print(f"GDA_OUTPUT_IO: {exc}", file=sys.stderr)
+        return 2
     return 0
 
 
