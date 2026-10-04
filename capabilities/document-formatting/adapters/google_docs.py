@@ -214,8 +214,6 @@ def build_plan(
     return plan
 
 #!/usr/bin/env python3
-from __future__ import annotations
-
 import argparse
 import importlib.util
 import json
