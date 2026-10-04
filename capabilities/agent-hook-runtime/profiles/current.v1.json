@@ -159,7 +159,8 @@
           },
           "accepted_response_shapes": [
             "cursor.native.prompt.v1"
-          ]
+          ],
+          "event_name_field": "hook_event_name"
         },
         "session.stop": {
           "host_events": [
@@ -186,7 +187,8 @@
             "cursor.native.stop.v1",
             "claude.flat.stop.v1",
             "claude.nested.stop.v1"
-          ]
+          ],
+          "event_name_field": "hook_event_name"
         },
         "session.start": {
           "host_events": [
@@ -212,7 +214,8 @@
           },
           "accepted_response_shapes": [
             "cursor.native.session-start.v1"
-          ]
+          ],
+          "event_name_field": "hook_event_name"
         }
       },
       "proof_ceiling": "Current documented Cursor common-envelope shape plus explicitly documented Claude-compatible Stop response fallbacks. Live acceptance is still required."
@@ -263,7 +266,8 @@
           "accepted_response_shapes": [
             "codex.common.prompt.v1",
             "claude.flat.decision.v1"
-          ]
+          ],
+          "event_name_field": "hook_event_name"
         }
       },
       "proof_ceiling": "Tracks the current open-source Codex UserPromptSubmit schema's required semantic/string fields; nullable transcript_path is treated as optional by this v1 type system. Live client binding remains separate."
