@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -165,6 +166,90 @@ class AgentRuntimeFabricTests(unittest.TestCase):
         )
         self.assertFalse(evaluation["properties"]["admission"]["$ref"] == "")
         self.assertGreaterEqual(len(schema["allOf"]), 2)
+
+    def test_missing_schema_required_fields_fail_closed(self) -> None:
+        profile = load("cloud-capped-executor.synthetic.v1.json")
+        for field in ("hard_limits", "reserve", "quotas", "dispatch_costs"):
+            candidate = dict(profile)
+            del candidate[field]
+            with self.subTest(profile_field=field):
+                with self.assertRaises(fabric.RuntimeFabricError):
+                    fabric.validate_profile(candidate)
+
+        req = requirement()
+        for field in ("expected_usage", "preferred_adapters"):
+            candidate = dict(req)
+            del candidate[field]
+            with self.subTest(requirement_field=field):
+                with self.assertRaises(fabric.RuntimeFabricError):
+                    fabric.validate_requirement(candidate)
+
+    def test_whitespace_normalization_is_used_by_admission(self) -> None:
+        profile = load("cloud-capped-executor.synthetic.v1.json")
+        profile["quotas"]["cloud_agent_launches"]["remaining"] = 10
+        profile["admitted_roles"] = [" EXECUTION_ONLY "]
+        profile["capabilities"] = [" repo_read ", " repo_edit ", " structured_output "]
+        decision = fabric.assess(
+            profile,
+            requirement(
+                required_role=" EXECUTION_ONLY ",
+                required_capabilities=[" repo_edit "],
+            ),
+        )
+        self.assertTrue(decision.allowed, decision.reasons)
+
+    def test_duplicate_normalized_list_values_fail_closed(self) -> None:
+        profile = load("cloud-capped-executor.synthetic.v1.json")
+        profile["capabilities"] = ["repo_edit", " repo_edit "]
+        with self.assertRaises(fabric.RuntimeFabricError):
+            fabric.validate_profile(profile)
+
+        req = requirement(preferred_adapters=["a", " a "])
+        with self.assertRaises(fabric.RuntimeFabricError):
+            fabric.validate_requirement(req)
+
+    def test_non_finite_numeric_probe_values_fail_closed(self) -> None:
+        for invalid in (float("nan"), float("inf"), float("-inf")):
+            profile = load("cloud-capped-executor.synthetic.v1.json")
+            profile["quotas"]["cloud_agent_launches"]["remaining"] = invalid
+            with self.subTest(quota=invalid):
+                with self.assertRaises(fabric.RuntimeFabricError):
+                    fabric.validate_profile(profile)
+
+            profile = load("cloud-capped-executor.synthetic.v1.json")
+            profile["hard_limits"]["wall_clock_ms"] = invalid
+            with self.subTest(hard_limit=invalid):
+                with self.assertRaises(fabric.RuntimeFabricError):
+                    fabric.validate_profile(profile)
+
+    def test_isolated_consumer_canary_runs_copied_portable_library(self) -> None:
+        manifest = json.loads(
+            (
+                ROOT / "capabilities/agent-runtime-fabric/capability.v1.json"
+            ).read_text(encoding="utf-8")
+        )
+        portable = ROOT / manifest["portable_library"]
+        self.assertTrue(portable.is_file())
+
+        with tempfile.TemporaryDirectory() as temp_name:
+            consumer_root = Path(temp_name)
+            copied = consumer_root / "agent_runtime_fabric.py"
+            copied.write_bytes(portable.read_bytes())
+
+            isolated_spec = importlib.util.spec_from_file_location(
+                "isolated_agent_runtime_fabric",
+                copied,
+            )
+            assert isolated_spec is not None and isolated_spec.loader is not None
+            isolated = importlib.util.module_from_spec(isolated_spec)
+            sys.modules[isolated_spec.name] = isolated
+            isolated_spec.loader.exec_module(isolated)
+
+            profile = load("cloud-capped-executor.synthetic.v1.json")
+            profile["quotas"]["cloud_agent_launches"]["remaining"] = 10
+            decision = isolated.assess(profile, requirement())
+            self.assertTrue(decision.allowed, decision.reasons)
+            self.assertEqual(Path(isolated.__file__).resolve().parent, consumer_root)
 
     def test_duplicate_adapter_registration_fails_closed(self) -> None:
         profile = load("cloud-capped-executor.synthetic.v1.json")
