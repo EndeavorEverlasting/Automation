@@ -81,6 +81,17 @@ class AgentHookRuntimeTests(unittest.TestCase):
         self.assertEqual(valid["state"], "VALID")
         self.assertEqual(neutral_response("beforeSubmitPrompt"), {"continue": True})
 
+    def test_cursor_before_submit_validates_attachment_items(self) -> None:
+        invalid = validate_event(
+            "beforeSubmitPrompt",
+            {"prompt": "hello", "attachments": [42, {"type": "other", "file_path": ""}]},
+        )
+        self.assertEqual(invalid["state"], "INVALID_EVENT_SCHEMA")
+        fields = {item["field"] for item in invalid["errors"]}
+        self.assertIn("attachments[0]", fields)
+        self.assertIn("attachments[1].type", fields)
+        self.assertIn("attachments[1].file_path", fields)
+
     def test_cursor_before_submit_does_not_require_conversation_id(self) -> None:
         result = validate_event("beforeSubmitPrompt", {"prompt": "hello"})
         self.assertEqual(result["state"], "VALID")
@@ -130,6 +141,51 @@ class AgentHookRuntimeTests(unittest.TestCase):
             self.assertEqual(receipt["transport"]["state"], "INVALID_JSON")
             self.assertEqual(receipt["cursor_version"], "test-version")
             self.assertFalse(receipt["transport"]["content_persisted"])
+
+    def test_probe_records_current_cursor_protocol_route_without_payload_values(self) -> None:
+        script = CAP / "diagnose_cursor_hook.py"
+        payload = {
+            "prompt": "private prompt",
+            "attachments": [],
+            "hook_event_name": "beforeSubmitPrompt",
+            "cursor_version": "9.99.1",
+            "workspace_roots": ["/private/repo"],
+            "conversation_id": "private-conversation",
+            "generation_id": "private-generation",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    str(script),
+                    "--event",
+                    "beforeSubmitPrompt",
+                    "--failure-policy",
+                    "allow",
+                    "--receipt-dir",
+                    tmp,
+                ],
+                input=json.dumps(payload),
+                text=True,
+                capture_output=True,
+                check=False,
+                env={**os.environ, "CURSOR_VERSION": "9.99.1"},
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertEqual(json.loads(proc.stdout), {"continue": True})
+            receipt_path = next(Path(tmp).glob("cursor-hook-beforeSubmitPrompt-*.json"))
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            route = receipt["protocol_route"]
+            self.assertEqual(route["state"], "MATCHED")
+            self.assertEqual(
+                route["selected"]["profile_id"],
+                "cursor-native-common-envelope-v2",
+            )
+            serialized = json.dumps(route)
+            self.assertNotIn("private prompt", serialized)
+            self.assertNotIn("private-conversation", serialized)
+            self.assertNotIn("private-generation", serialized)
+            self.assertNotIn("/private/repo", serialized)
 
     def test_probe_allow_mode_does_not_export_invalid_session(self) -> None:
         script = CAP / "diagnose_cursor_hook.py"

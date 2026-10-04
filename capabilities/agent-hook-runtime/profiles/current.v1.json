@@ -1,0 +1,276 @@
+{
+  "schema_version": "agent-hook-protocol-registry/v1",
+  "observed_at": "2026-10-04",
+  "evidence_sources": [
+    {
+      "source": "https://prod.cursor.com/docs/hooks",
+      "role": "Cursor native hook config/common input/event shapes"
+    },
+    {
+      "source": "https://prod.cursor.com/docs/reference/third-party-hooks",
+      "role": "Cursor Claude-compatible event/response mappings"
+    },
+    {
+      "source": "https://learn.chatgpt.com/docs/hooks",
+      "role": "Codex lifecycle hook event/output shapes"
+    },
+    {
+      "source": "https://github.com/openai/codex/blob/main/codex-rs/hooks/schema/generated/user-prompt-submit.command.input.schema.json",
+      "role": "Codex generated input schema evidence"
+    },
+    {
+      "source": "https://github.com/openai/codex/blob/main/codex-rs/hooks/schema/generated/user-prompt-submit.command.output.schema.json",
+      "role": "Codex generated output schema evidence"
+    },
+    {
+      "source": "https://github.com/anomalyco/opencode/blob/dev/specs/v2/instructions.md",
+      "role": "OpenCode V2 plugin hook conventions"
+    }
+  ],
+  "profiles": [
+    {
+      "schema_version": "agent-hook-protocol-profile/v1",
+      "profile_id": "cursor-native-minimal-v1",
+      "host_family": "cursor",
+      "shape_version": "cursor/native-minimal-v1",
+      "transport": "json_stdio",
+      "config_shapes": [
+        "cursor-native-config-v1"
+      ],
+      "version_match_mode": "HINT",
+      "host_version_evidence": {
+        "observed_versions": [],
+        "min": null,
+        "max": null,
+        "note": "Historical/minimal compatibility shape; version binding is learned from live observations rather than guessed."
+      },
+      "response_shapes": {
+        "cursor.native.prompt.v1": {
+          "encoder": "cursor-native-prompt-v1"
+        },
+        "cursor.native.stop.v1": {
+          "encoder": "cursor-native-stop-v1"
+        },
+        "cursor.native.session-start.v1": {
+          "encoder": "cursor-native-session-start-v1"
+        }
+      },
+      "events": {
+        "prompt.submit": {
+          "host_events": [
+            "beforeSubmitPrompt"
+          ],
+          "required_fields": {
+            "prompt": "string"
+          },
+          "optional_fields": {
+            "attachments": "array"
+          },
+          "accepted_response_shapes": [
+            "cursor.native.prompt.v1"
+          ]
+        },
+        "session.stop": {
+          "host_events": [
+            "stop"
+          ],
+          "required_fields": {
+            "status": "string",
+            "loop_count": "integer"
+          },
+          "optional_fields": {},
+          "accepted_response_shapes": [
+            "cursor.native.stop.v1"
+          ]
+        },
+        "session.start": {
+          "host_events": [
+            "sessionStart"
+          ],
+          "required_fields": {
+            "session_id": "string",
+            "is_background_agent": "boolean"
+          },
+          "optional_fields": {
+            "composer_mode": "string"
+          },
+          "accepted_response_shapes": [
+            "cursor.native.session-start.v1"
+          ]
+        }
+      },
+      "proof_ceiling": "Compatibility profile for minimal Cursor event shapes. Exact host-version association requires a live version/shape binding."
+    },
+    {
+      "schema_version": "agent-hook-protocol-profile/v1",
+      "profile_id": "cursor-native-common-envelope-v2",
+      "host_family": "cursor",
+      "shape_version": "cursor/native-common-envelope-v2",
+      "transport": "json_stdio",
+      "config_shapes": [
+        "cursor-native-config-v1",
+        "claude-codex-group-config-v1"
+      ],
+      "version_match_mode": "HINT",
+      "host_version_evidence": {
+        "observed_versions": [],
+        "min": null,
+        "max": null,
+        "note": "Current documented common-envelope shape; live observations bind actual Cursor versions."
+      },
+      "response_shapes": {
+        "cursor.native.prompt.v1": {
+          "encoder": "cursor-native-prompt-v1"
+        },
+        "cursor.native.stop.v1": {
+          "encoder": "cursor-native-stop-v1"
+        },
+        "claude.flat.stop.v1": {
+          "encoder": "claude-flat-decision-v1"
+        },
+        "claude.nested.stop.v1": {
+          "encoder": "claude-nested-stop-v1"
+        },
+        "cursor.native.session-start.v1": {
+          "encoder": "cursor-native-session-start-v1"
+        }
+      },
+      "events": {
+        "prompt.submit": {
+          "host_events": [
+            "beforeSubmitPrompt",
+            "UserPromptSubmit"
+          ],
+          "required_fields": {
+            "prompt": "string",
+            "hook_event_name": "string",
+            "cursor_version": "string",
+            "workspace_roots": "array"
+          },
+          "optional_fields": {
+            "attachments": "array",
+            "conversation_id": "string",
+            "generation_id": "string",
+            "model": "string",
+            "model_id": "string",
+            "model_params": "array",
+            "user_email": "string",
+            "transcript_path": "string"
+          },
+          "accepted_response_shapes": [
+            "cursor.native.prompt.v1"
+          ],
+          "event_name_field": "hook_event_name"
+        },
+        "session.stop": {
+          "host_events": [
+            "stop",
+            "Stop"
+          ],
+          "required_fields": {
+            "status": "string",
+            "loop_count": "integer",
+            "hook_event_name": "string",
+            "cursor_version": "string",
+            "workspace_roots": "array"
+          },
+          "optional_fields": {
+            "conversation_id": "string",
+            "generation_id": "string",
+            "model": "string",
+            "model_id": "string",
+            "model_params": "array",
+            "user_email": "string",
+            "transcript_path": "string"
+          },
+          "accepted_response_shapes": [
+            "cursor.native.stop.v1",
+            "claude.flat.stop.v1",
+            "claude.nested.stop.v1"
+          ],
+          "event_name_field": "hook_event_name"
+        },
+        "session.start": {
+          "host_events": [
+            "sessionStart",
+            "SessionStart"
+          ],
+          "required_fields": {
+            "session_id": "string",
+            "is_background_agent": "boolean",
+            "hook_event_name": "string",
+            "cursor_version": "string",
+            "workspace_roots": "array"
+          },
+          "optional_fields": {
+            "composer_mode": "string",
+            "conversation_id": "string",
+            "generation_id": "string",
+            "model": "string",
+            "model_id": "string",
+            "model_params": "array",
+            "user_email": "string",
+            "transcript_path": "string"
+          },
+          "accepted_response_shapes": [
+            "cursor.native.session-start.v1"
+          ],
+          "event_name_field": "hook_event_name"
+        }
+      },
+      "proof_ceiling": "Current documented Cursor common-envelope shape plus explicitly documented Claude-compatible Stop response fallbacks. Live acceptance is still required."
+    },
+    {
+      "schema_version": "agent-hook-protocol-profile/v1",
+      "profile_id": "codex-lifecycle-user-prompt-v1",
+      "host_family": "codex",
+      "shape_version": "codex/lifecycle-user-prompt-current-v1",
+      "transport": "json_stdio",
+      "config_shapes": [
+        "claude-codex-group-config-v1"
+      ],
+      "version_match_mode": "HINT",
+      "host_version_evidence": {
+        "observed_versions": [],
+        "min": null,
+        "max": null,
+        "note": "Codex lifecycle hook shape; exact client-version binding requires live evidence."
+      },
+      "response_shapes": {
+        "codex.common.prompt.v1": {
+          "encoder": "codex-common-prompt-v1"
+        },
+        "claude.flat.decision.v1": {
+          "encoder": "claude-flat-decision-v1"
+        }
+      },
+      "events": {
+        "prompt.submit": {
+          "host_events": [
+            "UserPromptSubmit"
+          ],
+          "required_fields": {
+            "cwd": "string",
+            "hook_event_name": "string",
+            "model": "string",
+            "permission_mode": "string",
+            "prompt": "string",
+            "session_id": "string",
+            "turn_id": "string"
+          },
+          "optional_fields": {
+            "transcript_path": "string",
+            "agent_id": "string",
+            "agent_type": "string"
+          },
+          "accepted_response_shapes": [
+            "codex.common.prompt.v1",
+            "claude.flat.decision.v1"
+          ],
+          "event_name_field": "hook_event_name"
+        }
+      },
+      "proof_ceiling": "Tracks the current open-source Codex UserPromptSubmit schema's required semantic/string fields; nullable transcript_path is treated as optional by this v1 type system. Live client binding remains separate."
+    }
+  ]
+}

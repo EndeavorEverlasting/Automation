@@ -1,28 +1,43 @@
 {
   "schema_version": "automation-capability/v1",
   "capability_id": "agent-hook-runtime",
-  "status": "CORE_IMPLEMENTED_CURSOR_ADAPTER_DIAGNOSTIC_ONLY",
-  "purpose": "Provide privacy-safe JSON-stdio hook transport normalization, provider schema validation, and diagnostic receipts without embedding product-specific policy.",
-  "core_owner": "capabilities/agent-hook-runtime/core/transport.py",
+  "status": "PROTOCOL_FABRIC_IMPLEMENTED_SHADOW_NEGOTIATION",
+  "purpose": "Provide host-neutral hook transport normalization plus versioned protocol-shape negotiation, canonical event/decision routing, compatibility response encoders, and privacy-safe shape/version evidence without embedding consumer policy.",
+  "core_owner": "capabilities/agent-hook-runtime/core/protocol_fabric.py",
   "adapters": {
-    "cursor": "capabilities/agent-hook-runtime/adapters/cursor.py"
+    "cursor": "capabilities/agent-hook-runtime/adapters/cursor.py",
+    "protocol_registry": "capabilities/agent-hook-runtime/profiles/current.v1.json"
   },
   "entrypoints": {
     "cursor_transport_probe": "capabilities/agent-hook-runtime/diagnose_cursor_hook.py"
   },
   "artifacts": {
-    "transport_receipt_schema": "capabilities/agent-hook-runtime/schemas/transport-receipt.v1.json"
+    "transport_receipt_schema": "capabilities/agent-hook-runtime/schemas/transport-receipt.v1.json",
+    "protocol_registry": "capabilities/agent-hook-runtime/profiles/current.v1.json"
   },
   "runtime_boundary": {
     "secrets": "No credentials required.",
-    "privacy": "Transport receipts persist raw-byte hash, length, encoding, and top-level keys only; payload values are not persisted.",
-    "supported_execution": ["LOCAL_AGENT_RUNTIME", "CI_OR_REMOTE_RUNNER"]
+    "privacy": "Protocol observations persist structural key/type fingerprints, host family/event/version hints, and hashes only; payload values are not persisted.",
+    "supported_execution": [
+      "LOCAL_AGENT_RUNTIME",
+      "CI_OR_REMOTE_RUNNER"
+    ],
+    "rollout_states": [
+      "DISCOVERED",
+      "PROFILED",
+      "SYNTHETIC_PROVEN",
+      "SHADOW_OBSERVED",
+      "CANARY_ACCEPTED",
+      "AUTO_SWITCH_ELIGIBLE"
+    ]
   },
   "non_goals": [
     "own prompt registries or prompt semantics",
-    "decide whether P07 or any other prompt should execute",
-    "claim malformed Cursor input without a captured receipt",
-    "persist raw prompts, attachments, or session identifiers in diagnostic receipts"
+    "grant execution or authorization policy",
+    "assume one immutable hook shape per host product",
+    "guess unknown host schemas from payload values",
+    "cross-hybridize unrelated host families without explicit compatibility evidence",
+    "promote synthetic negotiation to live host acceptance"
   ],
-  "proof_ceiling": "Synthetic tests can prove parser/schema behavior. A live Cursor receipt is required to attribute a workstation transport failure to Cursor."
+  "proof_ceiling": "Synthetic tests prove protocol profile validation, shape fingerprinting, routing, config projection, and admitted hybrid response encoding. Live host canary evidence is required before automatic switching is production-proven."
 }
