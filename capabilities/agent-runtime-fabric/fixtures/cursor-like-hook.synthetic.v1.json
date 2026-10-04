@@ -1,0 +1,13 @@
+{
+  "schema_version": "agent-runtime-profile/v1",
+  "adapter_id": "synthetic-cursor-like-before-submit",
+  "harness_family": "synchronous-hook",
+  "state": "READY",
+  "capabilities": ["before_submit_hook", "session_start_hook", "stop_hook"],
+  "admitted_roles": ["EXECUTION_ONLY"],
+  "hard_limits": {"wall_clock_ms": 10000, "workers": 1, "parallel_workers": 1},
+  "reserve": {"wall_clock_ms": 1000},
+  "quotas": {},
+  "dispatch_costs": {},
+  "proof_ceiling": "Synthetic hook profile only; not current Cursor provider truth."
+}
