@@ -32,6 +32,7 @@
         "BLOCKED_STALE_APPROVAL",
         "PROVIDER_REQUEST_READY",
         "PUBLISHED",
+        "PROVIDER_RESPONSE_INCOMPLETE",
         "PROVIDER_AUTHORIZATION_FAILED",
         "PROVIDER_REJECTED"
       ]
@@ -44,7 +45,10 @@
       "type": "boolean"
     },
     "provider_post_id": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
     }
   }
 }
