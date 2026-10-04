@@ -30,6 +30,7 @@ Core:
 - computes the canonical publishable-content hash;
 - binds approval to exact publishable semantics;
 - owns provider-neutral lifecycle states and receipts;
+- distinguishes provider-request state as `NOT_EMITTED`, `EMITTED`, or `UNKNOWN`;
 - refuses missing or stale approval.
 
 LinkedIn adapter:
@@ -87,6 +88,8 @@ Synthetic executable prototypes prove:
 - current LinkedIn text-post request construction;
 - successful provider response translation;
 - provider authorization failure translation;
-- secret-free receipts.
+- request-build failure receipts without provider mutation;
+- transport failure with `UNKNOWN` emission state;
+- strict secret-free receipts.
 
 They do not prove live LinkedIn authorization, network publication, actual member identity, platform acceptance, scheduling, or production use.
