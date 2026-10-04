@@ -1,6 +1,6 @@
 # P95 — Hook Protocol Fabric Architecture (2026-10-04)
 
-Status: THIN PROTOTYPE IMPLEMENTED; repository validation pending.
+Status: **ARCHITECTURE + PROTOCOL FABRIC INTEGRATED; LIVE HOST CANARY PENDING.**
 
 ## Problem
 
@@ -270,3 +270,7 @@ A destructive permission hook could make the opposite consumer choice and block.
 ## Proof ceiling
 
 The implementation can prove deterministic negotiation and encoding. It cannot prove a host accepted a response shape without a live host canary.
+
+## Integration closeout
+
+The architecture is no longer design-only: Automation PR #19 integrated the owner at `9157215fc6b976ae1fa2f25d8498652ea5eaa478`, and TokenCorridor PR #118 integrated the pinned consumer at `6c9e92062b77b2068d1e7e903937f716995dc871`. Both repositories' required post-merge validation passed. The remaining proof ceiling is live-host behavior, not repository implementation.
