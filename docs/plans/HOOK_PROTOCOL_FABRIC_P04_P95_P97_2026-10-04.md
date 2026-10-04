@@ -1,6 +1,6 @@
 # P04 — Hook Protocol Fabric Factoring Plan (2026-10-04)
 
-Status: OWNER IMPLEMENTATION IN PROGRESS.
+Status: **OWNER INTEGRATED; CONSUMER ADOPTION INTEGRATED; LIVE HOST CANARY PENDING.**
 
 ## Execution frame
 
@@ -8,8 +8,8 @@ Status: OWNER IMPLEMENTATION IN PROGRESS.
 - capability: `capabilities/agent-hook-runtime`
 - consumer incident: `EndeavorEverlasting/TokenCorridor` Cursor continuity
 - Automation floor: `main@5d0f363f1e98d0e4227b7abc7caf4162661ca1a6`
-- current owner branch: `feat/p04-p95-p97-hook-protocol-fabric-20261004`
-- overlapping open PR: #18 owns `agent-runtime-fabric`, shared README/AGENTS/validate workflow
+- integrated owner: PR #19 -> `main@9157215fc6b976ae1fa2f25d8498652ea5eaa478`
+- collision outcome: PR #19 avoided PR #18's `agent-runtime-fabric` and shared README/AGENTS/validate workflow surfaces
 - collision rule: this lane does not modify #18's owned capability or shared root/CI files
 
 ## Mission
@@ -105,3 +105,11 @@ Adoption order:
 ## Proof ceiling
 
 P04 factoring can prove ownership, dependencies, collision control, and repository acceptance. It cannot prove a specific installed host version/shape without HP-6 live evidence.
+
+## Closeout evidence
+
+- Automation PR #19 merged at `9157215fc6b976ae1fa2f25d8498652ea5eaa478`.
+- Automation main validation run `37222362465` passed.
+- TokenCorridor consumer PR #118 merged at `6c9e92062b77b2068d1e7e903937f716995dc871`.
+- TokenCorridor main P07 integration run `37223391552` passed.
+- HP-0 through HP-5 are repository-integrated. HP-6 remains a true installed-host boundary: live Cursor version/shape binding and response canaries.
