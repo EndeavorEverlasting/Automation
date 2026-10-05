@@ -1,6 +1,42 @@
 {
   "schema_version": "agent-hook-protocol-registry/v1",
   "observed_at": "2026-10-04",
+  "lifecycle_model": {
+    "schema_version": "agent-hook-shape-lifecycle/v1",
+    "catalog_states": [
+      "LEGACY",
+      "ACTIVE",
+      "PROSPECTIVE"
+    ],
+    "validation_states": [
+      "UNTESTED",
+      "PASS",
+      "FAIL",
+      "BLOCKED"
+    ],
+    "proof_classes": [
+      "DOCUMENTED",
+      "SYNTHETIC",
+      "SHADOW_OBSERVED",
+      "LIVE_CANARY"
+    ],
+    "routing_eligibilities": [
+      "OBSERVE_ONLY",
+      "CANARY_ELIGIBLE",
+      "AUTO_SWITCH_ELIGIBLE",
+      "RETIRED"
+    ],
+    "rollout_stages": [
+      "DISCOVERED",
+      "PROFILED",
+      "SYNTHETIC_PROVEN",
+      "SHADOW_OBSERVED",
+      "CANARY_ACCEPTED",
+      "AUTO_SWITCH_ELIGIBLE"
+    ],
+    "dimensions_are_orthogonal": true,
+    "note": "Catalog state, validation state, proof class and routing eligibility are independent dimensions. Lifecycle and proof strength are never interchangeable."
+  },
   "evidence_sources": [
     {
       "source": "https://prod.cursor.com/docs/hooks",
@@ -99,7 +135,19 @@
           ]
         }
       },
-      "proof_ceiling": "Compatibility profile for minimal Cursor event shapes. Exact host-version association requires a live version/shape binding."
+      "proof_ceiling": "Compatibility profile for minimal Cursor event shapes. Exact host-version association requires a live version/shape binding.",
+      "lifecycle": {
+        "catalog_state": "LEGACY",
+        "validation_state": "PASS",
+        "proof_class": "SYNTHETIC",
+        "routing_eligibility": "CANARY_ELIGIBLE",
+        "rollout_stage": "SYNTHETIC_PROVEN",
+        "compatibility_admitted": true,
+        "quarantined": false,
+        "retained_negative_evidence": false,
+        "superseded_by": "cursor-native-common-envelope-v2",
+        "note": "Historical Cursor shape; usable only through explicitly admitted compatibility and never preferred over a viable ACTIVE shape."
+      }
     },
     {
       "schema_version": "agent-hook-protocol-profile/v1",
@@ -218,7 +266,19 @@
           "event_name_field": "hook_event_name"
         }
       },
-      "proof_ceiling": "Current documented Cursor common-envelope shape plus explicitly documented Claude-compatible Stop response fallbacks. Live acceptance is still required."
+      "proof_ceiling": "Current documented Cursor common-envelope shape plus explicitly documented Claude-compatible Stop response fallbacks. Live acceptance is still required.",
+      "lifecycle": {
+        "catalog_state": "ACTIVE",
+        "validation_state": "PASS",
+        "proof_class": "SYNTHETIC",
+        "routing_eligibility": "CANARY_ELIGIBLE",
+        "rollout_stage": "SYNTHETIC_PROVEN",
+        "compatibility_admitted": false,
+        "quarantined": false,
+        "retained_negative_evidence": false,
+        "superseded_by": null,
+        "note": "Current documented Cursor common-envelope shape; synthetic proof only, so it is canary eligible and never auto-switch eligible."
+      }
     },
     {
       "schema_version": "agent-hook-protocol-profile/v1",
@@ -270,7 +330,196 @@
           "event_name_field": "hook_event_name"
         }
       },
-      "proof_ceiling": "Tracks the current open-source Codex UserPromptSubmit schema's required semantic/string fields; nullable transcript_path is treated as optional by this v1 type system. Live client binding remains separate."
+      "proof_ceiling": "Tracks the current open-source Codex UserPromptSubmit schema's required semantic/string fields; nullable transcript_path is treated as optional by this v1 type system. Live client binding remains separate.",
+      "lifecycle": {
+        "catalog_state": "ACTIVE",
+        "validation_state": "PASS",
+        "proof_class": "SYNTHETIC",
+        "routing_eligibility": "CANARY_ELIGIBLE",
+        "rollout_stage": "SYNTHETIC_PROVEN",
+        "compatibility_admitted": false,
+        "quarantined": false,
+        "retained_negative_evidence": false,
+        "superseded_by": null,
+        "note": "Current Codex UserPromptSubmit shape; synthetic proof only."
+      }
+    },
+    {
+      "schema_version": "agent-hook-protocol-profile/v1",
+      "profile_id": "cursor-native-common-envelope-v3-prospective",
+      "host_family": "cursor",
+      "shape_version": "cursor/native-common-envelope-v3-prospective",
+      "transport": "json_stdio",
+      "config_shapes": [
+        "cursor-native-config-v1",
+        "claude-codex-group-config-v1"
+      ],
+      "version_match_mode": "HINT",
+      "host_version_evidence": {
+        "observed_versions": [],
+        "min": null,
+        "max": null,
+        "note": "Prospective candidate only; no host version is bound to this shape."
+      },
+      "response_shapes": {
+        "cursor.native.prompt.v1": {
+          "encoder": "cursor-native-prompt-v1"
+        }
+      },
+      "events": {
+        "prompt.submit": {
+          "host_events": [
+            "beforeSubmitPrompt",
+            "UserPromptSubmit",
+            "promptSubmittedFuture"
+          ],
+          "required_fields": {
+            "prompt": "string",
+            "hook_event_name": "string",
+            "cursor_version": "string",
+            "agent_protocol_version": "string"
+          },
+          "optional_fields": {
+            "attachments": "array",
+            "workspace_roots": "array",
+            "conversation_id": "string",
+            "generation_id": "string",
+            "model": "string",
+            "model_id": "string",
+            "model_params": "array",
+            "user_email": "string",
+            "transcript_path": "string"
+          },
+          "accepted_response_shapes": [
+            "cursor.native.prompt.v1"
+          ],
+          "event_name_field": "hook_event_name"
+        }
+      },
+      "proof_ceiling": "Prospective structural candidate. Synthetic PASS proves shape validity only; the shape stays PROSPECTIVE and cannot be auto-switched without shadow/live evidence and an explicit catalog promotion.",
+      "lifecycle": {
+        "catalog_state": "PROSPECTIVE",
+        "validation_state": "PASS",
+        "proof_class": "SYNTHETIC",
+        "routing_eligibility": "CANARY_ELIGIBLE",
+        "rollout_stage": "SYNTHETIC_PROVEN",
+        "compatibility_admitted": false,
+        "quarantined": false,
+        "retained_negative_evidence": false,
+        "superseded_by": null,
+        "note": "Synthetic PASS keeps this candidate PROSPECTIVE; it never becomes ACTIVE or AUTO_SWITCH_ELIGIBLE without stronger evidence."
+      }
+    },
+    {
+      "schema_version": "agent-hook-protocol-profile/v1",
+      "profile_id": "cursor-native-prompt-rename-v0-prospective",
+      "host_family": "cursor",
+      "shape_version": "cursor/prompt-rename-v0-rejected",
+      "transport": "json_stdio",
+      "config_shapes": [
+        "cursor-native-config-v1"
+      ],
+      "version_match_mode": "HINT",
+      "host_version_evidence": {
+        "observed_versions": [],
+        "min": null,
+        "max": null,
+        "note": "Rejected candidate; no host version is bound to this shape."
+      },
+      "response_shapes": {
+        "cursor.native.prompt.v1": {
+          "encoder": "cursor-native-prompt-v1"
+        }
+      },
+      "events": {
+        "prompt.submit": {
+          "host_events": [
+            "beforeSubmitPrompt",
+            "promptSubmittedLegacy"
+          ],
+          "required_fields": {
+            "text": "string",
+            "hook_event_name": "string",
+            "cursor_version": "string",
+            "workspace_roots": "array"
+          },
+          "optional_fields": {
+            "attachments": "array",
+            "conversation_id": "string",
+            "generation_id": "string",
+            "model": "string",
+            "transcript_path": "string"
+          },
+          "accepted_response_shapes": [
+            "cursor.native.prompt.v1"
+          ],
+          "event_name_field": "hook_event_name"
+        }
+      },
+      "proof_ceiling": "Rejected prospective candidate retained as negative evidence. It is never deleted and never confers routing authority.",
+      "lifecycle": {
+        "catalog_state": "PROSPECTIVE",
+        "validation_state": "FAIL",
+        "proof_class": "SYNTHETIC",
+        "routing_eligibility": "OBSERVE_ONLY",
+        "rollout_stage": "PROFILED",
+        "compatibility_admitted": false,
+        "quarantined": false,
+        "retained_negative_evidence": true,
+        "superseded_by": null,
+        "note": "Rejected candidate retained as negative evidence; replay observes and classifies it but never routes through it."
+      }
+    },
+    {
+      "schema_version": "agent-hook-protocol-profile/v1",
+      "profile_id": "cursor-native-legacy-stop-v0",
+      "host_family": "cursor",
+      "shape_version": "cursor/legacy-stop-v0",
+      "transport": "json_stdio",
+      "config_shapes": [
+        "cursor-native-config-v1"
+      ],
+      "version_match_mode": "HINT",
+      "host_version_evidence": {
+        "observed_versions": [],
+        "min": null,
+        "max": null,
+        "note": "Legacy dialect; no host version is bound to this shape."
+      },
+      "response_shapes": {
+        "cursor.native.stop.v1": {
+          "encoder": "cursor-native-stop-v1"
+        }
+      },
+      "events": {
+        "session.stop": {
+          "host_events": [
+            "legacyStop"
+          ],
+          "required_fields": {
+            "status": "string",
+            "legacy_loop": "integer"
+          },
+          "optional_fields": {},
+          "accepted_response_shapes": [
+            "cursor.native.stop.v1"
+          ],
+          "event_name_field": "hook_event_name"
+        }
+      },
+      "proof_ceiling": "Legacy stop dialect observed in old deployments. Compatibility is not admitted, so this shape is observation-only.",
+      "lifecycle": {
+        "catalog_state": "LEGACY",
+        "validation_state": "UNTESTED",
+        "proof_class": "DOCUMENTED",
+        "routing_eligibility": "OBSERVE_ONLY",
+        "rollout_stage": "DISCOVERED",
+        "compatibility_admitted": false,
+        "quarantined": false,
+        "retained_negative_evidence": false,
+        "superseded_by": "cursor-native-common-envelope-v2",
+        "note": "Legacy stop dialect retained for observation; compatibility is not admitted, so it is never a fallback route."
+      }
     }
   ]
 }

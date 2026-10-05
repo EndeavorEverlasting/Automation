@@ -1,0 +1,797 @@
+{
+  "schema_version": "agent-hook-shape-sampling-matrix/v1",
+  "purpose": "Deterministic positive/control and negative/adversarial sampling matrix for the reusable harness-shape lifecycle, routing eligibility and certification capability.",
+  "cases": [
+    {
+      "case_id": "positive-active-exact-envelope",
+      "class": "POSITIVE",
+      "kind": "shape",
+      "intent": "An exact ACTIVE known profile negotiates and keeps ACTIVE routing.",
+      "host_family": "cursor",
+      "canonical_event": "prompt.submit",
+      "host_event": "beforeSubmitPrompt",
+      "host_version": "12.0.0",
+      "payload": {
+        "prompt": "sample prompt",
+        "attachments": [],
+        "hook_event_name": "beforeSubmitPrompt",
+        "cursor_version": "12.0.0",
+        "workspace_roots": [
+          "C:/work/repo"
+        ]
+      },
+      "expect": {
+        "route_state": "MATCHED",
+        "selected_profile_id": "cursor-native-common-envelope-v2",
+        "selection_basis": "ACTIVE_PREFERRED",
+        "catalog_state": "ACTIVE",
+        "validation_state": "PASS",
+        "proof_class": "SYNTHETIC",
+        "routing_eligibility": "CANARY_ELIGIBLE",
+        "canary_confirmation_required": true,
+        "content_persisted": false
+      }
+    },
+    {
+      "case_id": "positive-additive-unknown-field-preserves-semantics",
+      "class": "POSITIVE",
+      "kind": "shape",
+      "intent": "An additive unknown field preserves required semantics and is fingerprinted, never decoded.",
+      "host_family": "cursor",
+      "canonical_event": "prompt.submit",
+      "host_event": "beforeSubmitPrompt",
+      "host_version": "12.0.0",
+      "payload": {
+        "prompt": "sample prompt",
+        "attachments": [],
+        "hook_event_name": "beforeSubmitPrompt",
+        "cursor_version": "12.0.0",
+        "workspace_roots": [
+          "C:/work/repo"
+        ],
+        "future_additive_field": {
+          "nested": true
+        }
+      },
+      "expect": {
+        "route_state": "MATCHED",
+        "selected_profile_id": "cursor-native-common-envelope-v2",
+        "catalog_state": "ACTIVE",
+        "fingerprint_field_types": [
+          "prompt:string",
+          "future_additive_field:object"
+        ],
+        "content_persisted": false
+      }
+    },
+    {
+      "case_id": "positive-admitted-event-name-alias",
+      "class": "POSITIVE",
+      "kind": "shape",
+      "intent": "A documented/admitted event-name alias negotiates without inventing a mapping.",
+      "host_family": "cursor",
+      "canonical_event": "prompt.submit",
+      "host_event": "UserPromptSubmit",
+      "host_version": "12.0.0",
+      "payload": {
+        "prompt": "sample prompt",
+        "hook_event_name": "UserPromptSubmit",
+        "cursor_version": "12.0.0",
+        "workspace_roots": [
+          "C:/work/repo"
+        ]
+      },
+      "expect": {
+        "route_state": "MATCHED",
+        "selected_profile_id": "cursor-native-common-envelope-v2",
+        "selection_basis": "ACTIVE_PREFERRED"
+      }
+    },
+    {
+      "case_id": "positive-explicitly-admitted-response-fallback",
+      "class": "POSITIVE",
+      "kind": "shape",
+      "intent": "An explicitly admitted response fallback hybridizes only inside the selected profile.",
+      "host_family": "cursor",
+      "canonical_event": "session.stop",
+      "host_event": "stop",
+      "host_version": "12.0.0",
+      "payload": {
+        "status": "completed",
+        "loop_count": 0,
+        "hook_event_name": "stop",
+        "cursor_version": "12.0.0",
+        "workspace_roots": [
+          "C:/work/repo"
+        ]
+      },
+      "expect": {
+        "route_state": "HYBRIDIZED",
+        "selected_profile_id": "cursor-native-common-envelope-v2",
+        "response_shape": "claude.flat.stop.v1",
+        "catalog_state": "ACTIVE"
+      },
+      "failed_response_shapes": [
+        "cursor.native.stop.v1"
+      ]
+    },
+    {
+      "case_id": "positive-legacy-profile-with-explicit-compatibility",
+      "class": "POSITIVE",
+      "kind": "shape",
+      "intent": "A LEGACY profile with admitted compatibility is usable and routes only as a fallback.",
+      "host_family": "cursor",
+      "canonical_event": "prompt.submit",
+      "host_event": "beforeSubmitPrompt",
+      "host_version": "12.0.0",
+      "payload": {
+        "prompt": "sample prompt",
+        "attachments": []
+      },
+      "expect": {
+        "route_state": "MATCHED",
+        "selected_profile_id": "cursor-native-minimal-v1",
+        "selection_basis": "COMPATIBILITY_FALLBACK",
+        "catalog_state": "LEGACY",
+        "validation_state": "PASS",
+        "routing_eligibility": "CANARY_ELIGIBLE"
+      }
+    },
+    {
+      "case_id": "positive-legacy-is-not-preferred-over-viable-active",
+      "class": "POSITIVE",
+      "kind": "shape",
+      "intent": "A passing LEGACY shape never wins over a viable ACTIVE shape.",
+      "host_family": "cursor",
+      "canonical_event": "prompt.submit",
+      "host_event": "beforeSubmitPrompt",
+      "host_version": "12.0.0",
+      "payload": {
+        "prompt": "sample prompt",
+        "attachments": [],
+        "hook_event_name": "beforeSubmitPrompt",
+        "cursor_version": "12.0.0",
+        "workspace_roots": [
+          "C:/work/repo"
+        ]
+      },
+      "expect": {
+        "route_state": "MATCHED",
+        "selected_profile_id": "cursor-native-common-envelope-v2",
+        "selected_not_profile_ids": [
+          "cursor-native-minimal-v1"
+        ],
+        "selection_basis": "ACTIVE_PREFERRED",
+        "viable_profile_ids": [
+          "cursor-native-common-envelope-v2",
+          "cursor-native-minimal-v1"
+        ]
+      }
+    },
+    {
+      "case_id": "positive-prospective-synthetic-pass-remains-prospective",
+      "class": "POSITIVE",
+      "kind": "shape",
+      "intent": "A PROSPECTIVE synthetic PASS that beats the ACTIVE score still loses to catalog state.",
+      "host_family": "cursor",
+      "canonical_event": "prompt.submit",
+      "host_event": "beforeSubmitPrompt",
+      "host_version": "12.0.0",
+      "payload": {
+        "prompt": "sample prompt",
+        "attachments": [],
+        "hook_event_name": "beforeSubmitPrompt",
+        "cursor_version": "12.0.0",
+        "workspace_roots": [
+          "C:/work/repo"
+        ],
+        "agent_protocol_version": "3"
+      },
+      "expect": {
+        "route_state": "MATCHED",
+        "selected_profile_id": "cursor-native-common-envelope-v2",
+        "selected_not_profile_ids": [
+          "cursor-native-common-envelope-v3-prospective"
+        ],
+        "selection_basis": "ACTIVE_PREFERRED",
+        "catalog_state": "ACTIVE",
+        "viable_profile_ids": [
+          "cursor-native-common-envelope-v2",
+          "cursor-native-common-envelope-v3-prospective",
+          "cursor-native-minimal-v1"
+        ]
+      }
+    },
+    {
+      "case_id": "positive-prospective-only-shape-routes-with-canary-confirmation",
+      "class": "POSITIVE",
+      "kind": "shape",
+      "intent": "When only a PROSPECTIVE candidate matches, it routes only with an explicit canary marker.",
+      "host_family": "cursor",
+      "canonical_event": "prompt.submit",
+      "host_event": "promptSubmittedFuture",
+      "host_version": "13.0.0",
+      "payload": {
+        "prompt": "sample prompt",
+        "hook_event_name": "promptSubmittedFuture",
+        "cursor_version": "13.0.0",
+        "agent_protocol_version": "3"
+      },
+      "expect": {
+        "route_state": "MATCHED",
+        "selected_profile_id": "cursor-native-common-envelope-v3-prospective",
+        "selection_basis": "PROSPECTIVE_CANDIDATE",
+        "catalog_state": "PROSPECTIVE",
+        "routing_eligibility": "CANARY_ELIGIBLE",
+        "canary_confirmation_required": true,
+        "content_persisted": false
+      }
+    },
+    {
+      "case_id": "positive-documented-compatible-config-dialect",
+      "class": "POSITIVE",
+      "kind": "config",
+      "intent": "The documented compatible configuration dialect renders from canonical bindings.",
+      "config_shape": "claude-codex-group-config-v1",
+      "bindings": [
+        {
+          "canonical_event": "prompt.submit",
+          "command": "python hooks/prompt.py"
+        },
+        {
+          "canonical_event": "session.stop",
+          "command": "python hooks/stop.py"
+        }
+      ],
+      "expect": {
+        "config_host_events": [
+          "Stop",
+          "UserPromptSubmit"
+        ]
+      }
+    },
+    {
+      "case_id": "positive-native-config-dialect",
+      "class": "POSITIVE",
+      "kind": "config",
+      "intent": "The native configuration dialect renders from the same canonical bindings.",
+      "config_shape": "cursor-native-config-v1",
+      "bindings": [
+        {
+          "canonical_event": "prompt.submit",
+          "command": "python hooks/prompt.py"
+        },
+        {
+          "canonical_event": "session.stop",
+          "command": "python hooks/stop.py"
+        }
+      ],
+      "expect": {
+        "config_host_events": [
+          "beforeSubmitPrompt",
+          "stop"
+        ]
+      }
+    },
+    {
+      "case_id": "positive-admitted-response-shape-encodes",
+      "class": "POSITIVE",
+      "kind": "encode",
+      "intent": "An explicitly admitted response shape encodes a canonical decision.",
+      "profile_id": "cursor-native-common-envelope-v2",
+      "response_shape": "claude.flat.stop.v1",
+      "canonical_event": "session.stop",
+      "expect": {
+        "response_fields": [
+          "decision",
+          "reason"
+        ],
+        "response_contains": {
+          "decision": "block"
+        },
+        "reason_nonempty_string": true
+      },
+      "decision": {
+        "action": "FOLLOW_UP",
+        "message": "Continue the required work."
+      }
+    },
+    {
+      "case_id": "positive-prospective-pass-never-exceeds-canary",
+      "class": "POSITIVE",
+      "kind": "lifecycle",
+      "intent": "PROSPECTIVE + synthetic PASS stays PROSPECTIVE and is capped at CANARY_ELIGIBLE.",
+      "expect": {
+        "catalog_state": "PROSPECTIVE",
+        "validation_state": "PASS",
+        "proof_class": "SYNTHETIC",
+        "routing_eligibility": "CANARY_ELIGIBLE",
+        "max_routing_eligibility": "CANARY_ELIGIBLE",
+        "rollout_stage": "SYNTHETIC_PROVEN",
+        "may_route": true
+      },
+      "profile_id": "cursor-native-common-envelope-v3-prospective"
+    },
+    {
+      "case_id": "positive-active-synthetic-proof-never-auto-switches",
+      "class": "POSITIVE",
+      "kind": "lifecycle",
+      "intent": "ACTIVE + synthetic proof is canary eligible but never auto-switch eligible.",
+      "expect": {
+        "catalog_state": "ACTIVE",
+        "proof_class": "SYNTHETIC",
+        "routing_eligibility": "CANARY_ELIGIBLE",
+        "max_routing_eligibility": "CANARY_ELIGIBLE",
+        "degraded": false
+      },
+      "profile_id": "cursor-native-common-envelope-v2"
+    },
+    {
+      "case_id": "positive-legacy-with-admitted-compatibility-routes-as-fallback",
+      "class": "POSITIVE",
+      "kind": "lifecycle",
+      "intent": "LEGACY + PASS + admitted compatibility reaches at most CANARY_ELIGIBLE.",
+      "expect": {
+        "catalog_state": "LEGACY",
+        "validation_state": "PASS",
+        "max_routing_eligibility": "CANARY_ELIGIBLE",
+        "may_route": true
+      },
+      "profile_id": "cursor-native-minimal-v1"
+    },
+    {
+      "case_id": "positive-active-failure-degrades-and-quarantines",
+      "class": "POSITIVE",
+      "kind": "lifecycle",
+      "intent": "ACTIVE + FAIL is an explicit degraded/quarantined OBSERVE_ONLY state.",
+      "expect": {
+        "catalog_state": "ACTIVE",
+        "validation_state": "FAIL",
+        "routing_eligibility": "OBSERVE_ONLY",
+        "max_routing_eligibility": "OBSERVE_ONLY",
+        "degraded": true,
+        "may_route": false
+      },
+      "lifecycle": {
+        "catalog_state": "ACTIVE",
+        "validation_state": "FAIL",
+        "proof_class": "SYNTHETIC",
+        "routing_eligibility": "OBSERVE_ONLY",
+        "rollout_stage": "PROFILED",
+        "compatibility_admitted": false,
+        "quarantined": true,
+        "retained_negative_evidence": false
+      }
+    },
+    {
+      "case_id": "negative-missing-required-semantic-field",
+      "class": "NEGATIVE",
+      "kind": "shape",
+      "intent": "A missing required semantic field defers instead of guessing a mapping.",
+      "host_family": "cursor",
+      "canonical_event": "prompt.submit",
+      "host_event": "beforeSubmitPrompt",
+      "host_version": "12.0.0",
+      "payload": {
+        "hook_event_name": "beforeSubmitPrompt",
+        "cursor_version": "12.0.0",
+        "workspace_roots": [
+          "C:/work/repo"
+        ]
+      },
+      "expect": {
+        "route_state": "UNKNOWN_SHAPE",
+        "no_selection": true
+      }
+    },
+    {
+      "case_id": "negative-required-field-changed-type",
+      "class": "NEGATIVE",
+      "kind": "shape",
+      "intent": "A required field with a changed type never satisfies the contract.",
+      "host_family": "cursor",
+      "canonical_event": "prompt.submit",
+      "host_event": "beforeSubmitPrompt",
+      "host_version": "12.0.0",
+      "payload": {
+        "prompt": 123,
+        "hook_event_name": "beforeSubmitPrompt",
+        "cursor_version": "12.0.0",
+        "workspace_roots": [
+          "C:/work/repo"
+        ]
+      },
+      "expect": {
+        "route_state": "UNKNOWN_SHAPE",
+        "no_selection": true
+      }
+    },
+    {
+      "case_id": "negative-unadmitted-event-alias",
+      "class": "NEGATIVE",
+      "kind": "shape",
+      "intent": "An unadmitted event alias is deferred rather than reinterpreted.",
+      "host_family": "cursor",
+      "canonical_event": "prompt.submit",
+      "host_event": "beforeSubmitPrompt",
+      "host_version": "12.0.0",
+      "payload": {
+        "prompt": "sample prompt",
+        "hook_event_name": "PromptSubmitted",
+        "cursor_version": "12.0.0",
+        "workspace_roots": [
+          "C:/work/repo"
+        ]
+      },
+      "expect": {
+        "route_state": "UNKNOWN_SHAPE",
+        "reason": "SELF_DESCRIBED_EVENT_MISMATCH",
+        "no_selection": true,
+        "content_persisted": false
+      }
+    },
+    {
+      "case_id": "negative-cross-host-family-shape-mixing",
+      "class": "NEGATIVE",
+      "kind": "shape",
+      "intent": "Structurally similar payloads do not cross-match unrelated host families.",
+      "host_family": "codex",
+      "canonical_event": "prompt.submit",
+      "host_event": "beforeSubmitPrompt",
+      "host_version": "12.0.0",
+      "payload": {
+        "cwd": "/work/repo",
+        "hook_event_name": "beforeSubmitPrompt",
+        "model": "gpt",
+        "permission_mode": "default",
+        "prompt": "sample prompt",
+        "session_id": "session-0001",
+        "turn_id": "turn-0001"
+      },
+      "expect": {
+        "route_state": "UNKNOWN_SHAPE",
+        "no_selection": true
+      }
+    },
+    {
+      "case_id": "negative-wrong-canonical-event-semantics",
+      "class": "NEGATIVE",
+      "kind": "shape",
+      "intent": "A stop-shaped payload dispatched as prompt.submit is refused by self-description.",
+      "host_family": "cursor",
+      "canonical_event": "prompt.submit",
+      "host_event": "beforeSubmitPrompt",
+      "host_version": "12.0.0",
+      "payload": {
+        "status": "completed",
+        "loop_count": 0,
+        "hook_event_name": "stop",
+        "cursor_version": "12.0.0",
+        "workspace_roots": [
+          "C:/work/repo"
+        ]
+      },
+      "expect": {
+        "route_state": "UNKNOWN_SHAPE",
+        "reason": "SELF_DESCRIBED_EVENT_MISMATCH",
+        "no_selection": true
+      }
+    },
+    {
+      "case_id": "negative-retained-rejected-prospective-replay",
+      "class": "NEGATIVE",
+      "kind": "shape",
+      "intent": "Replaying a retained rejected PROSPECTIVE candidate observes it but never routes it.",
+      "host_family": "cursor",
+      "canonical_event": "prompt.submit",
+      "host_event": "promptSubmittedLegacy",
+      "host_version": "13.0.0",
+      "payload": {
+        "text": "renamed prompt",
+        "hook_event_name": "promptSubmittedLegacy",
+        "cursor_version": "13.0.0",
+        "workspace_roots": [
+          "C:/work/repo"
+        ]
+      },
+      "expect": {
+        "route_state": "OBSERVE_ONLY_SHAPE",
+        "no_selection": true,
+        "observed_profile_ids": [
+          "cursor-native-prompt-rename-v0-prospective"
+        ],
+        "content_persisted": false
+      }
+    },
+    {
+      "case_id": "negative-active-failure-with-no-canary-qualified-replacement",
+      "class": "NEGATIVE",
+      "kind": "shape",
+      "intent": "An ACTIVE regression degrades explicitly; a prospective candidate never replaces it.",
+      "host_family": "cursor",
+      "canonical_event": "prompt.submit",
+      "host_event": "beforeSubmitPrompt",
+      "host_version": "12.0.0",
+      "payload": {
+        "text": "renamed prompt",
+        "hook_event_name": "beforeSubmitPrompt",
+        "cursor_version": "13.0.0",
+        "workspace_roots": [
+          "C:/work/repo"
+        ]
+      },
+      "expect": {
+        "route_state": "UNKNOWN_SHAPE",
+        "reason": "ACTIVE_SHAPE_REGRESSION",
+        "no_selection": true,
+        "lifecycle_safety": {
+          "degraded": true,
+          "prospective_fallback": "NOT_PERFORMED",
+          "active_profiles_regressed": [
+            "cursor-native-common-envelope-v2"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "negative-legacy-fallback-without-admitted-compatibility",
+      "class": "NEGATIVE",
+      "kind": "shape",
+      "intent": "A LEGACY shape whose compatibility is not admitted is observed but never routed.",
+      "host_family": "cursor",
+      "canonical_event": "session.stop",
+      "host_event": "legacyStop",
+      "host_version": "10.0.0",
+      "payload": {
+        "status": "completed",
+        "legacy_loop": 0
+      },
+      "expect": {
+        "route_state": "OBSERVE_ONLY_SHAPE",
+        "no_selection": true,
+        "observed_profile_ids": [
+          "cursor-native-legacy-stop-v0"
+        ]
+      }
+    },
+    {
+      "case_id": "negative-response-shape-outside-admitted-set",
+      "class": "NEGATIVE",
+      "kind": "encode",
+      "intent": "A response shape outside the selected profile's admitted set fails closed.",
+      "profile_id": "cursor-native-common-envelope-v2",
+      "response_shape": "totally-unknown",
+      "canonical_event": "session.stop",
+      "expect": {
+        "raises": "ProtocolFabricError"
+      }
+    },
+    {
+      "case_id": "negative-rejected-prospective-cannot-route",
+      "class": "NEGATIVE",
+      "kind": "lifecycle",
+      "intent": "A rejected PROSPECTIVE candidate is retained and capped at OBSERVE_ONLY.",
+      "expect": {
+        "catalog_state": "PROSPECTIVE",
+        "validation_state": "FAIL",
+        "routing_eligibility": "OBSERVE_ONLY",
+        "max_routing_eligibility": "OBSERVE_ONLY",
+        "may_route": false
+      },
+      "profile_id": "cursor-native-prompt-rename-v0-prospective"
+    },
+    {
+      "case_id": "negative-unadmitted-legacy-cannot-route",
+      "class": "NEGATIVE",
+      "kind": "lifecycle",
+      "intent": "A LEGACY shape without admitted compatibility never becomes a fallback route.",
+      "expect": {
+        "catalog_state": "LEGACY",
+        "validation_state": "UNTESTED",
+        "routing_eligibility": "OBSERVE_ONLY",
+        "max_routing_eligibility": "OBSERVE_ONLY",
+        "may_route": false
+      },
+      "profile_id": "cursor-native-legacy-stop-v0"
+    },
+    {
+      "case_id": "negative-active-failure-without-quarantine-is-rejected",
+      "class": "NEGATIVE",
+      "kind": "lifecycle",
+      "intent": "ACTIVE + FAIL without an explicit quarantined state is rejected.",
+      "expect": {
+        "raises": "ProtocolFabricError"
+      },
+      "lifecycle": {
+        "catalog_state": "ACTIVE",
+        "validation_state": "FAIL",
+        "proof_class": "SYNTHETIC",
+        "routing_eligibility": "OBSERVE_ONLY",
+        "rollout_stage": "PROFILED",
+        "compatibility_admitted": false,
+        "quarantined": false
+      }
+    },
+    {
+      "case_id": "negative-synthetic-proof-cannot-claim-auto-switch",
+      "class": "NEGATIVE",
+      "kind": "lifecycle",
+      "intent": "Synthetic proof can never claim AUTO_SWITCH_ELIGIBLE routing.",
+      "expect": {
+        "raises": "ProtocolFabricError"
+      },
+      "lifecycle": {
+        "catalog_state": "ACTIVE",
+        "validation_state": "PASS",
+        "proof_class": "SYNTHETIC",
+        "routing_eligibility": "AUTO_SWITCH_ELIGIBLE",
+        "rollout_stage": "SYNTHETIC_PROVEN",
+        "compatibility_admitted": false
+      }
+    },
+    {
+      "case_id": "negative-prospective-proof-cannot-exceed-canary",
+      "class": "NEGATIVE",
+      "kind": "lifecycle",
+      "intent": "Even live proof cannot push a PROSPECTIVE shape past CANARY_ELIGIBLE.",
+      "expect": {
+        "raises": "ProtocolFabricError"
+      },
+      "lifecycle": {
+        "catalog_state": "PROSPECTIVE",
+        "validation_state": "PASS",
+        "proof_class": "LIVE_CANARY",
+        "routing_eligibility": "AUTO_SWITCH_ELIGIBLE",
+        "rollout_stage": "CANARY_ACCEPTED",
+        "compatibility_admitted": false
+      }
+    },
+    {
+      "case_id": "negative-documentation-cannot-prove-pass",
+      "class": "NEGATIVE",
+      "kind": "lifecycle",
+      "intent": "Documentation never becomes proof: PASS with DOCUMENTED proof class is rejected.",
+      "expect": {
+        "raises": "ProtocolFabricError"
+      },
+      "lifecycle": {
+        "catalog_state": "ACTIVE",
+        "validation_state": "PASS",
+        "proof_class": "DOCUMENTED",
+        "routing_eligibility": "OBSERVE_ONLY",
+        "rollout_stage": "PROFILED",
+        "compatibility_admitted": false
+      }
+    }
+  ],
+  "binding_certifications": [
+    {
+      "case_id": "positive-binding-current-live-canary",
+      "class": "POSITIVE",
+      "intent": "A current live-canary binding certifies against current structural evidence.",
+      "binding": {
+        "schema_version": "agent-hook-version-shape-binding/v1",
+        "host_family": "cursor",
+        "host_version": "12.0.0",
+        "host_event": "beforeSubmitPrompt",
+        "shape_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "profile_id": "cursor-native-common-envelope-v2",
+        "proof_class": "LIVE_CANARY",
+        "content_persisted": false
+      },
+      "current_observation": {
+        "schema_version": "agent-hook-shape-observation/v1",
+        "host_family": "cursor",
+        "host_event": "beforeSubmitPrompt",
+        "host_version": "12.0.0",
+        "fingerprint": {
+          "shape_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "field_count": 5,
+          "field_types": [],
+          "content_persisted": false
+        },
+        "content_persisted": false
+      },
+      "expect": {
+        "state": "CURRENT",
+        "authorized_routing_eligibility": "CANARY_ELIGIBLE"
+      }
+    },
+    {
+      "case_id": "negative-binding-stale-shape-fingerprint",
+      "class": "NEGATIVE",
+      "intent": "A stale shape fingerprint cannot authorize current automatic switching.",
+      "binding": {
+        "schema_version": "agent-hook-version-shape-binding/v1",
+        "host_family": "cursor",
+        "host_version": "11.0.0",
+        "host_event": "beforeSubmitPrompt",
+        "shape_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "profile_id": "cursor-native-common-envelope-v2",
+        "proof_class": "LIVE_CANARY",
+        "content_persisted": false
+      },
+      "current_observation": {
+        "schema_version": "agent-hook-shape-observation/v1",
+        "host_family": "cursor",
+        "host_event": "beforeSubmitPrompt",
+        "host_version": "12.0.0",
+        "fingerprint": {
+          "shape_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "field_count": 5,
+          "field_types": [],
+          "content_persisted": false
+        },
+        "content_persisted": false
+      },
+      "expect": {
+        "state": "STALE_SHAPE",
+        "authorized_routing_eligibility": "OBSERVE_ONLY"
+      }
+    },
+    {
+      "case_id": "negative-binding-stale-host-version",
+      "class": "NEGATIVE",
+      "intent": "An old host-version binding cannot authorize current automatic switching.",
+      "binding": {
+        "schema_version": "agent-hook-version-shape-binding/v1",
+        "host_family": "cursor",
+        "host_version": "11.0.0",
+        "host_event": "beforeSubmitPrompt",
+        "shape_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "profile_id": "cursor-native-common-envelope-v2",
+        "proof_class": "LIVE_CANARY",
+        "content_persisted": false
+      },
+      "current_observation": {
+        "schema_version": "agent-hook-shape-observation/v1",
+        "host_family": "cursor",
+        "host_event": "beforeSubmitPrompt",
+        "host_version": "12.0.0",
+        "fingerprint": {
+          "shape_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "field_count": 5,
+          "field_types": [],
+          "content_persisted": false
+        },
+        "content_persisted": false
+      },
+      "expect": {
+        "state": "STALE_VERSION",
+        "authorized_routing_eligibility": "OBSERVE_ONLY"
+      }
+    },
+    {
+      "case_id": "negative-binding-documentation-never-authorizes-routing",
+      "class": "NEGATIVE",
+      "intent": "A documented-only binding collapses to OBSERVE_ONLY despite a current shape.",
+      "binding": {
+        "schema_version": "agent-hook-version-shape-binding/v1",
+        "host_family": "cursor",
+        "host_version": "12.0.0",
+        "host_event": "beforeSubmitPrompt",
+        "shape_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "profile_id": "cursor-native-common-envelope-v2",
+        "proof_class": "DOCUMENTED",
+        "content_persisted": false
+      },
+      "current_observation": {
+        "schema_version": "agent-hook-shape-observation/v1",
+        "host_family": "cursor",
+        "host_event": "beforeSubmitPrompt",
+        "host_version": "12.0.0",
+        "fingerprint": {
+          "shape_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "field_count": 5,
+          "field_types": [],
+          "content_persisted": false
+        },
+        "content_persisted": false
+      },
+      "expect": {
+        "state": "CURRENT_WITH_PROOF_CEILING",
+        "authorized_routing_eligibility": "OBSERVE_ONLY"
+      }
+    }
+  ]
+}

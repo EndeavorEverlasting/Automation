@@ -110,6 +110,29 @@ The core does not decide how a host proves a claim. It verifies that:
 
 This keeps host quirks in adapters and prevents one agent's lifecycle from contaminating another.
 
+## Harness availability
+
+`classify_harness_availability()` answers a narrower question than readiness: *is this one harness currently usable for this repository?*
+
+It returns `local-agent-harness-availability/v1` with one independent state per `expected_agent_id`:
+
+| state | proof class |
+| --- | --- |
+| `AVAILABLE / LIVE_VERIFIED` | `LIVE_HOST_OBSERVATION` and `FRESH` |
+| `AVAILABLE / ACTIVE_SPRINT` | `OPERATOR_INTENT`, or a non-live evidence class when the operator marked this harness the active sprint surface |
+| `BLOCKED` | missing/unreadable/invalid observation, profile-revision drift, or stale projection |
+| `UNAVAILABLE` | live observation reports `FAIL` |
+| `UNCONFIGURED` | harness not configured for this repository |
+| `UNKNOWN` | configured but no observation, or only non-live evidence |
+| `INTENDED_TARGET_NOT_OBSERVED` | observation belongs to a different agent |
+
+Non-negotiable rules:
+
+- Cursor evidence never satisfies OpenCode availability, and vice versa — the observed agent id must equal the expected agent id;
+- documentation, synthetic tests and operator intent never reach `LIVE_VERIFIED`;
+- staleness is computed from the observation `floor_sha` against current `HEAD` over this agent's projection paths only;
+- receipts are state/structure only — no prompt text, session ids, workspace paths or payload values.
+
 ## Healthy repository recipe
 
 See `docs/HEALTHY_AGENT_REPOSITORY_RECIPE.md`.
@@ -125,6 +148,8 @@ The isolated-consumer tests create a temporary repository with separate Cursor-l
 - shared-surface invalidation;
 - live-observation binding;
 - dry-run remote-write separation;
-- actual-push readback separation.
+- actual-push readback separation;
+- harness-availability state classification and cross-agent isolation;
+- rejection of symlinks inside a declared projection.
 
 Synthetic tests prove classifier behavior only. A consumer must still execute live host observations and remote readback on its actual workstation to claim readiness.

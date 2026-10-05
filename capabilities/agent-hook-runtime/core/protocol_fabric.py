@@ -47,6 +47,50 @@ CANONICAL_EVENTS = {
 
 DECISION_ACTIONS = {"ALLOW", "BLOCK", "FOLLOW_UP", "CONTEXT"}
 
+LIFECYCLE_SCHEMA = "agent-hook-shape-lifecycle/v1"
+
+CATALOG_STATES = ("LEGACY", "ACTIVE", "PROSPECTIVE")
+VALIDATION_STATES = ("UNTESTED", "PASS", "FAIL", "BLOCKED")
+PROOF_CLASSES = ("DOCUMENTED", "SYNTHETIC", "SHADOW_OBSERVED", "LIVE_CANARY")
+ROUTING_ELIGIBILITIES = (
+    "OBSERVE_ONLY",
+    "CANARY_ELIGIBLE",
+    "AUTO_SWITCH_ELIGIBLE",
+    "RETIRED",
+)
+ROLLOUT_STAGES = (
+    "DISCOVERED",
+    "PROFILED",
+    "SYNTHETIC_PROVEN",
+    "SHADOW_OBSERVED",
+    "CANARY_ACCEPTED",
+    "AUTO_SWITCH_ELIGIBLE",
+)
+
+ROUTING_RANK = {
+    "OBSERVE_ONLY": 0,
+    "CANARY_ELIGIBLE": 1,
+    "AUTO_SWITCH_ELIGIBLE": 2,
+    "RETIRED": -1,
+}
+CATALOG_RANK = {"ACTIVE": 0, "LEGACY": 1, "PROSPECTIVE": 2}
+PROOF_RANK = {
+    "DOCUMENTED": 0,
+    "SYNTHETIC": 1,
+    "SHADOW_OBSERVED": 2,
+    "LIVE_CANARY": 3,
+}
+STAGE_PROOF_FLOOR = {
+    "DISCOVERED": 0,
+    "PROFILED": 0,
+    "SYNTHETIC_PROVEN": 1,
+    "SHADOW_OBSERVED": 2,
+    "CANARY_ACCEPTED": 3,
+    "AUTO_SWITCH_ELIGIBLE": 3,
+}
+ROUTABLE_ROUTING_STATES = frozenset({"CANARY_ELIGIBLE", "AUTO_SWITCH_ELIGIBLE"})
+REJECTED_VALIDATION_STATES = frozenset({"FAIL", "BLOCKED"})
+
 
 class ProtocolFabricError(ValueError):
     """Raised when a tracked protocol contract is malformed or unsafe to use."""
@@ -169,6 +213,223 @@ def _check_field_type(value: Any, expected: str) -> bool:
     return isinstance(value, typ)
 
 
+def max_routing_eligibility(lifecycle: Mapping[str, Any]) -> str:
+    """Return the strongest routing eligibility a lifecycle declaration may claim.
+
+    Catalog state and proof strength are orthogonal but they do not stack:
+    documentation is never proof, a passing prospective candidate never becomes
+    auto-switch material, and a legacy shape is never auto-switch material
+    because it still happens to validate.
+    """
+
+    catalog = lifecycle["catalog_state"]
+    validation = lifecycle["validation_state"]
+    proof = lifecycle["proof_class"]
+    admitted = lifecycle.get("compatibility_admitted", False) is True
+
+    if validation != "PASS":
+        return "OBSERVE_ONLY"
+
+    if proof == "LIVE_CANARY":
+        ceiling = "AUTO_SWITCH_ELIGIBLE"
+    elif proof in {"SYNTHETIC", "SHADOW_OBSERVED"}:
+        ceiling = "CANARY_ELIGIBLE"
+    else:
+        ceiling = "OBSERVE_ONLY"
+
+    if catalog == "PROSPECTIVE" and ROUTING_RANK[ceiling] > ROUTING_RANK["CANARY_ELIGIBLE"]:
+        return "CANARY_ELIGIBLE"
+    if catalog == "LEGACY":
+        if not admitted:
+            return "OBSERVE_ONLY"
+        if ROUTING_RANK[ceiling] > ROUTING_RANK["CANARY_ELIGIBLE"]:
+            return "CANARY_ELIGIBLE"
+    return ceiling
+
+
+def _is_degraded_active(lifecycle: Mapping[str, Any]) -> bool:
+    return (
+        lifecycle["catalog_state"] == "ACTIVE"
+        and lifecycle["validation_state"] in REJECTED_VALIDATION_STATES
+    )
+
+
+def validate_lifecycle(lifecycle: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate one profile's catalog/validation/proof/routing declaration."""
+
+    if not isinstance(lifecycle, Mapping):
+        raise ProtocolFabricError("lifecycle must be an object")
+    required = {
+        "catalog_state",
+        "validation_state",
+        "proof_class",
+        "routing_eligibility",
+        "rollout_stage",
+        "compatibility_admitted",
+    }
+    missing = sorted(required - set(lifecycle))
+    if missing:
+        raise ProtocolFabricError("lifecycle missing fields: " + ", ".join(missing))
+
+    catalog = lifecycle["catalog_state"]
+    validation = lifecycle["validation_state"]
+    proof = lifecycle["proof_class"]
+    routing = lifecycle["routing_eligibility"]
+    stage = lifecycle["rollout_stage"]
+    admitted = lifecycle["compatibility_admitted"]
+
+    if catalog not in CATALOG_STATES:
+        raise ProtocolFabricError(f"unsupported catalog_state: {catalog}")
+    if validation not in VALIDATION_STATES:
+        raise ProtocolFabricError(f"unsupported validation_state: {validation}")
+    if proof not in PROOF_CLASSES:
+        raise ProtocolFabricError(f"unsupported proof_class: {proof}")
+    if routing not in ROUTING_ELIGIBILITIES:
+        raise ProtocolFabricError(f"unsupported routing_eligibility: {routing}")
+    if stage not in ROLLOUT_STAGES:
+        raise ProtocolFabricError(f"unsupported rollout_stage: {stage}")
+    if not isinstance(admitted, bool):
+        raise ProtocolFabricError("lifecycle.compatibility_admitted must be a boolean")
+
+    for key in ("quarantined", "retained_negative_evidence"):
+        if key in lifecycle and not isinstance(lifecycle[key], bool):
+            raise ProtocolFabricError(f"lifecycle.{key} must be a boolean")
+    if "superseded_by" in lifecycle and lifecycle["superseded_by"] is not None:
+        superseded_by = lifecycle["superseded_by"]
+        if not isinstance(superseded_by, str) or not superseded_by.strip():
+            raise ProtocolFabricError("lifecycle.superseded_by must be null or a non-empty string")
+    if "note" in lifecycle and not isinstance(lifecycle["note"], str):
+        raise ProtocolFabricError("lifecycle.note must be a string")
+
+    if validation == "PASS" and proof == "DOCUMENTED":
+        raise ProtocolFabricError(
+            "documentation cannot prove a PASS validation state; raise the proof class"
+        )
+    if validation == "UNTESTED" and proof != "DOCUMENTED":
+        raise ProtocolFabricError(
+            "an UNTESTED shape may only carry DOCUMENTED proof strength"
+        )
+
+    ceiling = max_routing_eligibility(lifecycle)
+    if routing != "RETIRED" and ROUTING_RANK[routing] > ROUTING_RANK[ceiling]:
+        raise ProtocolFabricError(
+            f"routing_eligibility {routing} exceeds the {ceiling} ceiling for "
+            f"{catalog}/{validation}/{proof}"
+        )
+
+    degraded = _is_degraded_active(lifecycle)
+    quarantined = lifecycle.get("quarantined", False) is True
+    if degraded:
+        if routing != "OBSERVE_ONLY":
+            raise ProtocolFabricError(
+                "an ACTIVE shape in FAIL/BLOCKED must be routed OBSERVE_ONLY"
+            )
+        if not quarantined:
+            raise ProtocolFabricError(
+                "an ACTIVE shape in FAIL/BLOCKED requires an explicit quarantined state"
+            )
+    elif quarantined:
+        raise ProtocolFabricError(
+            "quarantined may only be set on a degraded ACTIVE shape"
+        )
+
+    if catalog == "PROSPECTIVE" and validation in REJECTED_VALIDATION_STATES:
+        if lifecycle.get("retained_negative_evidence") is not True:
+            raise ProtocolFabricError(
+                "a rejected PROSPECTIVE candidate must be retained as negative evidence"
+            )
+        if ROUTING_RANK[routing] > ROUTING_RANK["OBSERVE_ONLY"]:
+            raise ProtocolFabricError(
+                "a rejected PROSPECTIVE candidate may only route OBSERVE_ONLY"
+            )
+    if lifecycle.get("retained_negative_evidence") and not (
+        catalog == "PROSPECTIVE" and validation in REJECTED_VALIDATION_STATES
+    ):
+        raise ProtocolFabricError(
+            "retained_negative_evidence only applies to rejected PROSPECTIVE candidates"
+        )
+
+    if PROOF_RANK[proof] < STAGE_PROOF_FLOOR[stage]:
+        raise ProtocolFabricError(
+            f"rollout_stage {stage} requires proof_class at rank "
+            f"{STAGE_PROOF_FLOOR[stage]} or stronger, not {proof}"
+        )
+    if stage == "AUTO_SWITCH_ELIGIBLE" and not (
+        catalog == "ACTIVE"
+        and validation == "PASS"
+        and routing == "AUTO_SWITCH_ELIGIBLE"
+    ):
+        raise ProtocolFabricError(
+            "AUTO_SWITCH_ELIGIBLE rollout requires an ACTIVE, PASS, "
+            "auto-switch-eligible shape"
+        )
+    if stage in {"SHADOW_OBSERVED", "CANARY_ACCEPTED"} and ROUTING_RANK[routing] < ROUTING_RANK[
+        "CANARY_ELIGIBLE"
+    ]:
+        raise ProtocolFabricError(
+            f"rollout_stage {stage} requires at least CANARY_ELIGIBLE routing"
+        )
+    if stage == "DISCOVERED" and validation == "PASS":
+        raise ProtocolFabricError("a DISCOVERED shape cannot already be PASS")
+
+    normalized = {
+        "catalog_state": catalog,
+        "validation_state": validation,
+        "proof_class": proof,
+        "routing_eligibility": routing,
+        "rollout_stage": stage,
+        "compatibility_admitted": admitted,
+        "quarantined": quarantined,
+        "retained_negative_evidence": lifecycle.get("retained_negative_evidence", False)
+        is True,
+        "superseded_by": lifecycle.get("superseded_by"),
+        "note": lifecycle.get("note", ""),
+        "degraded": degraded,
+        "max_routing_eligibility": ceiling,
+    }
+    return normalized
+
+
+def lifecycle_index(profiles: Sequence[Mapping[str, Any]]) -> dict[str, dict[str, Any]]:
+    return {profile["profile_id"]: dict(profile["lifecycle"]) for profile in profiles}
+
+
+def may_route(lifecycle: Mapping[str, Any]) -> bool:
+    return lifecycle["routing_eligibility"] in ROUTABLE_ROUTING_STATES
+
+
+def selection_basis(lifecycle: Mapping[str, Any]) -> str:
+    catalog = lifecycle["catalog_state"]
+    if catalog == "ACTIVE":
+        return "ACTIVE_PREFERRED"
+    if catalog == "LEGACY":
+        return "COMPATIBILITY_FALLBACK"
+    return "PROSPECTIVE_CANDIDATE"
+
+
+def validate_lifecycle_model(model: Any) -> dict[str, Any]:
+    """Validate the registry's declared lifecycle vocabulary against the owner."""
+
+    if not isinstance(model, Mapping):
+        raise ProtocolFabricError("lifecycle_model must be an object")
+    if model.get("schema_version") != LIFECYCLE_SCHEMA:
+        raise ProtocolFabricError("unsupported lifecycle model schema")
+    expected = {
+        "catalog_states": CATALOG_STATES,
+        "validation_states": VALIDATION_STATES,
+        "proof_classes": PROOF_CLASSES,
+        "routing_eligibilities": ROUTING_ELIGIBILITIES,
+        "rollout_stages": ROLLOUT_STAGES,
+    }
+    for key, allowed in expected.items():
+        value = model.get(key)
+        if not isinstance(value, list) or tuple(value) != allowed:
+            raise ProtocolFabricError(
+                f"lifecycle_model.{key} must equal the owner vocabulary {list(allowed)}"
+            )
+    return dict(model)
+
+
 def validate_profile(profile: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(profile, Mapping):
         raise ProtocolFabricError("profile must be an object")
@@ -184,6 +445,7 @@ def validate_profile(profile: Mapping[str, Any]) -> dict[str, Any]:
         "response_shapes",
         "host_version_evidence",
         "proof_ceiling",
+        "lifecycle",
     }
     missing = sorted(required - set(profile))
     if missing:
@@ -257,7 +519,9 @@ def validate_profile(profile: Mapping[str, Any]) -> dict[str, Any]:
             )
 
     _version_match(profile, None)
-    return dict(profile)
+    normalized = dict(profile)
+    normalized["lifecycle"] = validate_lifecycle(profile["lifecycle"])
+    return normalized
 
 
 def _validate_type_name(expected: Any) -> None:
@@ -267,6 +531,8 @@ def _validate_type_name(expected: Any) -> None:
 
 def load_profiles(value: Mapping[str, Any] | Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     if isinstance(value, Mapping):
+        if "lifecycle_model" in value:
+            validate_lifecycle_model(value["lifecycle_model"])
         profiles = value.get("profiles")
         if profiles is None:
             profiles = [value]
@@ -471,10 +737,62 @@ def negotiate(
         )
         if candidate is not None:
             candidates.append(candidate)
-    candidates.sort(key=lambda item: (-item.score, item.profile_id))
+    lifecycle_by_id = lifecycle_index(validated)
+    candidates.sort(
+        key=lambda item: (
+            CATALOG_RANK.get(lifecycle_by_id[item.profile_id]["catalog_state"], 99),
+            -item.score,
+            item.profile_id,
+        )
+    )
+
+    def _lifecycle_of(candidate: Candidate) -> dict[str, Any]:
+        return lifecycle_by_id[candidate.profile_id]
+
+    def _regressed_active() -> list[str]:
+        return [
+            item.profile_id
+            for item in candidates
+            if _lifecycle_of(item)["catalog_state"] == "ACTIVE" and item.missing_required
+        ]
+
+    def _active_regression_route(regressed: list[str]) -> dict[str, Any]:
+        return {
+            "schema_version": ROUTE_SCHEMA,
+            "state": "UNKNOWN_SHAPE",
+            "reason": "ACTIVE_SHAPE_REGRESSION",
+            "host_family": host_family,
+            "canonical_event": canonical_event,
+            "host_event": host_event,
+            "host_version": host_version,
+            "observation": observation,
+            "candidates": [asdict(item) for item in candidates],
+            "selected": None,
+            "fallbacks": [],
+            "lifecycle_safety": {
+                "active_profiles_regressed": sorted(regressed),
+                "prospective_fallback": "NOT_PERFORMED",
+                "degraded": True,
+                "rule": (
+                    "A regressed ACTIVE shape is an explicit degradation. A prospective "
+                    "or unadmitted candidate never silently replaces it."
+                ),
+            },
+            "safety": {
+                "policy_decision": "DEFER_TO_CONSUMER",
+                "rule": (
+                    "The previously accepted ACTIVE shape no longer matches. Consumers "
+                    "must observe the regression rather than route through a weaker "
+                    "candidate that merely happens to parse."
+                ),
+            },
+        }
 
     viable = [item for item in candidates if not item.missing_required]
     if not viable:
+        regressed = _regressed_active()
+        if regressed:
+            return _active_regression_route(regressed)
         return {
             "schema_version": ROUTE_SCHEMA,
             "state": "UNKNOWN_SHAPE",
@@ -486,6 +804,12 @@ def negotiate(
             "candidates": [asdict(item) for item in candidates],
             "selected": None,
             "fallbacks": [],
+            "lifecycle_safety": {
+                "active_profiles_regressed": [],
+                "prospective_fallback": "NOT_PERFORMED",
+                "degraded": False,
+                "rule": "No tracked shape claimed this payload; nothing was invented.",
+            },
             "safety": {
                 "policy_decision": "DEFER_TO_CONSUMER",
                 "rule": (
@@ -496,7 +820,57 @@ def negotiate(
             },
         }
 
-    selected = viable[0]
+    routable = [item for item in viable if may_route(_lifecycle_of(item))]
+    if not routable:
+        regressed = _regressed_active()
+        if regressed:
+            return _active_regression_route(regressed)
+        observed = [
+            {
+                "profile_id": item.profile_id,
+                "catalog_state": _lifecycle_of(item)["catalog_state"],
+                "validation_state": _lifecycle_of(item)["validation_state"],
+                "proof_class": _lifecycle_of(item)["proof_class"],
+                "routing_eligibility": _lifecycle_of(item)["routing_eligibility"],
+            }
+            for item in viable
+        ]
+        return {
+            "schema_version": ROUTE_SCHEMA,
+            "state": "OBSERVE_ONLY_SHAPE",
+            "host_family": host_family,
+            "canonical_event": canonical_event,
+            "host_event": host_event,
+            "host_version": host_version,
+            "observation": observation,
+            "candidates": [asdict(item) for item in candidates],
+            "observed_profiles": observed,
+            "selected": None,
+            "fallbacks": [],
+            "lifecycle_safety": {
+                "active_profiles_regressed": [],
+                "prospective_fallback": "NOT_PERFORMED",
+                "degraded": False,
+                "rule": (
+                    "Structurally matching but non-routable shapes are observed and "
+                    "retained; they never become an implicit route."
+                ),
+            },
+            "safety": {
+                "policy_decision": "DEFER_TO_CONSUMER",
+                "rule": (
+                    "Observation and structural classification are permitted; routing "
+                    "authority is not."
+                ),
+            },
+        }
+
+    selected = routable[0]
+    selected_lifecycle = _lifecycle_of(selected)
+    if selected_lifecycle["catalog_state"] == "PROSPECTIVE":
+        regressed = _regressed_active()
+        if regressed:
+            return _active_regression_route(regressed)
     profile = next(item for item in validated if item["profile_id"] == selected.profile_id)
     failed = set(failed_response_shapes)
     declared_response_shapes = list(selected.response_shapes)
@@ -523,6 +897,8 @@ def negotiate(
             "observation": observation,
             "candidates": [asdict(item) for item in candidates],
             "selected": asdict(selected),
+            "lifecycle": dict(selected_lifecycle),
+            "selection_basis": selection_basis(selected_lifecycle),
             "fallbacks": [],
             "safety": {"policy_decision": "DEFER_TO_CONSUMER"},
         }
@@ -543,6 +919,12 @@ def negotiate(
             "response_shape": response_shape,
             "config_shapes": list(profile["config_shapes"]),
         },
+        "lifecycle": dict(selected_lifecycle),
+        "selection_basis": selection_basis(selected_lifecycle),
+        "canary_confirmation_required": (
+            selected_lifecycle["catalog_state"] == "PROSPECTIVE"
+            or selected_lifecycle["proof_class"] != "LIVE_CANARY"
+        ),
         "fallbacks": [item for item in available[1:]],
         "version_binding": bind_observation_to_profile(observation, selected.profile_id),
         "proof_ceiling": (

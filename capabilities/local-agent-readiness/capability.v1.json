@@ -5,12 +5,14 @@
   "purpose": "Classify whether a local agent may be trusted for a repository without conflating remote integration, checkout freshness, agent projection parity, live host runtime proof, remote-write reachability, or actual push proof.",
   "core_owner": "capabilities/local-agent-readiness/core/readiness.py",
   "entrypoints": {
-    "verify": "capabilities/local-agent-readiness/verify.py"
+    "verify": "capabilities/local-agent-readiness/verify.py",
+    "harness_availability": "capabilities/local-agent-readiness/core/readiness.py#classify_harness_availability"
   },
   "artifacts": {
     "profile_schema": "capabilities/local-agent-readiness/schemas/profile.v1.json",
     "runtime_observation_schema": "capabilities/local-agent-readiness/schemas/runtime-observation.v1.json",
-    "readiness_receipt_schema": "capabilities/local-agent-readiness/schemas/readiness-receipt.v1.json"
+    "readiness_receipt_schema": "capabilities/local-agent-readiness/schemas/readiness-receipt.v1.json",
+    "harness_availability_schema": "capabilities/local-agent-readiness/schemas/harness-availability.v1.json"
   },
   "runtime_boundary": {
     "default_mutation": "NONE",

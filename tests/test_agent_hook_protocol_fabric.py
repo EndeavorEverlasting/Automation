@@ -25,11 +25,16 @@ negotiate = FABRIC.negotiate
 observe_shape = FABRIC.observe_shape
 render_config = FABRIC.render_config
 shape_fingerprint = FABRIC.shape_fingerprint
+validate_lifecycle = FABRIC.validate_lifecycle
+max_routing_eligibility = FABRIC.max_routing_eligibility
+
+
+def registry_value() -> dict:
+    return json.loads(REGISTRY.read_text(encoding="utf-8"))
 
 
 def profiles() -> list[dict]:
-    value = json.loads(REGISTRY.read_text(encoding="utf-8"))
-    return load_profiles(value)
+    return load_profiles(registry_value())
 
 
 class HookProtocolFabricTests(unittest.TestCase):
@@ -320,6 +325,236 @@ class HookProtocolFabricTests(unittest.TestCase):
         right = shape_fingerprint({"b": 999, "a": "two"})
         self.assertEqual(left["shape_sha256"], right["shape_sha256"])
         self.assertEqual(left["field_types"], ["a:string", "b:integer"])
+
+
+class ShapeLifecycleContractTests(unittest.TestCase):
+    def _profile(self, profile_id: str) -> dict:
+        return next(
+            item for item in load_profiles(registry_value()) if item["profile_id"] == profile_id
+        )
+
+    def test_registry_lifecycle_model_matches_owner_vocabulary(self) -> None:
+        model = registry_value()["lifecycle_model"]
+        self.assertTrue(model["dimensions_are_orthogonal"])
+        self.assertEqual(model["catalog_states"], list(FABRIC.CATALOG_STATES))
+        self.assertEqual(model["validation_states"], list(FABRIC.VALIDATION_STATES))
+        self.assertEqual(model["proof_classes"], list(FABRIC.PROOF_CLASSES))
+        self.assertEqual(
+            model["routing_eligibilities"], list(FABRIC.ROUTING_ELIGIBILITIES)
+        )
+        self.assertEqual(model["rollout_stages"], list(FABRIC.ROLLOUT_STAGES))
+
+    def test_every_tracked_profile_declares_a_valid_lifecycle(self) -> None:
+        for profile in load_profiles(registry_value()):
+            lifecycle = profile["lifecycle"]
+            self.assertEqual(lifecycle["catalog_state"] in FABRIC.CATALOG_STATES, True)
+            self.assertEqual(
+                lifecycle["routing_eligibility"],
+                validate_lifecycle(lifecycle)["routing_eligibility"],
+            )
+            self.assertNotIn("payload", lifecycle)
+
+    def test_profile_without_lifecycle_is_rejected(self) -> None:
+        profile = dict(self._profile("cursor-native-common-envelope-v2"))
+        profile.pop("lifecycle")
+        with self.assertRaises(ProtocolFabricError):
+            FABRIC.validate_profile(profile)
+
+    def test_prospective_synthetic_pass_stays_prospective(self) -> None:
+        lifecycle = self._profile("cursor-native-common-envelope-v3-prospective")["lifecycle"]
+        self.assertEqual(lifecycle["catalog_state"], "PROSPECTIVE")
+        self.assertEqual(lifecycle["validation_state"], "PASS")
+        self.assertEqual(lifecycle["proof_class"], "SYNTHETIC")
+        self.assertEqual(lifecycle["routing_eligibility"], "CANARY_ELIGIBLE")
+        self.assertEqual(lifecycle["max_routing_eligibility"], "CANARY_ELIGIBLE")
+        self.assertNotEqual(lifecycle["routing_eligibility"], "AUTO_SWITCH_ELIGIBLE")
+
+    def test_prospective_candidate_never_displaces_a_viable_active_shape(self) -> None:
+        route = negotiate(
+            load_profiles(registry_value()),
+            host_family="cursor",
+            canonical_event="prompt.submit",
+            host_event="beforeSubmitPrompt",
+            payload={
+                "prompt": "hello",
+                "hook_event_name": "beforeSubmitPrompt",
+                "cursor_version": "13.0.0",
+                "workspace_roots": ["/repo"],
+                "agent_protocol_version": "3",
+            },
+        )
+        self.assertEqual(route["state"], "MATCHED")
+        self.assertEqual(route["selected"]["profile_id"], "cursor-native-common-envelope-v2")
+        self.assertEqual(route["selection_basis"], "ACTIVE_PREFERRED")
+        viable = [
+            item["profile_id"]
+            for item in route["candidates"]
+            if not item["missing_required"]
+        ]
+        self.assertIn("cursor-native-common-envelope-v3-prospective", viable)
+
+    def test_rejected_prospective_candidate_is_retained_observe_only(self) -> None:
+        lifecycle = self._profile("cursor-native-prompt-rename-v0-prospective")["lifecycle"]
+        self.assertEqual(lifecycle["catalog_state"], "PROSPECTIVE")
+        self.assertEqual(lifecycle["validation_state"], "FAIL")
+        self.assertTrue(lifecycle["retained_negative_evidence"])
+        self.assertEqual(lifecycle["routing_eligibility"], "OBSERVE_ONLY")
+        self.assertEqual(lifecycle["max_routing_eligibility"], "OBSERVE_ONLY")
+
+    def test_active_regression_degrades_without_silent_prospective_fallback(self) -> None:
+        route = negotiate(
+            load_profiles(registry_value()),
+            host_family="cursor",
+            canonical_event="prompt.submit",
+            host_event="beforeSubmitPrompt",
+            payload={
+                "text": "renamed prompt",
+                "hook_event_name": "beforeSubmitPrompt",
+                "cursor_version": "13.0.0",
+                "workspace_roots": ["/repo"],
+            },
+        )
+        self.assertEqual(route["state"], "UNKNOWN_SHAPE")
+        self.assertEqual(route["reason"], "ACTIVE_SHAPE_REGRESSION")
+        self.assertIsNone(route["selected"])
+        self.assertTrue(route["lifecycle_safety"]["degraded"])
+        self.assertEqual(route["lifecycle_safety"]["prospective_fallback"], "NOT_PERFORMED")
+        self.assertEqual(
+            route["lifecycle_safety"]["active_profiles_regressed"],
+            ["cursor-native-common-envelope-v2"],
+        )
+        self.assertEqual(route["safety"]["policy_decision"], "DEFER_TO_CONSUMER")
+
+    def test_legacy_fallback_requires_explicitly_admitted_compatibility(self) -> None:
+        route = negotiate(
+            load_profiles(registry_value()),
+            host_family="cursor",
+            canonical_event="session.stop",
+            host_event="legacyStop",
+            payload={"status": "completed", "legacy_loop": 0},
+        )
+        self.assertEqual(route["state"], "OBSERVE_ONLY_SHAPE")
+        self.assertIsNone(route["selected"])
+        observed = [item["profile_id"] for item in route["observed_profiles"]]
+        self.assertEqual(observed, ["cursor-native-legacy-stop-v0"])
+        self.assertEqual(route["lifecycle_safety"]["prospective_fallback"], "NOT_PERFORMED")
+
+    def test_legacy_shape_with_admitted_compatibility_is_a_marked_fallback(self) -> None:
+        route = negotiate(
+            load_profiles(registry_value()),
+            host_family="cursor",
+            canonical_event="prompt.submit",
+            host_event="beforeSubmitPrompt",
+            payload={"prompt": "hello"},
+        )
+        self.assertEqual(route["state"], "MATCHED")
+        self.assertEqual(route["selected"]["profile_id"], "cursor-native-minimal-v1")
+        self.assertEqual(route["selection_basis"], "COMPATIBILITY_FALLBACK")
+        self.assertEqual(route["lifecycle"]["catalog_state"], "LEGACY")
+
+    def test_prospective_only_shape_is_routable_with_an_explicit_canary_marker(self) -> None:
+        route = negotiate(
+            load_profiles(registry_value()),
+            host_family="cursor",
+            canonical_event="prompt.submit",
+            host_event="promptSubmittedFuture",
+            payload={
+                "prompt": "hello",
+                "hook_event_name": "promptSubmittedFuture",
+                "cursor_version": "13.0.0",
+                "agent_protocol_version": "3",
+            },
+        )
+        self.assertEqual(route["state"], "MATCHED")
+        self.assertEqual(
+            route["selected"]["profile_id"],
+            "cursor-native-common-envelope-v3-prospective",
+        )
+        self.assertEqual(route["selection_basis"], "PROSPECTIVE_CANDIDATE")
+        self.assertTrue(route["canary_confirmation_required"])
+
+    def test_documentation_cannot_prove_validation_pass(self) -> None:
+        with self.assertRaises(ProtocolFabricError):
+            validate_lifecycle(
+                {
+                    "catalog_state": "ACTIVE",
+                    "validation_state": "PASS",
+                    "proof_class": "DOCUMENTED",
+                    "routing_eligibility": "OBSERVE_ONLY",
+                    "rollout_stage": "PROFILED",
+                    "compatibility_admitted": False,
+                }
+            )
+
+    def test_synthetic_proof_cannot_claim_auto_switch_eligibility(self) -> None:
+        with self.assertRaises(ProtocolFabricError):
+            validate_lifecycle(
+                {
+                    "catalog_state": "ACTIVE",
+                    "validation_state": "PASS",
+                    "proof_class": "SYNTHETIC",
+                    "routing_eligibility": "AUTO_SWITCH_ELIGIBLE",
+                    "rollout_stage": "SYNTHETIC_PROVEN",
+                    "compatibility_admitted": False,
+                }
+            )
+
+    def test_active_failure_requires_explicit_quarantine(self) -> None:
+        declaration = {
+            "catalog_state": "ACTIVE",
+            "validation_state": "FAIL",
+            "proof_class": "SYNTHETIC",
+            "routing_eligibility": "OBSERVE_ONLY",
+            "rollout_stage": "PROFILED",
+            "compatibility_admitted": False,
+            "quarantined": False,
+        }
+        with self.assertRaises(ProtocolFabricError):
+            validate_lifecycle(declaration)
+        declaration["quarantined"] = True
+        normalized = validate_lifecycle(declaration)
+        self.assertTrue(normalized["degraded"])
+        self.assertEqual(normalized["routing_eligibility"], "OBSERVE_ONLY")
+
+    def test_max_routing_ceiling_is_monotone_across_dimensions(self) -> None:
+        base = {
+            "catalog_state": "ACTIVE",
+            "validation_state": "PASS",
+            "proof_class": "SYNTHETIC",
+            "routing_eligibility": "CANARY_ELIGIBLE",
+            "rollout_stage": "SYNTHETIC_PROVEN",
+            "compatibility_admitted": False,
+        }
+        self.assertEqual(max_routing_eligibility(base), "CANARY_ELIGIBLE")
+        self.assertEqual(
+            max_routing_eligibility({**base, "proof_class": "LIVE_CANARY"}),
+            "AUTO_SWITCH_ELIGIBLE",
+        )
+        self.assertEqual(
+            max_routing_eligibility({**base, "proof_class": "DOCUMENTED"}),
+            "OBSERVE_ONLY",
+        )
+        self.assertEqual(
+            max_routing_eligibility({**base, "validation_state": "UNTESTED"}),
+            "OBSERVE_ONLY",
+        )
+        self.assertEqual(
+            max_routing_eligibility(
+                {**base, "proof_class": "LIVE_CANARY", "catalog_state": "PROSPECTIVE"}
+            ),
+            "CANARY_ELIGIBLE",
+        )
+        self.assertEqual(
+            max_routing_eligibility(
+                {
+                    **base,
+                    "proof_class": "LIVE_CANARY",
+                    "catalog_state": "LEGACY",
+                    "compatibility_admitted": False,
+                }
+            ),
+            "OBSERVE_ONLY",
+        )
 
 
 if __name__ == "__main__":
