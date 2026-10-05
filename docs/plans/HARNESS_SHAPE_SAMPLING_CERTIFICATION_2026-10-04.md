@@ -1,6 +1,6 @@
 # Harness Shape Sampling + Certification Plan (2026-10-04)
 
-Status: OWNER IMPLEMENTATION COMPLETE, MERGE PENDING.
+Status: MERGED via PR #21 into `main@462fc98e113fb6935315155d1eb97478e586fc83`. Post-merge validation green.
 
 ## Execution frame
 
@@ -91,3 +91,17 @@ This lane proves deterministic, synthetic, privacy-safe sampling and lifecycle d
 - PR #18 and PR #20 files are untouched.
 - Cursor remains an installed runtime under test, not an implementation agent.
 - OpenCode remains the current execution harness; Automation remains the reusable owner.
+
+## Post-merge proof (2026-10-05)
+
+| check | result |
+| --- | --- |
+| merge | PR #21 squash-merged, `main@462fc98e113fb6935315155d1eb97478e586fc83` |
+| CI on merge commit | `Automation Validation` conclusion `success` |
+| `python -m unittest discover -s tests` on a fresh detached worktree at `462fc98` | 204 tests, OK (591.6s) |
+| `python capabilities/agent-hook-runtime/sample_shapes.py` | exit 0, `state PASS`, `SENSITIVE`, 16/16 positive, 18/18 negative, `failed_case_ids []` |
+| files changed by `9157215..462fc98` | 16, all inside this lane |
+| overlap with PR #18 / PR #20 owned files | none |
+| PR #7, #18, #20 after merge | still open |
+| TokenCorridor worktree | `feat/cursor-workstation-readiness-acceptance-20261003` @ `fb2c1f0`, 2 modified + 8 untracked, unchanged |
+| `git diff --check` | clean |
