@@ -23,7 +23,9 @@ SPEC.loader.exec_module(READINESS)
 ReadinessError = READINESS.ReadinessError
 agent_profile_digest = READINESS.agent_profile_digest
 assess_readiness = READINESS.assess_readiness
+classify_harness_availability = READINESS.classify_harness_availability
 load_profile = READINESS.load_profile
+projection_paths = READINESS.projection_paths
 
 
 def git(root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -77,6 +79,7 @@ class LocalAgentReadinessTests(unittest.TestCase):
         git(base, "clone", "-b", "main", str(self.remote), str(self.work))
         git(self.work, "config", "user.name", "Readiness Worktree")
         git(self.work, "config", "user.email", "fixture@example.invalid")
+        git(self.work, "config", "core.symlinks", "true")
 
         self.profile = {
             "schema_version": "local-agent-readiness-profile/v1",
@@ -615,6 +618,254 @@ class LocalAgentReadinessTests(unittest.TestCase):
         path.write_text(json.dumps(broken), encoding="utf-8")
         with self.assertRaises(ReadinessError):
             load_profile(path)
+
+
+class HarnessAvailabilityTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.base = Path(self.tmp.name)
+        self.work = self.base / "work"
+        self.remote = self.base / "remote.git"
+        self.seed = self.base / "seed"
+        self.profile_path = self.base / "profile.json"
+        self.schema = json.loads(
+            (CAP / "schemas" / "harness-availability.v1.json").read_text(encoding="utf-8")
+        )
+
+        self.seed.mkdir()
+        git(self.seed, "init")
+        git(self.seed, "config", "user.name", "Availability Fixture")
+        git(self.seed, "config", "user.email", "fixture@example.invalid")
+        git(self.seed, "checkout", "-b", "main")
+        for rel, text in {
+            "AGENTS.md": "shared contract\n",
+            ".cursor/hooks.json": "{}\n",
+            ".cursor/hooks/p07.py": "print('cursor fixture')\n",
+            "opencode.json": "{}\n",
+            ".opencode/config.json": "{}\n",
+        }.items():
+            path = self.seed / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
+        git(self.seed, "add", ".")
+        git(self.seed, "commit", "-m", "initial agent projections")
+
+        git(self.base, "init", "--bare", str(self.remote))
+        git(self.seed, "remote", "add", "origin", str(self.remote))
+        git(self.seed, "push", "-u", "origin", "main")
+        git(self.remote, "symbolic-ref", "HEAD", "refs/heads/main")
+        git(self.base, "clone", "-b", "main", str(self.remote), str(self.work))
+        git(self.work, "config", "user.name", "Availability Worktree")
+        git(self.work, "config", "user.email", "fixture@example.invalid")
+
+        self.profile = self.write_profile()
+
+    def head(self) -> str:
+        return git(self.work, "rev-parse", "HEAD").stdout.strip()
+
+    def write_profile(self) -> dict[str, object]:
+        value = {
+            "schema_version": "local-agent-readiness-profile/v1",
+            "repository": {
+                "remote": "origin",
+                "baseline_branch": "main",
+                "remote_identity": None,
+            },
+            "projection_sets": {
+                "shared": {"paths": ["AGENTS.md"]},
+                "cursor": {"paths": [".cursor/hooks.json", ".cursor/hooks"]},
+                "opencode": {"paths": ["opencode.json", ".opencode"]},
+            },
+            "agents": {
+                "cursor": {
+                    "projection_sets": ["shared", "cursor"],
+                    "required_gates": ["REPOSITORY_CHECKOUT_CURRENT"],
+                    "runtime_claims_required": [],
+                },
+                "opencode": {
+                    "projection_sets": ["shared", "opencode"],
+                    "required_gates": ["REPOSITORY_CHECKOUT_CURRENT"],
+                    "runtime_claims_required": ["PROJECT_CONFIGURATION_LOADED"],
+                },
+            },
+            "remote_write": {"dry_run_namespace": "refs/heads/agent-readiness-canary"},
+        }
+        self.profile_path.write_text(
+            json.dumps(value, indent=2) + "\n", encoding="utf-8"
+        )
+        return load_profile(self.profile_path)
+
+    def write_observation(
+        self, agent: str, path: Path, *, schema_version: str | None = None
+    ) -> Path:
+        value = {
+            "schema_version": "local-agent-runtime-observation/v1",
+            "agent_id": agent,
+            "status": "PASS",
+            "proof_class": "LIVE_HOST_OBSERVATION",
+            "observed_at": "2026-10-04T00:00:00Z",
+            "floor_sha": self.head(),
+            "agent_profile_sha256": agent_profile_digest(self.profile, agent),
+            "host_version": "synthetic-1",
+            "claims": [{"id": "PROJECT_CONFIGURATION_LOADED", "state": "PASS",
+                        "evidence_refs": ["synthetic:probe"]}],
+            "raw_private_content_persisted": False,
+            "proof_ceiling": "Synthetic isolated-consumer live-host shape only.",
+        }
+        if schema_version is not None:
+            value["schema_version"] = schema_version
+            value["proof_class"] = "DOCUMENTATION"
+        path.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
+        return path
+
+    def classify(self, agent: str, **kwargs: object) -> dict:
+        receipt = classify_harness_availability(
+            self.work,
+            expected_agent_id=agent,
+            paths=projection_paths(self.profile, agent),
+            expected_profile_sha256=agent_profile_digest(self.profile, agent),
+            **kwargs,  # type: ignore[arg-type]
+        )
+        for key in self.schema["required"]:
+            self.assertIn(key, receipt)
+        self.assertEqual(receipt["schema_version"], self.schema["properties"]["schema_version"]["const"])
+        self.assertIn(receipt["state"], self.schema["properties"]["state"]["enum"])
+        self.assertFalse(receipt["raw_private_content_persisted"])
+        return receipt
+
+    def test_unconfigured_harness_is_unconfigured_not_unknown(self) -> None:
+        receipt = self.classify("opencode", configured=False)
+        self.assertEqual(receipt["state"], "UNCONFIGURED")
+        self.assertEqual(receipt["proof_class"], "NONE")
+        self.assertEqual(receipt["freshness"], "NOT_APPLICABLE")
+
+    def test_configured_harness_without_observation_is_unknown(self) -> None:
+        receipt = self.classify("opencode", configured=True)
+        self.assertEqual(receipt["state"], "UNKNOWN")
+        self.assertEqual(receipt["freshness"], "UNKNOWN")
+        self.assertIsNone(receipt["observed_agent_id"])
+
+    def test_operator_intent_is_active_sprint_not_live_proof(self) -> None:
+        receipt = self.classify("cursor", configured=True, active_sprint=True)
+        self.assertEqual(receipt["state"], "AVAILABLE / ACTIVE_SPRINT")
+        self.assertEqual(receipt["proof_class"], "OPERATOR_INTENT")
+        self.assertNotEqual(receipt["proof_class"], "LIVE_HOST_OBSERVATION")
+
+    def test_documentation_evidence_is_never_promoted_to_live_proof(self) -> None:
+        observation = self.write_observation(
+            "opencode",
+            self.base / "docs-claim.json",
+            schema_version="local-agent-readiness-receipt/v1",
+        )
+        receipt = self.classify(
+            "opencode", configured=True, runtime_observation=observation
+        )
+        self.assertEqual(receipt["state"], "UNKNOWN")
+        self.assertEqual(receipt["proof_class"], "DOCUMENTATION")
+        active = self.classify(
+            "opencode",
+            configured=True,
+            active_sprint=True,
+            runtime_observation=observation,
+        )
+        self.assertEqual(active["state"], "AVAILABLE / ACTIVE_SPRINT")
+        self.assertEqual(active["proof_class"], "DOCUMENTATION")
+
+    def test_fresh_live_observation_is_live_verified(self) -> None:
+        observation = self.write_observation(
+            "opencode", self.base / "live-opencode.json"
+        )
+        receipt = self.classify(
+            "opencode", configured=True, runtime_observation=observation
+        )
+        self.assertEqual(receipt["state"], "AVAILABLE / LIVE_VERIFIED")
+        self.assertEqual(receipt["proof_class"], "LIVE_HOST_OBSERVATION")
+        self.assertEqual(receipt["freshness"], "FRESH")
+        self.assertEqual(receipt["observed_agent_id"], "opencode")
+
+    def test_projection_change_after_observation_blocks_live_availability(self) -> None:
+        observation = self.write_observation(
+            "opencode", self.base / "live-opencode.json"
+        )
+        opencode = self.seed / "opencode.json"
+        opencode.write_text(
+            opencode.read_text(encoding="utf-8") + "\n# drift\n", encoding="utf-8"
+        )
+        git(self.seed, "add", "opencode.json")
+        git(self.seed, "commit", "-m", "advance opencode projection")
+        git(self.seed, "push", "origin", "main")
+        git(self.work, "fetch", "origin", "main")
+        git(self.work, "reset", "--hard", "origin/main")
+
+        receipt = self.classify(
+            "opencode", configured=True, runtime_observation=observation
+        )
+        self.assertEqual(receipt["state"], "BLOCKED")
+        self.assertEqual(receipt["freshness"], "STALE")
+        self.assertTrue(receipt["evidence_refs"])
+
+    def test_cursor_evidence_never_satisfies_opencode_availability(self) -> None:
+        observation = self.write_observation("cursor", self.base / "live-cursor.json")
+        receipt = self.classify(
+            "opencode", configured=True, runtime_observation=observation
+        )
+        self.assertEqual(receipt["state"], "INTENDED_TARGET_NOT_OBSERVED")
+        self.assertEqual(receipt["observed_agent_id"], "cursor")
+        self.assertNotEqual(receipt["observed_agent_id"], receipt["agent_id"])
+        self.assertEqual(receipt["freshness"], "NOT_APPLICABLE")
+
+    def test_failed_live_observation_is_unavailable(self) -> None:
+        observation = self.write_observation(
+            "opencode", self.base / "failed.json"
+        )
+        value = json.loads(observation.read_text(encoding="utf-8"))
+        value["status"] = "FAIL"
+        observation.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
+        receipt = self.classify(
+            "opencode", configured=True, runtime_observation=observation
+        )
+        self.assertEqual(receipt["state"], "UNAVAILABLE")
+        self.assertEqual(receipt["proof_class"], "LIVE_HOST_OBSERVATION")
+
+    def test_profile_revision_change_blocks_live_availability(self) -> None:
+        observation = self.write_observation(
+            "opencode", self.base / "live-opencode.json"
+        )
+        value = json.loads(observation.read_text(encoding="utf-8"))
+        value["agent_profile_sha256"] = "0" * 64
+        observation.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
+        receipt = self.classify(
+            "opencode", configured=True, runtime_observation=observation
+        )
+        self.assertEqual(receipt["state"], "BLOCKED")
+        self.assertEqual(receipt["freshness"], "STALE")
+
+    def test_missing_observation_path_is_blocked(self) -> None:
+        receipt = self.classify(
+            "opencode",
+            configured=True,
+            runtime_observation=self.base / "absent.json",
+        )
+        self.assertEqual(receipt["state"], "BLOCKED")
+        self.assertEqual(receipt["freshness"], "UNKNOWN")
+
+    def test_empty_expected_agent_id_is_rejected(self) -> None:
+        with self.assertRaises(ReadinessError):
+            classify_harness_availability(self.work, expected_agent_id="", configured=True)
+
+    def test_capability_registers_harness_availability_schema(self) -> None:
+        capability = json.loads(
+            (CAP / "capability.v1.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            capability["artifacts"]["harness_availability_schema"],
+            "capabilities/local-agent-readiness/schemas/harness-availability.v1.json",
+        )
+        self.assertTrue(
+            (ROOT / capability["artifacts"]["harness_availability_schema"]).is_file()
+        )
+        self.assertIn("harness_availability", capability["entrypoints"])
 
 
 if __name__ == "__main__":

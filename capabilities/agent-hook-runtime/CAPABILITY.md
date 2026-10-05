@@ -148,8 +148,60 @@ Protocol changes advance through:
 
 A documentation scrape or unit test can create a profile but cannot certify a real installed host. Auto-switch is permitted only when the consumer's live canary/acceptance contract has admitted that profile or response fallback.
 
+## Shape lifecycle
+
+Every profile declares a `lifecycle` object whose dimensions are **orthogonal**:
+
+| dimension | values |
+| --- | --- |
+| `catalog_state` | `LEGACY`, `ACTIVE`, `PROSPECTIVE` |
+| `validation_state` | `UNTESTED`, `PASS`, `FAIL`, `BLOCKED` |
+| `proof_class` | `DOCUMENTED`, `SYNTHETIC`, `SHADOW_OBSERVED`, `LIVE_CANARY` |
+| `routing_eligibility` | `OBSERVE_ONLY`, `CANARY_ELIGIBLE`, `AUTO_SWITCH_ELIGIBLE`, `RETIRED` |
+| `rollout_stage` | `DISCOVERED -> PROFILED -> SYNTHETIC_PROVEN -> SHADOW_OBSERVED -> CANARY_ACCEPTED -> AUTO_SWITCH_ELIGIBLE` |
+
+`routing_eligibility` is never asserted; it is **derived** by `max_routing_eligibility()` from the other four plus `compatibility_admitted`. The negotiated route and the sampling receipt report that derived ceiling, so a declaration cannot over-claim.
+
+Invariants enforced by `validate_lifecycle()` and by negotiation:
+
+- a `PROSPECTIVE` profile with `validation_state=PASS` stays `PROSPECTIVE` and is capped at `CANARY_ELIGIBLE`, never `AUTO_SWITCH_ELIGIBLE`;
+- a `PROSPECTIVE` profile with `validation_state=FAIL` is retained with `retained_negative_evidence: true` and stays `OBSERVE_ONLY` — rejection is recorded, not deleted;
+- an `ACTIVE` profile whose validation fails routes to `UNKNOWN_SHAPE` with reason `ACTIVE_SHAPE_REGRESSION` and `degraded: true`; the fabric never silently substitutes a prospective candidate, and the observed candidate IDs are still reported;
+- a `LEGACY` profile only becomes routable through an explicitly `compatibility_admitted` record; documentation alone (`proof_class=DOCUMENTED`) can never produce `validation_state=PASS`;
+- a host that is not the profile's `host_family` is never a candidate, regardless of lifecycle.
+
+`profiles/current.v1.json` carries a top-level `lifecycle_model` that must equal the owner vocabulary, so a registry and the code cannot drift apart.
+
+## Deterministic shape sampling and certification
+
+Portable owners:
+
+- `core/shape_sampler.py`
+- `sample_shapes.py`
+- `fixtures/shape-sampling-matrix.synthetic.v1.json`
+- `schemas/shape-sampling-receipt.v1.json`
+
+```text
+python capabilities/agent-hook-runtime/sample_shapes.py --output Outputs/harness-shape-sampling-receipt.json
+```
+
+The sampler replays a **positive and negative** case matrix against the registry and emits a single deterministic receipt. Exit code is `0` only when the receipt state is `PASS`.
+
+Case kinds: `shape` (observe → negotiate → certify routing), `config` (render a dialect and check shape), `lifecycle` (assert derived eligibility/rollout invariants), `encode` (assert the response encoder persists structure only).
+
+Binding certification is separate from negotiation and returns one of `CURRENT`, `CURRENT_WITH_PROOF_CEILING`, `PROFILE_MISMATCH`, `PROFILE_NOT_ROUTABLE`, `STALE_SHAPE`, `STALE_VERSION`. Stale shape fingerprints and stale host-version bindings never authorize current auto-switching.
+
+Receipt properties:
+
+- `deterministic` — no timestamps, no wall clock; two runs produce byte-identical JSON;
+- `sensitivity.state` must be `SENSITIVE`: every `NEGATIVE` case must fail on its own assertion and every `POSITIVE` case must pass. A matrix with zero negative cases yields `INSUFFICIENT` and the overall state is `FAIL`, so a happy-path sweep cannot be reported as success;
+- privacy-safe — receipts retain structural fingerprints (`shape_sha256`, `field_count`, `field_types`, `content_persisted: false`) and profile IDs only; prompt text, workspace paths, session/conversation IDs, attachments and payload values are never written;
+- registered in `capability.v1.json` under `entrypoints.shape_sampler` and `artifacts.shape_sampling_matrix` / `shape_sampling_receipt_schema`.
+
+The receipt schema is asserted structurally in tests. No third-party schema validator is required to consume it.
+
 ## Proof ceiling
 
-The current implementation proves deterministic profile validation, structural fingerprinting, version-hint routing, native/compat response selection, config projection, and synthetic hybridization. Cursor diagnostics now shadow-negotiate live shapes.
+The current implementation proves deterministic profile validation, structural fingerprinting, version-hint routing, native/compat response selection, config projection, synthetic hybridization, lifecycle-eligibility derivation, and deterministic positive/negative shape sampling with binding staleness certification. Cursor diagnostics now shadow-negotiate live shapes.
 
-It does **not** prove that any installed Cursor, Codex, Claude Code, OpenCode, or future host accepted a selected response. That requires host-specific live observation/canary evidence.
+It does **not** prove that any installed Cursor, Codex, Claude Code, OpenCode, or future host accepted a selected response. Sampling never advances `rollout_stage` or `proof_class`; only live canary/acceptance evidence can do that.

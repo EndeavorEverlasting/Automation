@@ -1,19 +1,22 @@
 {
   "schema_version": "automation-capability/v1",
   "capability_id": "agent-hook-runtime",
-  "status": "PROTOCOL_FABRIC_IMPLEMENTED_SHADOW_NEGOTIATION",
-  "purpose": "Provide host-neutral hook transport normalization plus versioned protocol-shape negotiation, canonical event/decision routing, compatibility response encoders, and privacy-safe shape/version evidence without embedding consumer policy.",
+  "status": "PROTOCOL_FABRIC_AND_SHAPE_SAMPLING_IMPLEMENTED_SYNTHETIC",
+  "purpose": "Provide host-neutral hook transport normalization plus versioned protocol-shape negotiation, canonical event/decision routing, compatibility response encoders, explicit shape lifecycle (catalog/validation/proof/routing) validation, deterministic sampling and certification, and privacy-safe shape/version evidence without embedding consumer policy.",
   "core_owner": "capabilities/agent-hook-runtime/core/protocol_fabric.py",
   "adapters": {
     "cursor": "capabilities/agent-hook-runtime/adapters/cursor.py",
     "protocol_registry": "capabilities/agent-hook-runtime/profiles/current.v1.json"
   },
   "entrypoints": {
-    "cursor_transport_probe": "capabilities/agent-hook-runtime/diagnose_cursor_hook.py"
+    "cursor_transport_probe": "capabilities/agent-hook-runtime/diagnose_cursor_hook.py",
+    "shape_sampler": "capabilities/agent-hook-runtime/sample_shapes.py"
   },
   "artifacts": {
     "transport_receipt_schema": "capabilities/agent-hook-runtime/schemas/transport-receipt.v1.json",
-    "protocol_registry": "capabilities/agent-hook-runtime/profiles/current.v1.json"
+    "protocol_registry": "capabilities/agent-hook-runtime/profiles/current.v1.json",
+    "shape_sampling_matrix": "capabilities/agent-hook-runtime/fixtures/shape-sampling-matrix.synthetic.v1.json",
+    "shape_sampling_receipt_schema": "capabilities/agent-hook-runtime/schemas/shape-sampling-receipt.v1.json"
   },
   "runtime_boundary": {
     "secrets": "No credentials required.",
@@ -22,6 +25,32 @@
       "LOCAL_AGENT_RUNTIME",
       "CI_OR_REMOTE_RUNNER"
     ],
+    "lifecycle_vocabulary": {
+      "catalog_states": [
+        "LEGACY",
+        "ACTIVE",
+        "PROSPECTIVE"
+      ],
+      "validation_states": [
+        "UNTESTED",
+        "PASS",
+        "FAIL",
+        "BLOCKED"
+      ],
+      "proof_classes": [
+        "DOCUMENTED",
+        "SYNTHETIC",
+        "SHADOW_OBSERVED",
+        "LIVE_CANARY"
+      ],
+      "routing_eligibilities": [
+        "OBSERVE_ONLY",
+        "CANARY_ELIGIBLE",
+        "AUTO_SWITCH_ELIGIBLE",
+        "RETIRED"
+      ],
+      "orthogonal": true
+    },
     "rollout_states": [
       "DISCOVERED",
       "PROFILED",
@@ -37,7 +66,9 @@
     "assume one immutable hook shape per host product",
     "guess unknown host schemas from payload values",
     "cross-hybridize unrelated host families without explicit compatibility evidence",
-    "promote synthetic negotiation to live host acceptance"
+    "promote synthetic negotiation to live host acceptance",
+    "silently promote a PROSPECTIVE candidate over a regressed ACTIVE shape",
+    "let historical version/shape bindings authorize current automatic switching"
   ],
-  "proof_ceiling": "Synthetic tests prove protocol profile validation, shape fingerprinting, routing, config projection, and admitted hybrid response encoding. Live host canary evidence is required before automatic switching is production-proven."
+  "proof_ceiling": "Synthetic tests prove protocol profile validation, shape fingerprinting, lifecycle validation, routing eligibility ceilings, config projection, admitted hybrid response encoding, and positive/negative sampling sensitivity. Live host canary evidence is required before automatic switching is production-proven."
 }

@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 import subprocess
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -983,3 +984,357 @@ def assess_readiness(
             "Repository CI alone cannot satisfy live-host or real-push gates."
         ),
     }
+
+
+HARNESS_AVAILABILITY_STATES = (
+    "AVAILABLE / LIVE_VERIFIED",
+    "AVAILABLE / ACTIVE_SPRINT",
+    "BLOCKED",
+    "UNAVAILABLE",
+    "UNCONFIGURED",
+    "UNKNOWN",
+    "INTENDED_TARGET_NOT_OBSERVED",
+)
+
+AVAILABILITY_SCHEMA = "local-agent-harness-availability/v1"
+
+
+def _availability(
+    state: str,
+    *,
+    agent_id: str,
+    observed_agent_id: str | None,
+    configured: bool,
+    active_sprint: bool,
+    freshness: str,
+    proof_class: str,
+    reason: str,
+    evidence_refs: list[str] | None = None,
+) -> dict[str, Any]:
+    if state not in HARNESS_AVAILABILITY_STATES:
+        raise ReadinessError(f"unsupported harness availability state: {state}")
+    return {
+        "schema_version": AVAILABILITY_SCHEMA,
+        "agent_id": agent_id,
+        "observed_agent_id": observed_agent_id,
+        "state": state,
+        "configured": bool(configured),
+        "active_sprint": bool(active_sprint),
+        "freshness": freshness,
+        "proof_class": proof_class,
+        "reason": reason,
+        "evidence_refs": sorted(set(evidence_refs or [])),
+        "raw_private_content_persisted": False,
+        "proof_ceiling": (
+            "Availability classifies one independent harness observation. "
+            "Documentation, synthetic tests and operator intent never satisfy "
+            "LIVE_VERIFIED, and one agent's evidence never satisfies another agent."
+        ),
+    }
+
+
+def _projection_freshness(
+    root: Path,
+    *,
+    observation: dict[str, Any],
+    local_head: str | None,
+    paths: Sequence[str],
+) -> tuple[str, str, list[str]]:
+    floor = observation["floor_sha"]
+    if _resolve(root, floor) is None:
+        return (
+            "STALE",
+            "Live observation floor commit is unavailable in this checkout.",
+            [],
+        )
+    if not local_head:
+        return (
+            "UNKNOWN",
+            "Local HEAD is unavailable; observation freshness cannot be established.",
+            [],
+        )
+    ancestry = _git(root, "merge-base", "--is-ancestor", floor, local_head)
+    if ancestry.returncode != 0:
+        return (
+            "STALE",
+            "Live observation floor is not an ancestor of current HEAD.",
+            [],
+        )
+    if paths:
+        history_ok, touched = _projection_history_commits(
+            root, floor=floor, head=local_head, paths=list(paths)
+        )
+        if not history_ok:
+            return (
+                "UNKNOWN",
+                "Unable to inspect projection history after the observation floor.",
+                [],
+            )
+        if touched:
+            return (
+                "STALE",
+                "Projection history changed after the live observation, even if endpoint "
+                "bytes were later restored.",
+                touched,
+            )
+        changes_ok, changes = _projection_changes(
+            root, base=floor, head=local_head, paths=list(paths)
+        )
+        if not changes_ok:
+            return (
+                "UNKNOWN",
+                "Unable to compare projection surfaces against the observation floor.",
+                [],
+            )
+        changed = sorted(
+            set(
+                changes["committed"]
+                + changes["staged"]
+                + changes["unstaged"]
+                + changes["untracked"]
+            )
+        )
+        if changed:
+            return (
+                "STALE",
+                "Agent projection changed after the live observation.",
+                changed,
+            )
+    return "FRESH", "Live observation matches the current checkout projection.", []
+
+
+def classify_harness_availability(
+    root: Path,
+    *,
+    expected_agent_id: str,
+    configured: bool,
+    active_sprint: bool = False,
+    runtime_observation: Path | None = None,
+    paths: Sequence[str] = (),
+    expected_profile_sha256: str | None = None,
+) -> dict[str, Any]:
+    """Classify one harness's availability without conflating proof classes.
+
+    States are deliberately independent per agent: Cursor evidence never
+    satisfies OpenCode availability and vice versa.
+    """
+
+    if not isinstance(expected_agent_id, str) or not expected_agent_id.strip():
+        raise ReadinessError("expected_agent_id must be a non-empty string")
+    if not configured:
+        return _availability(
+            "UNCONFIGURED",
+            agent_id=expected_agent_id,
+            observed_agent_id=None,
+            configured=configured,
+            active_sprint=active_sprint,
+            freshness="NOT_APPLICABLE",
+            proof_class="NONE",
+            reason="Harness is not configured for this repository.",
+        )
+
+    if runtime_observation is None:
+        if active_sprint:
+            return _availability(
+                "AVAILABLE / ACTIVE_SPRINT",
+                agent_id=expected_agent_id,
+                observed_agent_id=None,
+                configured=configured,
+                active_sprint=active_sprint,
+                freshness="NOT_APPLICABLE",
+                proof_class="OPERATOR_INTENT",
+                reason=(
+                    "Harness is the active sprint surface. This is operator intent, "
+                    "not live host proof."
+                ),
+            )
+        return _availability(
+            "UNKNOWN",
+            agent_id=expected_agent_id,
+            observed_agent_id=None,
+            configured=configured,
+            active_sprint=active_sprint,
+            freshness="UNKNOWN",
+            proof_class="NONE",
+            reason="Harness is configured but no runtime observation was supplied.",
+        )
+
+    path = runtime_observation.expanduser().resolve()
+    if not path.is_file():
+        return _availability(
+            "BLOCKED",
+            agent_id=expected_agent_id,
+            observed_agent_id=None,
+            configured=configured,
+            active_sprint=active_sprint,
+            freshness="UNKNOWN",
+            proof_class="NONE",
+            reason="Declared runtime observation does not exist.",
+            evidence_refs=[path.name],
+        )
+
+    try:
+        raw = _load_json(path)
+    except ReadinessError as exc:
+        return _availability(
+            "BLOCKED",
+            agent_id=expected_agent_id,
+            observed_agent_id=None,
+            configured=configured,
+            active_sprint=active_sprint,
+            freshness="UNKNOWN",
+            proof_class="NONE",
+            reason=f"Runtime observation is unreadable: {exc}",
+            evidence_refs=[path.name],
+        )
+
+    observed_agent = raw.get("agent_id")
+    if not isinstance(observed_agent, str) or not observed_agent.strip():
+        return _availability(
+            "BLOCKED",
+            agent_id=expected_agent_id,
+            observed_agent_id=None,
+            configured=configured,
+            active_sprint=active_sprint,
+            freshness="UNKNOWN",
+            proof_class="NONE",
+            reason="Runtime observation does not name an agent.",
+            evidence_refs=[path.name],
+        )
+    if observed_agent != expected_agent_id:
+        return _availability(
+            "INTENDED_TARGET_NOT_OBSERVED",
+            agent_id=expected_agent_id,
+            observed_agent_id=observed_agent,
+            configured=configured,
+            active_sprint=active_sprint,
+            freshness="NOT_APPLICABLE",
+            proof_class="NONE",
+            reason=(
+                "Runtime observation belongs to a different agent; independent harness "
+                "observations are never interchangeable."
+            ),
+            evidence_refs=[path.name],
+        )
+
+    if raw.get("schema_version") != "local-agent-runtime-observation/v1":
+        proof_class = raw.get("proof_class")
+        proof_class = proof_class if isinstance(proof_class, str) and proof_class else "UNKNOWN"
+        if active_sprint:
+            return _availability(
+                "AVAILABLE / ACTIVE_SPRINT",
+                agent_id=expected_agent_id,
+                observed_agent_id=observed_agent,
+                configured=configured,
+                active_sprint=active_sprint,
+                freshness="NOT_APPLICABLE",
+                proof_class=proof_class,
+                reason=(
+                    f"Only {proof_class} evidence exists; the active sprint surface is "
+                    "available but is not live-verified."
+                ),
+                evidence_refs=[path.name],
+            )
+        return _availability(
+            "UNKNOWN",
+            agent_id=expected_agent_id,
+            observed_agent_id=observed_agent,
+            configured=configured,
+            active_sprint=active_sprint,
+            freshness="NOT_APPLICABLE",
+            proof_class=proof_class,
+            reason=(
+                f"Observation evidence class is {proof_class}; it cannot be promoted to "
+                "live host proof."
+            ),
+            evidence_refs=[path.name],
+        )
+
+    try:
+        observation = _load_runtime_observation(path)
+    except ReadinessError as exc:
+        return _availability(
+            "BLOCKED",
+            agent_id=expected_agent_id,
+            observed_agent_id=observed_agent,
+            configured=configured,
+            active_sprint=active_sprint,
+            freshness="UNKNOWN",
+            proof_class="LIVE_HOST_OBSERVATION",
+            reason=f"Live runtime observation is invalid: {exc}",
+            evidence_refs=[path.name],
+        )
+
+    if observation["status"] == "FAIL":
+        return _availability(
+            "UNAVAILABLE",
+            agent_id=expected_agent_id,
+            observed_agent_id=observed_agent,
+            configured=configured,
+            active_sprint=active_sprint,
+            freshness="NOT_APPLICABLE",
+            proof_class="LIVE_HOST_OBSERVATION",
+            reason="Live runtime observation reports FAIL.",
+            evidence_refs=[path.name],
+        )
+    if observation["status"] == "BLOCKED":
+        return _availability(
+            "BLOCKED",
+            agent_id=expected_agent_id,
+            observed_agent_id=observed_agent,
+            configured=configured,
+            active_sprint=active_sprint,
+            freshness="NOT_APPLICABLE",
+            proof_class="LIVE_HOST_OBSERVATION",
+            reason="Live runtime observation reports BLOCKED.",
+            evidence_refs=[path.name],
+        )
+
+    if (
+        expected_profile_sha256 is not None
+        and observation["agent_profile_sha256"] != expected_profile_sha256
+    ):
+        return _availability(
+            "BLOCKED",
+            agent_id=expected_agent_id,
+            observed_agent_id=observed_agent,
+            configured=configured,
+            active_sprint=active_sprint,
+            freshness="STALE",
+            proof_class="LIVE_HOST_OBSERVATION",
+            reason="Live observation was produced for a different agent profile revision.",
+            evidence_refs=[path.name],
+        )
+
+    root_path = root.expanduser().resolve()
+    local_head = _resolve(root_path, "HEAD")
+    freshness, reason, touched = _projection_freshness(
+        root_path,
+        observation=observation,
+        local_head=local_head,
+        paths=paths,
+    )
+    if freshness != "FRESH":
+        return _availability(
+            "BLOCKED",
+            agent_id=expected_agent_id,
+            observed_agent_id=observed_agent,
+            configured=configured,
+            active_sprint=active_sprint,
+            freshness=freshness,
+            proof_class="LIVE_HOST_OBSERVATION",
+            reason=reason,
+            evidence_refs=[path.name, *touched],
+        )
+
+    return _availability(
+        "AVAILABLE / LIVE_VERIFIED",
+        agent_id=expected_agent_id,
+        observed_agent_id=observed_agent,
+        configured=configured,
+        active_sprint=active_sprint,
+        freshness="FRESH",
+        proof_class="LIVE_HOST_OBSERVATION",
+        reason="Live runtime observation verifies the current agent projection.",
+        evidence_refs=[path.name],
+    )

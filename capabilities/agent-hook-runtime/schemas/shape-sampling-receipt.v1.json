@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent-hook-shape-sampling-receipt/v1",
+  "title": "Agent hook shape sampling and certification receipt",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "capability_id",
+    "matrix_schema",
+    "deterministic",
+    "registry_sha256",
+    "matrix_sha256",
+    "case_count",
+    "failed_case_ids",
+    "sensitivity",
+    "state",
+    "cases",
+    "privacy",
+    "vocabulary",
+    "proof_ceiling"
+  ],
+  "properties": {
+    "schema_version": {"const": "agent-hook-shape-sampling-receipt/v1"},
+    "capability_id": {"const": "agent-hook-runtime"},
+    "matrix_schema": {"const": "agent-hook-shape-sampling-matrix/v1"},
+    "deterministic": {"const": true},
+    "registry_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "matrix_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "case_count": {"type": "integer", "minimum": 1},
+    "failed_case_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "sensitivity": {
+      "type": "object",
+      "required": ["positive_total", "positive_passed", "negative_total", "negative_passed", "state"],
+      "properties": {
+        "positive_total": {"type": "integer", "minimum": 0},
+        "positive_passed": {"type": "integer", "minimum": 0},
+        "negative_total": {"type": "integer", "minimum": 0},
+        "negative_passed": {"type": "integer", "minimum": 0},
+        "state": {"enum": ["SENSITIVE", "INSUFFICIENT", "FAILED"]}
+      },
+      "additionalProperties": false
+    },
+    "state": {"enum": ["PASS", "FAIL"]},
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "case_id",
+          "class",
+          "kind",
+          "intent",
+          "route_state",
+          "selected_profile_id",
+          "checks",
+          "verdict"
+        ],
+        "properties": {
+          "case_id": {"type": "string", "minLength": 1},
+          "class": {"enum": ["POSITIVE", "NEGATIVE"]},
+          "kind": {"enum": ["shape", "config", "lifecycle", "encode"]},
+          "intent": {"type": "string", "minLength": 1},
+          "host_family": {"type": ["string", "null"]},
+          "canonical_event": {"type": ["string", "null"]},
+          "host_event": {"type": ["string", "null"]},
+          "route_state": {"type": "string", "minLength": 1},
+          "route_reason": {"type": ["string", "null"]},
+          "selected_profile_id": {"type": ["string", "null"]},
+          "selection_basis": {"type": ["string", "null"]},
+          "lifecycle": {
+            "type": ["object", "null"],
+            "properties": {
+              "catalog_state": {"enum": ["LEGACY", "ACTIVE", "PROSPECTIVE"]},
+              "validation_state": {"enum": ["UNTESTED", "PASS", "FAIL", "BLOCKED"]},
+              "proof_class": {
+                "enum": ["DOCUMENTED", "SYNTHETIC", "SHADOW_OBSERVED", "LIVE_CANARY"]
+              },
+              "routing_eligibility": {
+                "enum": ["OBSERVE_ONLY", "CANARY_ELIGIBLE", "AUTO_SWITCH_ELIGIBLE", "RETIRED"]
+              },
+              "rollout_stage": {
+                "enum": [
+                  "DISCOVERED",
+                  "PROFILED",
+                  "SYNTHETIC_PROVEN",
+                  "SHADOW_OBSERVED",
+                  "CANARY_ACCEPTED",
+                  "AUTO_SWITCH_ELIGIBLE"
+                ]
+              }
+            }
+          },
+          "observation_fingerprint": {
+            "type": ["object", "null"],
+            "properties": {
+              "field_types": {
+                "type": "array",
+                "items": {"type": "string", "pattern": "^[^:]+:[a-z]+$"}
+              },
+              "shape_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "field_count": {"type": "integer", "minimum": 0},
+              "content_persisted": {"const": false}
+            }
+          },
+          "explicitly_compatible_response_shapes": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1}
+          },
+          "checks": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["expectation", "satisfied"],
+              "properties": {
+                "expectation": {"type": "string", "minLength": 1},
+                "satisfied": {"type": "boolean"}
+              },
+              "additionalProperties": true
+            }
+          },
+          "verdict": {"enum": ["PASS", "FAIL"]},
+          "error": {"type": ["string", "null"]}
+        },
+        "additionalProperties": true
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "required": ["raw_payload_values_persisted", "retained_fields", "excluded_fields"],
+      "properties": {
+        "raw_payload_values_persisted": {"const": false},
+        "retained_fields": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "excluded_fields": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "reused_mechanism": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "vocabulary": {
+      "type": "object",
+      "required": [
+        "catalog_states",
+        "validation_states",
+        "proof_classes",
+        "routing_eligibilities",
+        "rollout_stages"
+      ],
+      "additionalProperties": true
+    },
+    "proof_ceiling": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": false
+}

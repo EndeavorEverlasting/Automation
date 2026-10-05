@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "local-agent-harness-availability/v1",
+  "title": "Local agent harness availability",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "agent_id",
+    "observed_agent_id",
+    "state",
+    "configured",
+    "active_sprint",
+    "freshness",
+    "proof_class",
+    "reason",
+    "evidence_refs",
+    "raw_private_content_persisted",
+    "proof_ceiling"
+  ],
+  "properties": {
+    "schema_version": {"const": "local-agent-harness-availability/v1"},
+    "agent_id": {"type": "string", "minLength": 1},
+    "observed_agent_id": {"type": ["string", "null"], "minLength": 1},
+    "state": {
+      "enum": [
+        "AVAILABLE / LIVE_VERIFIED",
+        "AVAILABLE / ACTIVE_SPRINT",
+        "BLOCKED",
+        "UNAVAILABLE",
+        "UNCONFIGURED",
+        "UNKNOWN",
+        "INTENDED_TARGET_NOT_OBSERVED"
+      ]
+    },
+    "configured": {"type": "boolean"},
+    "active_sprint": {"type": "boolean"},
+    "freshness": {"enum": ["FRESH", "STALE", "UNKNOWN", "NOT_APPLICABLE"]},
+    "proof_class": {"type": "string", "minLength": 1},
+    "reason": {"type": "string", "minLength": 1},
+    "evidence_refs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "raw_private_content_persisted": {"const": false},
+    "proof_ceiling": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": false
+}
