@@ -1,0 +1,48 @@
+{
+  "schema": "automation.parallel-dispatch-manifest/v1",
+  "max_concurrent": 4,
+  "lanes": [
+    {
+      "id": "fixture-a",
+      "argv": [
+        "python",
+        "-c",
+        "print('a')"
+      ],
+      "depends_on": [],
+      "exclusive_resources": [
+        "fixture-a"
+      ],
+      "timeout_seconds": 10
+    },
+    {
+      "id": "fixture-b",
+      "argv": [
+        "python",
+        "-c",
+        "print('b')"
+      ],
+      "depends_on": [],
+      "exclusive_resources": [
+        "fixture-b"
+      ],
+      "timeout_seconds": 10
+    },
+    {
+      "id": "fixture-c",
+      "argv": [
+        "python",
+        "-c",
+        "print('c')"
+      ],
+      "depends_on": [
+        "fixture-a",
+        "fixture-b"
+      ],
+      "exclusive_resources": [
+        "fixture-a"
+      ],
+      "timeout_seconds": 10
+    }
+  ]
+}
