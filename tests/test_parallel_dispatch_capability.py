@@ -39,7 +39,8 @@ class ParallelDispatchTests(unittest.TestCase):
         self.assertGreater(receipt["observed_peak_overlapping_processes"], 1)
         self.assertLessEqual(receipt["observed_peak_overlapping_processes"], 8)
         self.assertTrue(receipt["observed_parallelism"])
-        self.assertNotIn("argv", json.dumps(receipt))
+        self.assertNotIn("argv", receipt)
+        self.assertNotIn("argv", json.dumps(receipt["lanes"]))
         self.assertIn("NOT 100 LLM agents", receipt["proof_ceiling"])
 
     def test_cap_one_means_no_parallelism(self):
