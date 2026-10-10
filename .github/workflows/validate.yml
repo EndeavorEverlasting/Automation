@@ -63,6 +63,7 @@ jobs:
             capabilities/agent-hook-runtime/adapters/cursor.py \
             capabilities/local-agent-readiness/verify.py \
             capabilities/local-agent-readiness/core/readiness.py \
+            capabilities/agent-runtime-fabric/core/fabric.py \
             capabilities/social-publication/prototype.py \
             capabilities/social-publication/core/publication.py \
             capabilities/social-publication/adapters/linkedin.py \

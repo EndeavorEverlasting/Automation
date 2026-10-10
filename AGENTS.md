@@ -75,6 +75,18 @@ Local executors such as Cursor/OpenCode execute exact READY packets. They do not
 
 No contract may assume a frontier model is executing it. Architecture or ownership judgment must be resolved and persisted before a packet becomes READY.
 
+### Runtime adapter admission
+
+After a READY runtime-placement handoff and before selecting a concrete provider/harness modality, read `capabilities/agent-runtime-fabric/CAPABILITY.md`.
+
+- Route over concrete execution modalities, not whole-product availability.
+- Keep host hard limits, workflow resource envelopes, provider quotas, machine capacity, and authority/capability facts separate.
+- A capped modality does not disable another independently eligible modality.
+- Adapter availability never grants judgment authority; use only roles already admitted by upstream policy.
+- Unknown quota or capability facts fail closed for that adapter, then deterministic fallback may continue.
+- Admission/profile proof is not native execution or live-host proof.
+
+
 ### Public/private execution boundary
 
 - Never commit private continuity-store URLs/IDs, credentials, authenticated browser/session state, or person-specific workstation paths.
