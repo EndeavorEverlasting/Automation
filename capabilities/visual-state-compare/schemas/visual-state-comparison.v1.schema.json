@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:automation:visual-state-comparison:v1",
+  "title": "Visual State Comparison Receipt v1",
+  "type": "object",
+  "required": [
+    "contract",
+    "engine",
+    "status",
+    "semantic_verdict",
+    "proof_ceiling"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "contract": {
+      "const": "automation.visual-state-comparison/v1"
+    },
+    "engine": {
+      "const": "pillow-pixel-diff/v1"
+    },
+    "status": {
+      "enum": [
+        "NO_CHANGE",
+        "TOLERATED_CHANGE",
+        "CHANGED",
+        "INCOMPARABLE_GEOMETRY",
+        "INVALID_INPUT",
+        "INVALID_MASK",
+        "ENGINE_UNAVAILABLE"
+      ]
+    },
+    "before_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "after_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "width": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "comparable_pixels": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "changed_pixels": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "change_ratio": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "changed_bbox": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "x",
+            "y",
+            "width",
+            "height"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "x": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "y": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      ]
+    },
+    "pixel_threshold": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "max_diff_ratio": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "masked_regions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "x": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "semantic_verdict": {
+      "const": "NOT_EVALUATED"
+    },
+    "capture_provenance": {
+      "const": "NOT_PROVIDED"
+    },
+    "proof_ceiling": {
+      "enum": [
+        "OFFLINE_DETERMINISTIC_PIXEL_COMPARISON",
+        "NO_COMPARISON_PROOF"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "NO_CHANGE",
+              "TOLERATED_CHANGE",
+              "CHANGED"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "before_sha256",
+          "after_sha256",
+          "width",
+          "height",
+          "comparable_pixels",
+          "changed_pixels",
+          "change_ratio",
+          "changed_bbox",
+          "pixel_threshold",
+          "max_diff_ratio",
+          "masked_regions",
+          "capture_provenance"
+        ],
+        "properties": {
+          "proof_ceiling": {
+            "const": "OFFLINE_DETERMINISTIC_PIXEL_COMPARISON"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "proof_ceiling": {
+            "const": "NO_COMPARISON_PROOF"
+          }
+        }
+      }
+    }
+  ]
+}
