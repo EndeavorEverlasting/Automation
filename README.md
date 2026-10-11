@@ -72,6 +72,7 @@ The short version:
 
 Admitted capabilities:
 
+- [`media-transcript-acquisition`](capabilities/media-transcript-acquisition/CAPABILITY.md) — local-first SRT/VTT evidence normalization with optional YouTube caption adapters and explicit runtime-blocked receipts; live-source proof pending.
 - [`visual-state-compare`](capabilities/visual-state-compare/CAPABILITY.md) — **VSC-0 synthetic CI validated (PR head)**: local-only deterministic PNG comparisons with synthetic tests, receipt and no semantic/click authority.
 - [`playlist-link-extraction`](capabilities/playlist-link-extraction/CAPABILITY.md) — status `CORE_IMPLEMENTED_ADAPTERS_PENDING`
 - [`agent-hook-runtime`](capabilities/agent-hook-runtime/CAPABILITY.md) — status `CORE_IMPLEMENTED_CURSOR_ADAPTER_DIAGNOSTIC_ONLY`; separates JSON-stdio host transport/schema proof from consumer policy and emits privacy-safe runtime receipts.
