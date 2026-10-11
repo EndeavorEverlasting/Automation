@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:automation:media-transcript-evidence:v1",
+  "title": "Portable timestamped transcript observation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "status",
+    "proof_ceiling",
+    "method",
+    "attempts",
+    "cues"
+  ],
+  "properties": {
+    "contract": {
+      "const": "automation.media-transcript-evidence/v1"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "video_id"
+      ],
+      "properties": {
+        "provider": {
+          "const": "youtube"
+        },
+        "video_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{11}$"
+        }
+      }
+    },
+    "status": {
+      "enum": [
+        "TRANSCRIPT_ACQUIRED",
+        "UNRESOLVED_SOURCE_ACCESS",
+        "SOURCE_NOT_ATTACHED",
+        "INVALID_CAPTIONS",
+        "INVALID_SOURCE"
+      ]
+    },
+    "method": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "provided_captions",
+        "youtube_transcript_api",
+        "yt_dlp",
+        null
+      ]
+    },
+    "attempts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "adapter",
+          "status"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "adapter": {
+            "enum": [
+              "youtube_transcript_api",
+              "yt_dlp"
+            ]
+          },
+          "status": {
+            "enum": [
+              "SUCCESS",
+              "ADAPTER_UNAVAILABLE",
+              "PROVIDER_BLOCKED",
+              "PROVIDER_TIMEOUT",
+              "CAPTIONS_UNAVAILABLE",
+              "PROVIDER_ERROR",
+              "INVALID_CAPTIONS"
+            ]
+          }
+        }
+      }
+    },
+    "cues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "start_ms",
+          "end_ms",
+          "text"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "start_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "end_ms": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "input_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "proof_ceiling": {
+      "enum": [
+        "SOURCE_TEXT_ACQUIRED",
+        "NO_SOURCE_TEXT"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "TRANSCRIPT_ACQUIRED"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "source",
+          "input_sha256"
+        ],
+        "properties": {
+          "cues": {
+            "minItems": 1
+          },
+          "proof_ceiling": {
+            "const": "SOURCE_TEXT_ACQUIRED"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "proof_ceiling": {
+            "const": "NO_SOURCE_TEXT"
+          },
+          "cues": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ]
+}
