@@ -1,6 +1,6 @@
 # Visual state comparison (VSC-0)
 
-**Owner:** Automation, reusable core. **Status:** implemented in a review branch; merge, full repository CI and live host evidence are separate gates.
+**Owner:** Automation, reusable core. **Status:** VSC-0 offline implementation with synthetic CI validation on the PR head; merge and live-host capture/evaluation remain separate gates.
 
 ## Purpose and scope
 
