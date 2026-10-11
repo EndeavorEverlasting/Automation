@@ -49,6 +49,8 @@ Automation owns the portable compare algorithm, versioned receipt and future opt
 - No model installation, screenshot collection, cloud transfer, autonomous clicking or consumer deployment is performed.
 - Runtime production/use path: **UNDECLARED**. Canonical development path: `capabilities/visual-state-compare/`.
 
+For the test-only JSON Schema validation dependency, also install `jsonschema==4.25.1` in the test environment. The CLI runtime itself requires only Pillow.
+
 Run synthetic independent CLI tests:
 
 ```bash
