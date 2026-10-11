@@ -118,5 +118,22 @@ class VisualStateCompareTests(unittest.TestCase):
         self.assertNotIn("absolute_path", json.dumps(first))
 
 
+    def test_isolated_consumer_without_owner_checkout(self):
+        # Only the supported script and public CLI flags are available in an empty workspace.
+        from shutil import copyfile
+        isolated = self.dir / "isolated-consumer"
+        isolated.mkdir()
+        standalone = isolated / "visual-compare.py"
+        copyfile(ENTRY, standalone)
+        completed = subprocess.run(
+            [sys.executable, str(standalone), "--before", str(self.before),
+             "--after", str(self.after), "--receipt", str(self.receipt)],
+            text=True, capture_output=True, check=False, cwd=isolated
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        receipt = json.loads(self.receipt.read_text(encoding="utf-8"))
+        self.assertEqual(receipt["contract"], "automation.visual-state-comparison/v1")
+        self.assertEqual(receipt["status"], "NO_CHANGE")
+
 if __name__ == "__main__":
     unittest.main()
