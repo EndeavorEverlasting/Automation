@@ -7,10 +7,14 @@ import unittest
 from pathlib import Path
 
 from PIL import Image
+from jsonschema import Draft202012Validator
 
 
 ROOT = Path(__file__).resolve().parents[1]
 ENTRY = ROOT / "compare.py"
+SCHEMA = json.loads((ROOT / "schemas" / "visual-state-comparison.v1.schema.json").read_text(encoding="utf-8"))
+Draft202012Validator.check_schema(SCHEMA)
+VALIDATOR = Draft202012Validator(SCHEMA)
 
 
 class VisualStateCompareTests(unittest.TestCase):
@@ -30,7 +34,9 @@ class VisualStateCompareTests(unittest.TestCase):
              "--after", str(self.after), "--receipt", str(self.receipt), *options],
             text=True, capture_output=True, check=False
         )
-        return proc, json.loads(self.receipt.read_text(encoding="utf-8"))
+        result = json.loads(self.receipt.read_text(encoding="utf-8"))
+        VALIDATOR.validate(result)
+        return proc, result
 
     def change_pixel(self, x=3, y=2, color="black"):
         image = Image.open(self.after)
