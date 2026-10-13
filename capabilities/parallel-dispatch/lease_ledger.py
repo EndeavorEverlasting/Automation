@@ -110,8 +110,17 @@ class LeaseLedger:
             for row in active:
                 held.update(json.loads(row["resources"]))
             states = {r["id"]: r["status"] for r in rows}
+            # Resolve dependency failures before granting any new claim.
+            # A previous early return must not hide a blocked successor.
             for row in rows:
                 if row["status"] != "PENDING":
+                    continue
+                if any(states.get(dep) in {"FAILED", "BLOCKED_DEPENDENCY"}
+                       for dep in json.loads(row["deps"])):
+                    cx.execute("UPDATE lanes SET status='BLOCKED_DEPENDENCY' WHERE id=?", (row["id"],))
+                    states[row["id"]] = "BLOCKED_DEPENDENCY"
+            for row in rows:
+                if states[row["id"]] != "PENDING":
                     continue
                 deps = json.loads(row["deps"])
                 if any(states.get(dep) in {"FAILED", "BLOCKED_DEPENDENCY"} for dep in deps):
