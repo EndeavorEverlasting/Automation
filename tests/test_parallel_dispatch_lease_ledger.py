@@ -1,5 +1,6 @@
 """Synthetic state-transition tests; no provider or native agent execution."""
 import importlib.util
+from concurrent.futures import ThreadPoolExecutor
 import tempfile
 import unittest
 from pathlib import Path
@@ -88,6 +89,18 @@ class DurableLeaseTests(unittest.TestCase):
         claims = [large.claim(f"worker{i}") for i in range(4)]
         self.assertTrue(all(claims))
         self.assertIsNone(large.claim("worker5"))
+        self.assertEqual(large.snapshot()["states"]["LEASED"], 4)
+
+    def test_concurrent_claimers_obey_single_host_cap(self):
+        large = LeaseLedger(Path(self.temp.name) / "parallel.db",
+                            clock=lambda: self.now[0])
+        large.install(manifest(n=100, cap=4))
+        with ThreadPoolExecutor(max_workers=16) as workers:
+            claims = list(workers.map(lambda i: large.claim(f"worker{i}"),
+                                      range(32)))
+        admitted = [claim for claim in claims if claim is not None]
+        self.assertEqual(len(admitted), 4)
+        self.assertEqual(len({item["lane_id"] for item in admitted}), 4)
         self.assertEqual(large.snapshot()["states"]["LEASED"], 4)
 
     def test_worker_failure_blocks_dependency(self):
