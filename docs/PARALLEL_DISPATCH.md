@@ -4,9 +4,9 @@ Issue: [AUTO-PD1 #14](https://github.com/EndeavorEverlasting/Automation/issues/1
 
 ## Intake hierarchy
 
-`TokenCorridor Work Graph / P04 runtime partition` → `Automation parallel-dispatch admission/receipt` → `AgentSwitchboard/FirstMate real agent runtime` → `independent tests / merge authority`.
+`TokenCorridor Work Graph / P04 runtime partition` → `Automation parallel-dispatch admission/receipt` → `FirstMate native crew runtime` → `independent tests / merge authority`.
 
-This capability implements only a **local argv process executor** to unblock real bounded fan-out measurement. It does not replace FirstMate, AgentSwitchboard, or a cross-host scheduler.
+This capability implements only a **local argv process executor** to unblock real bounded fan-out measurement. It does not replace FirstMate or a cross-host scheduler.
 
 ## Dispatch target
 
@@ -30,8 +30,8 @@ No shell strings, no arbitrary environment injections, and no implicit execution
 1. Host-attested execution packet; source/ref and frozen scope integrity; operator-approved spend limit.
 2. Readiness/rate/quota probes and cost per execution class; bounded backpressure.
 3. Durable atomic claims, leases, heartbeats, crash recovery and cancellation across hosts.
-4. FirstMate/AgentSwitchboard native agent session spawn and unique worktree ownership.
+4. FirstMate native agent session spawn and unique worktree ownership.
 5. Independent proof/readback, retries with budgets, duplicate prevention and convergence.
 6. Physical workstation and cloud validation, not just CI; stop when contention, rate limits or errors worsen.
 
-In existing repo ownership: TokenCorridor issue #142 covers the P04 dispatcher consumer; AgentSwitchboard/FirstMate provide native crew execution, and Automation #14 provides reusable queue/dispatcher mechanics. Do not merge an alternate scheduler into TokenCorridor or GNHF.
+In existing repo ownership: TokenCorridor issue #142 covers the P04 dispatcher consumer; FirstMate provides native crew execution, and Automation #14 provides reusable queue/dispatcher mechanics. Do not merge an alternate scheduler into TokenCorridor or GNHF.
