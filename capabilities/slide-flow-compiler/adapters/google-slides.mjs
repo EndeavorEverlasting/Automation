@@ -27,7 +27,7 @@ export function toGoogleSlidesRequests(ir,slideId){
    shape(ob.id+"_rail","RECTANGLE",{x:20,y:21,w:5,h:45},ob.colors.action);
    text(ob.id+"_eye",ob.eyebrow,{x:39,y:11,w:645,h:19},10.2,ob.colors.action,true);
    text(ob.id+"_title",ob.title,{x:39,y:32,w:655,h:36},26,ob.colors.ink,true);
-   text(ob.id+"_sub",ob.qualifier,{x:39,y:68,w:662,h:15},9.1,ob.colors.muted,true);
+   text(ob.id+"_sub",ob.qualifier,{x:39,y:68,w:662,h:15},9.6,ob.colors.muted,true);
   }else if(ob.type==="lane_label"){
    text(ob.id,ob.text,b,10.9,ob.color,true);
   }else if(ob.type==="card"){
@@ -35,7 +35,7 @@ export function toGoogleSlidesRequests(ir,slideId){
    shape(ob.id+"_rail","RECTANGLE",{x:b.x+2,y:b.y+11,w:4,h:b.h-22},ob.accent);
    text(ob.id+"_head",s.title,{x:b.x+11,y:b.y+12,w:b.w-21,h:27},15.1,ob.ink,true);
    text(ob.id+"_description",s.summary,{x:b.x+11,y:b.y+44,w:b.w-21,h:33},9.5,ob.muted);
-   if(s.action)text(ob.id+"_action",s.action.label+" ↗",{x:b.x+11,y:b.y+b.h-19,w:b.w-20,h:16},8.7,ob.accent,true,s.action.url);
+   if(s.action)text(ob.id+"_action",s.action.label+" ↗",{x:b.x+11,y:b.y+b.h-19,w:b.w-20,h:16},9.3,ob.accent,true,s.action.url);
   }else if(ob.type==="arrow"){
    shape(ob.id,"RIGHT_ARROW",b,ob.accent);
   }else if(ob.type==="footer"){
