@@ -33,3 +33,18 @@ node --test capabilities/slide-flow-compiler/tests/test_compile.mjs
 \`\`\`
 
 The test imports only the advertised compiler and adapter, with synthetic domain-agnostic inputs. A consumer can change the style profile without changing the graph compiler. Do not promote structural test success to Google Slides visual acceptance.
+
+
+### Second-pass provider readback acceptance
+
+After the **consumer** has explicitly authorized a provider write, fetch the original slide through the authenticated Google Slides API and pass its raw resource plus the exact compiled plan to \`auditGoogleSlidesReadback(snapshot, plan)\` from \`adapters/google-slides-readback.mjs\`.
+
+The structural validator compares requested shape IDs, link targets, actual Google \`PageElement\` geometry using \`size × scale\`, canvas bounds, and the 9pt minimum readability floor. A Google Slides response frequently normalizes requested sizes to 3,000,000 EMU and moves the true physical width/height into the affine transform. Reading only \`size.width\` is incorrect.
+
+It always reports \`provenance: CALLER_SUPPLIED_SNAPSHOT_NOT_PROVIDER_AUTHENTICATED\`, \`visual_state: NOT_VISUALLY_INSPECTED\`, and \`interaction_state: NOT_BROWSER_CLICK_TESTED\`. Only a distinct authenticated provider receipt and actual rendered/interactive observation can advance those ceilings. Test the code with:
+
+\`\`\`bash
+node --test capabilities/slide-flow-compiler/tests/test_readback.mjs
+\`\`\`
+
+**Readability revision:** the adapter now uses at least 9pt font sizes and the compiler caps action-label length at 20 characters instead of squeezing text smaller to fit.
