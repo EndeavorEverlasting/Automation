@@ -1,0 +1,19 @@
+name: Portable Slide Flow Quality
+on:
+  pull_request:
+    paths:
+      - 'capabilities/slide-flow-compiler/**'
+      - '.github/workflows/slide-flow-compiler.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'capabilities/slide-flow-compiler/**'
+      - '.github/workflows/slide-flow-compiler.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: node --test capabilities/slide-flow-compiler/tests/test_compile.mjs
