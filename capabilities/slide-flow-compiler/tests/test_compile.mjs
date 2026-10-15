@@ -72,3 +72,24 @@ test('fail closed on fifth card in a lane',()=>{
   const g=clone(graph);g.lanes[0].steps.push({...g.lanes[0].steps[0],id:'fifth'});
   assert.ok(checkGraph(g,profile).some(x=>x.includes('1-4 steps')));
 });
+
+
+test('card actions stay clear of descriptions and borders in both row heights',()=>{
+  const g=clone(graph);
+  g.lanes[1].steps[0].action={label:'OPEN SOURCE',url:'https://example.org/fleet'};
+  const plan=toGoogleSlidesRequests(compileFlow(g,profile),'synthetic_slide_clearance');
+  const objects=new Map(plan.requests.filter(x=>x.createShape).map(x=>[x.createShape.objectId,x.createShape.elementProperties]));
+  for(const [id,props] of objects){
+    if(!id.endsWith('_action'))continue;
+    const stem=id.slice(0,-'_action'.length),desc=objects.get(stem+'_description'),panel=objects.get(stem+'_panel');
+    assert.ok(desc && panel,'every action belongs to one description and card');
+    const actionY=props.transform.translateY,actionH=props.size.height.magnitude;
+    const descEnd=desc.transform.translateY+desc.size.height.magnitude;
+    const cardEnd=panel.transform.translateY+panel.size.height.magnitude;
+    assert.ok(actionY-descEnd>=1,stem+' description-to-link clearance');
+    assert.ok(cardEnd-(actionY+actionH)>=8,stem+' bottom margin');
+  }
+  const inserted=plan.requests.filter(x=>x.insertText).map(x=>x.insertText.text);
+  assert.ok(inserted.every(x=>!x.includes('↗')),'textual link glyph must not leak into exported decks');
+  assert.ok(plan.requests.some(x=>x.updateTextStyle?.style?.link?.url),'native hyperlinks retained');
+});
