@@ -24,7 +24,7 @@ export function checkGraph(graph,profile){
    if(step.kind==="outcome"&&step.proof_state!=="verified")errors.push("outcome requires verified proof");
    if(typeof step.title!=="string"||!step.title.trim()||step.title.length>22)errors.push("step title missing/too long (max 22)");
    if(typeof step.summary!=="string"||step.summary.length>57)errors.push("step summary max 57");
-   if(step.action){if(typeof step.action.label!=="string"||step.action.label.length>23||!step.action.label.trim())errors.push("action label missing/too long");if(typeof step.action.url!=="string"||!/^https:\/\/[^/\s]+/.test(step.action.url))errors.push("action URL must be https")}
+   if(step.action){if(typeof step.action.label!=="string"||step.action.label.length>20||!step.action.label.trim())errors.push("action label missing/too long (max 20)");if(typeof step.action.url!=="string"||!/^https:\/\/[^/\s]+/.test(step.action.url))errors.push("action URL must be https")}
   }
   if(lane.edges!==undefined&&!Array.isArray(lane.edges))errors.push("edges must be an array");
   for(const edge of Array.isArray(lane.edges)?lane.edges:[]){
