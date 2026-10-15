@@ -39,7 +39,7 @@ export function toGoogleSlidesRequests(ir,slideId){
   }else if(ob.type==="arrow"){
    shape(ob.id,"RIGHT_ARROW",b,ob.accent);
   }else if(ob.type==="footer"){
-   shape(ob.id+"_bar","ROUND_RECTANGLE",b,"#061423",ob.accent,.96);
+   shape(ob.id+"_bar","ROUND_RECTANGLE",b,ob.canvas,ob.accent,.96);
    text(ob.id+"_text",ob.text,{x:b.x+11,y:b.y+5,w:b.w-21,h:17},9.4,ob.accent,true);
   }else throw Error("unsupported IR object type: "+ob.type);
  }
