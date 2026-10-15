@@ -54,7 +54,7 @@ export function compileFlow(graph,profile){
    add("arrow",graph.id+`_l${li}_e${si}`,{x:xs[si]+145,y:y+(h-25)/2,w:29,h:25},{accent:edge.kind==="conditional"?colors.gate:li===0?colors.action:colors.secondary,kind:edge.kind});
   }
  });
- if(graph.footer){if(graph.footer.length>103)throw Error("footer max 103 chars");add("footer",graph.id+"_footer",{x:24,y:375,w:672,h:24},{text:graph.footer,accent:colors.gate})}
+ if(graph.footer){if(graph.footer.length>103)throw Error("footer max 103 chars");add("footer",graph.id+"_footer",{x:24,y:375,w:672,h:24},{text:graph.footer,accent:colors.gate,canvas:colors.canvas})}
  return {schema:"slide-flow-ir/v1",style_id:profile.id,style_version:profile.version,graph_id:graph.id,page:{width_pt:720,height_pt:405},objects,proof_ceiling:"COMPILED_GEOMETRY_ONLY"};
 }
 
