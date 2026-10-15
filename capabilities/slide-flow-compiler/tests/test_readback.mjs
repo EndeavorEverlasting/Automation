@@ -16,7 +16,7 @@ function syntheticReadback(plan){
  const pageElements=[],updates=new Map(plan.requests.filter(x=>x.updateTextStyle).map(x=>[x.updateTextStyle.objectId,x.updateTextStyle.style]));
  for(const r of plan.requests.filter(x=>x.createShape)){
   const shape=r.createShape,p=shape.elementProperties,t=p.transform,s=p.size;
-  const style=updates.get(shape.objectId),texts=style?[{textRun:{content:'example',style}}]:[];
+  const style=updates.has(shape.objectId)?JSON.parse(JSON.stringify(updates.get(shape.objectId))):null,texts=style?[{textRun:{content:'example',style}}]:[];
   pageElements.push({objectId:shape.objectId,
    size:{width:{magnitude:3000000,unit:'EMU'},height:{magnitude:3000000,unit:'EMU'}},
    transform:{scaleX:s.width.magnitude*12700/3000000,scaleY:s.height.magnitude*12700/3000000,translateX:t.translateX*12700,translateY:t.translateY*12700,unit:'EMU'},
