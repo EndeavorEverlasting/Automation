@@ -124,3 +124,8 @@ Live provider execution remains unproven; status stays `CORE_IMPLEMENTED_ADAPTER
 ## Existing experiments
 
 This repository began as a small automation sandbox. Early experiments may predate the current charter. New work should follow the charter rather than treating historical layout as the architectural model.
+
+
+### Portable slide-flow compiler
+
+`capabilities/slide-flow-compiler/` turns explicit semantic workflows and style-token profiles into deterministic editable slide geometry and a **side-effect-free Google Slides request plan**. It does not connect to, overwrite or visually certify a live presentation. Start with [the capability contract](capabilities/slide-flow-compiler/CAPABILITY.md), then run `node --test capabilities/slide-flow-compiler/tests/test_compile.mjs`. Operational sources, private links and preferred-style registries stay consumer-owned.
