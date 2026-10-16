@@ -3,7 +3,7 @@
   "date": "2026-10-04",
   "repository": "EndeavorEverlasting/Automation",
   "floor_sha": "5d0f363f1e98d0e4227b7abc7caf4162661ca1a6",
-  "branch": "feat/p04-p95-p97-hook-protocol-fabric-20261004",
+  "branch": "main",
   "capability": "agent-hook-runtime",
   "prompts": {
     "P04": "[PARALLEL] Repo-Aware Sprint + Harness Factoring Distributor",
@@ -41,25 +41,25 @@
     },
     {
       "id": "HP-2",
-      "state": "IMPLEMENTED",
+      "state": "COMPLETE",
       "owner": "Automation",
       "mission": "protocol fabric, profiles, tests"
     },
     {
       "id": "HP-3",
-      "state": "IMPLEMENTED",
+      "state": "COMPLETE",
       "owner": "Automation",
       "mission": "Cursor shadow negotiation"
     },
     {
       "id": "HP-4",
-      "state": "PENDING",
+      "state": "COMPLETE",
       "owner": "Automation",
       "mission": "exact-head CI + integration"
     },
     {
       "id": "HP-5",
-      "state": "BLOCKED_ON_HP_4",
+      "state": "COMPLETE",
       "owner": "TokenCorridor",
       "mission": "pin/vendor owner + consumer parity"
     },
@@ -95,5 +95,15 @@
     "CANARY_ACCEPTED",
     "AUTO_SWITCH_ELIGIBLE"
   ],
-  "proof_ceiling": "Repository proof cannot establish live host acceptance; auto-switch requires consumer canary evidence."
+  "proof_ceiling": "HP-0..HP-5 are repository-integrated and default-branch validated. HP-6 live host canaries/version-shape binding remain unproven until executed on the installed consumer host.",
+  "integrated_owner_commit": "9157215fc6b976ae1fa2f25d8498652ea5eaa478",
+  "owner_pr": 19,
+  "owner_main_validation_run": 37222362465,
+  "consumer": {
+    "repository": "EndeavorEverlasting/TokenCorridor",
+    "pr": 118,
+    "integrated_commit": "6c9e92062b77b2068d1e7e903937f716995dc871",
+    "main_validation_run": 37223391552,
+    "state": "INTEGRATED"
+  }
 }
