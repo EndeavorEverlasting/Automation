@@ -26,3 +26,20 @@ jobs:
         run: python -m pip install 'Pillow==11.3.0' 'jsonschema==4.25.1'
       - name: Black-box synthetic acceptance
         run: python -m unittest discover -s capabilities/visual-state-compare/tests -v
+  browser-adapter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pinned browser and schema verifier
+        run: python -m pip install 'playwright==1.55.0' 'jsonschema==4.25.1'
+      - name: Provision synthetic browser engine
+        run: python -m playwright install --with-deps chromium
+      - name: Synthetic and real isolated Chromium canary
+        env:
+          VSC_REQUIRE_BROWSER: "1"
+        run: python -m unittest discover -s capabilities/visual-state-compare/adapters/playwright-browser/tests -v
+
