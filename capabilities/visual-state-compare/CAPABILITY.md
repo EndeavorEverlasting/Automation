@@ -65,3 +65,13 @@ VSC-1: explicit capture adapter and typed provenance.
 VSC-2: OCR/accessibility information plus source-backed interpretation.
 VSC-3: optional local VLM with hardware/licensing/latency/eval receipts.
 VSC-4: independent element grounding and authorized observe-act-verify loop.
+
+## VSC-1 — optional read-only Playwright adapter
+
+Source: capabilities/visual-state-compare/adapters/playwright-browser/capture.py
+Consumer interface: automation.browser-visual-capture/v1; adapter-specific versioned JSON Schema and quick-start README under the same directory.
+
+VSC-1 is a separate opt-in capture capability; it does not change the deterministic VSC-0 comparison contract. A newly created ephemeral browser context with JavaScript disabled records only local requested outputs. Local synthetic fixtures are rendered inline, with all file/network subresource requests denied. Explicitly authorized same-origin HTTPS (or loopback HTTP) is allowed in private-local mode; off-origin requests fail closed. No existing logged-in browser profile, credentials, clicks, form submissions, network background scanning, cloud uploads, or mutation authority. AX snapshots contain UI text, so are written only on an explicit --ax-out request.
+
+The receipt contains a hashed origin rather than URL, selected host alias, viewport/DPI scale, screenshot SHA/dimensions, optional AX status, blocked request count, privacy/proof ceiling and NOT_EVALUATED semantic verdict. Capture does not assert task success or UI similarity. The synthetic Chromium hosted canary is not Windows or Android host proof, local model proof, or permission for product action.
+

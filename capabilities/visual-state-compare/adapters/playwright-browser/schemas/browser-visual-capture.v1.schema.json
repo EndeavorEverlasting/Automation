@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:automation:browser-visual-capture:v1",
+  "title": "Browser Visual Capture Receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "engine",
+    "status",
+    "proof_ceiling",
+    "semantic_verdict"
+  ],
+  "properties": {
+    "contract": {
+      "const": "automation.browser-visual-capture/v1"
+    },
+    "engine": {
+      "const": "playwright-chromium-isolated/v1"
+    },
+    "status": {
+      "enum": [
+        "CAPTURED",
+        "INVALID_SOURCE",
+        "PRIVACY_DENIED",
+        "ORIGIN_NOT_AUTHORIZED",
+        "OUTPUT_EXISTS",
+        "OUTPUT_DIRECTORY_MISSING",
+        "OUTPUT_COLLISION",
+        "OUTPUT_IN_SOURCE_TREE",
+        "ENGINE_UNAVAILABLE",
+        "NAVIGATION_DENIED",
+        "NAVIGATION_FAILED",
+        "NAVIGATION_OR_CAPTURE_FAILED",
+        "CAPTURE_INVALID"
+      ]
+    },
+    "proof_ceiling": {
+      "enum": [
+        "ISOLATED_READ_ONLY_BROWSER_OBSERVATION",
+        "NONE"
+      ]
+    },
+    "semantic_verdict": {
+      "const": "NOT_EVALUATED"
+    },
+    "privacy": {
+      "enum": [
+        "SYNTHETIC_PUBLIC",
+        "PRIVATE_LOCAL_ONLY"
+      ]
+    },
+    "source_kind": {
+      "enum": [
+        "LOCAL_HTML",
+        "EXPLICIT_ORIGIN"
+      ]
+    },
+    "origin_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "host_alias": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,48}$"
+    },
+    "viewport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "width",
+        "height"
+      ],
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "device_scale_factor": {
+      "type": "number",
+      "minimum": 0.5,
+      "maximum": 3
+    },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sha256",
+        "width",
+        "height"
+      ],
+      "properties": {
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "accessibility": {
+      "enum": [
+        "LOCAL_FILE_WRITTEN",
+        "NOT_CAPTURED"
+      ]
+    },
+    "cross_origin_requests_blocked": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "navigation_scripts": {
+      "const": "DISABLED"
+    },
+    "action_authority": {
+      "const": "NONE"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "CAPTURED"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "privacy",
+          "source_kind",
+          "origin_sha256",
+          "host_alias",
+          "viewport",
+          "device_scale_factor",
+          "image",
+          "accessibility",
+          "cross_origin_requests_blocked",
+          "navigation_scripts",
+          "action_authority"
+        ],
+        "properties": {
+          "proof_ceiling": {
+            "const": "ISOLATED_READ_ONLY_BROWSER_OBSERVATION"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "proof_ceiling": {
+            "const": "NONE"
+          }
+        }
+      }
+    }
+  ]
+}
