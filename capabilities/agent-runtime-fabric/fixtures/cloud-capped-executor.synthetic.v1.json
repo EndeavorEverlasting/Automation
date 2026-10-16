@@ -1,0 +1,15 @@
+{
+  "schema_version": "agent-runtime-profile/v1",
+  "adapter_id": "synthetic-metered-cloud-agent",
+  "harness_family": "cloud-agent",
+  "state": "READY",
+  "capabilities": ["repo_read", "repo_edit", "structured_output"],
+  "admitted_roles": ["EXECUTION_ONLY"],
+  "hard_limits": {"wall_clock_ms": 900000, "model_tokens": 200000, "workers": 4, "parallel_workers": 2},
+  "reserve": {"wall_clock_ms": 30000, "model_tokens": 10000},
+  "quotas": {
+    "cloud_agent_launches": {"state": "KNOWN", "remaining": 0, "unit": "launch"}
+  },
+  "dispatch_costs": {"cloud_agent_launches": 1},
+  "proof_ceiling": "Synthetic capped cloud-agent profile; not a claim about any named provider."
+}

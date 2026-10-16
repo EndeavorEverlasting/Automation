@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent-runtime-work-requirement/v1",
+  "title": "Agent runtime work requirement",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "work_unit_id",
+    "required_role",
+    "required_capabilities",
+    "expected_usage",
+    "preferred_adapters",
+    "proof_ceiling"
+  ],
+  "properties": {
+    "schema_version": {"const": "agent-runtime-work-requirement/v1"},
+    "work_unit_id": {"type": "string", "minLength": 1},
+    "required_role": {"type": "string", "minLength": 1},
+    "required_capabilities": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "expected_usage": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0}},
+    "preferred_adapters": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "proof_ceiling": {"type": "string", "minLength": 1}
+  }
+}

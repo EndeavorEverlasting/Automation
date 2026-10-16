@@ -1,0 +1,36 @@
+{
+  "schema_version": "automation-capability/v1",
+  "capability_id": "agent-runtime-fabric",
+  "status": "PROGRAM_DESIGN_ROUTING_PROTOTYPE_PROVEN",
+  "purpose": "Admit an already-authorized work unit to a provider/harness-neutral runtime modality without conflating host hard limits, workflow envelopes, provider quotas, machine capacity, or authority/capability gates.",
+  "core_owner": "capabilities/agent-runtime-fabric/core/fabric.py",
+  "artifacts": {
+    "runtime_profile_schema": "capabilities/agent-runtime-fabric/schemas/runtime-profile.v1.json",
+    "work_requirement_schema": "capabilities/agent-runtime-fabric/schemas/work-requirement.v1.json",
+    "route_decision_schema": "capabilities/agent-runtime-fabric/schemas/route-decision.v1.json"
+  },
+  "composes_with": [
+    "harness/contracts/runtime-execution-handoff.v1.json",
+    "capabilities/agent-hook-runtime",
+    "capabilities/local-agent-readiness"
+  ],
+  "runtime_boundary": {
+    "default_mutation": "NONE",
+    "native_execution": "OUTSIDE_CAPABILITY",
+    "supported_execution": [
+      "LOCAL_AGENT_RUNTIME",
+      "CI_OR_REMOTE_RUNNER_FOR_SYNTHETIC_TESTS"
+    ]
+  },
+  "non_goals": [
+    "choose semantic ownership or runtime placement",
+    "grant judgment authority or infer model quality",
+    "execute provider/native runtime actions",
+    "replace agent-hook-runtime transport normalization",
+    "replace local-agent-readiness live-host verification",
+    "treat one product name as one universal execution capability"
+  ],
+  "proof_ceiling": "Synthetic tests prove admission and fallback semantics only. Live provider limits, quota truth, native dispatch, and production behavior require adapter-specific runtime evidence.",
+  "portable_library": "capabilities/agent-runtime-fabric/core/fabric.py",
+  "portability_contract": "Consumers may vendor/pin the portable stdlib-only library file plus the machine-readable schemas; the isolated canary executes a copied-out library from a temporary consumer root."
+}
