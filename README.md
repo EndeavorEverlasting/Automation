@@ -78,6 +78,20 @@ Admitted capabilities:
 - [`agent-hook-runtime`](capabilities/agent-hook-runtime/CAPABILITY.md) — status `CORE_IMPLEMENTED_CURSOR_ADAPTER_DIAGNOSTIC_ONLY`; separates JSON-stdio host transport/schema proof from consumer policy and emits privacy-safe runtime receipts.
 - [`social-publication`](capabilities/social-publication/CAPABILITY.md) — status `PROGRAM_DESIGN_PROTOTYPE_PROVEN`; approval-bound, provider-neutral text publication with a LinkedIn adapter prototype. Live OAuth/network publication remains unproven.
 - [`document-formatting`](capabilities/document-formatting/CAPABILITY.md) — status `COMPILER_IR_PROTOTYPE_PROVEN_GOOGLE_DOCS_PLAN_ADAPTER_PROVEN`; reusable consumer profiles plus deterministic semantic compilation to provider-neutral IR and a fail-closed Google Docs adapter plan.
+- [`ghidra-bootstrap`](capabilities/ghidra-bootstrap/CAPABILITY.md) — status `CORE_IMPLEMENTED_WINDOWS_HOST`; deterministic agent-free Ghidra download/verify/install plus non-interactive `USER_AGREEMENT=ACCEPT` (same gate as GUI **I agree**).
+
+Ghidra bootstrap (Windows):
+
+```bat
+Bootstrap-Ghidra.cmd
+Bootstrap-Ghidra.cmd -InstallRoot D:\tools
+```
+
+Default install root: `%LOCALAPPDATA%\Automation\ghidra-bootstrap\tools`. Synthetic agreement proof:
+
+```powershell
+pwsh -File capabilities\ghidra-bootstrap\Prove-GhidraBootstrap.ps1
+```
 
 Document-formatting portable plan:
 

@@ -1,0 +1,24 @@
+{
+  "schema": "automation.ghidra-bootstrap.v1",
+  "capability_id": "ghidra-bootstrap",
+  "owner": "EndeavorEverlasting/Automation",
+  "ghidra": {
+    "version": "12.1.4",
+    "release_name": "PUBLIC",
+    "tag": "Ghidra_12.1.4_build",
+    "zip_name": "ghidra_12.1.4_PUBLIC_20260921.zip",
+    "url": "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.1.4_build/ghidra_12.1.4_PUBLIC_20260921.zip",
+    "sha256": "ddac49f903da9d5bac833e5cc79395098b9c33cfd3279be5f31bd00387d2d4db",
+    "settings_dir_name": ".ghidra_12.1.4_PUBLIC",
+    "java_min": 21
+  },
+  "jdk": {
+    "winget_id": "EclipseAdoptium.Temurin.21.JDK",
+    "major": 21
+  },
+  "agreement": {
+    "property": "USER_AGREEMENT",
+    "accepted_value": "ACCEPT",
+    "rationale": "NSA-documented non-interactive accept (same effect as clicking I agree on UserAgreementDialog). Preferences.getProperty checks system properties first; showUserAgreement skips dialog when value is ACCEPT and persists ACCEPT after manual accept."
+  }
+}
