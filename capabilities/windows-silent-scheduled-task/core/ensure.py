@@ -40,8 +40,7 @@ $task = {_ps_literal(task_name)}
 $arg = {_ps_literal(arg)}
 $action = New-ScheduledTaskAction -Execute $pythonw -Argument $arg -WorkingDirectory $repo
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) `
-  -RepetitionInterval (New-TimeSpan -Minutes {interval}) `
-  -RepetitionDuration (New-TimeSpan -Days 3650)
+  -RepetitionInterval (New-TimeSpan -Minutes {interval})
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
   -StartWhenAvailable -MultipleInstances IgnoreNew -Hidden
 $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel {run_level}
