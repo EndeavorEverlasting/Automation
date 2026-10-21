@@ -1,0 +1,22 @@
+name: Upstream intelligence offline locator
+on:
+  pull_request:
+    paths:
+      - "capabilities/upstream-reference-discovery/**"
+      - ".github/workflows/upstream-reference-discovery.yml"
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m unittest discover -s capabilities/upstream-reference-discovery/tests -p "test_*.py" -v
+      - run: python -m py_compile capabilities/upstream-reference-discovery/lookup.py
