@@ -1,0 +1,25 @@
+{
+  "schema_version": "automation-capability/v1",
+  "capability_id": "upstream-reference-discovery",
+  "owner": "EndeavorEverlasting/Automation",
+  "intent": "Offline deterministic discovery of registered source references and provenance across consumer repositories",
+  "entrypoint": "capabilities/upstream-reference-discovery/lookup.py",
+  "contract": "upstream-intelligence-consumer/v1",
+  "inputs": [
+    "consumer local registry JSON",
+    "query/category"
+  ],
+  "outputs": [
+    "ranked evidence-bounded references",
+    "invalid registry failure"
+  ],
+  "principles": [
+    "discover != installed",
+    "research != licensed/adopted",
+    "plugin skill URI != local Codex skill",
+    "no network or auto installation",
+    "domain owner decides adoption",
+    "no repository secrets/source workbook mirrored into public consumers"
+  ],
+  "proof_ceiling": "Pure offline discovery/validation unit tests; actual local host skill discovery needs runtime certification"
+}
