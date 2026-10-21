@@ -79,9 +79,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.cmd in {"render", "ensure"}:
-        repo_root = (args.repo_root or args.registry.parent).resolve()
-        # For synthetic fixture, repo_root should be the capability directory
-        # so fixtures/demo_tick.py resolves.
+        if args.repo_root is None:
+            parser.error("--repo-root is required for render/ensure")
+        repo_root = args.repo_root.resolve()
         if args.cmd == "render":
             result = ensure_job(
                 args.job_id,
