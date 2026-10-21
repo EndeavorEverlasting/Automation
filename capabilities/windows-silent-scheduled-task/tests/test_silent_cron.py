@@ -168,6 +168,7 @@ class SilentCronCapabilityTests(unittest.TestCase):
                                          repo_root=CAP)
         self.assertIn("$task = 'Owner''s $Task'", ps)
         self.assertIn(" -Force | Out-Null", ps)
+        self.assertNotIn("-RepetitionDuration", ps)
         self.assertNotIn("Unregister-ScheduledTask", ps)
         self.assertIn("-Hidden", ps)
 
