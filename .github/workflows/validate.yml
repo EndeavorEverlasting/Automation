@@ -42,6 +42,12 @@ jobs:
               assert observed == item["source_blob_sha"], (local, observed, item)
           PY
 
+      - name: Silent scheduled-task synthetic capability gates
+        run: |
+          python -m unittest discover -s capabilities/windows-silent-scheduled-task/tests -p 'test_*.py' -v
+          python -m py_compile capabilities/windows-silent-scheduled-task/core/*.py capabilities/windows-silent-scheduled-task/silent_cron.py
+          python capabilities/windows-silent-scheduled-task/silent_cron.py render --registry capabilities/windows-silent-scheduled-task/fixtures/registry.synthetic.v1.json --job-id demo_tick --repo-root capabilities/windows-silent-scheduled-task
+
       - name: Unit and contract tests
         run: python -m unittest discover -s tests -v
 
