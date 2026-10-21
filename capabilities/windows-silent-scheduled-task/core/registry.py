@@ -13,7 +13,7 @@ def load_registry(path: Path) -> dict[str, Any]:
     raw = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
         raise ValueError("registry must be a JSON object")
-    schema = str(raw.get("schema") or raw.get("schema_version") or "")
+    schema = raw.get("schema")
     if schema != SCHEMA:
         raise ValueError(f"unsupported registry schema {schema!r}; expected {SCHEMA}")
     jobs = raw.get("jobs")
@@ -26,12 +26,17 @@ def load_registry(path: Path) -> dict[str, Any]:
         for key in REQUIRED_JOB_KEYS:
             if key not in job:
                 raise ValueError(f"job missing required key {key!r}")
-        job_id = str(job["id"])
+        for key in ("id", "task_name", "script"):
+            if not isinstance(job[key], str) or not job[key].strip():
+                raise ValueError(f"job {key} must be a nonempty string")
+        if Path(job["script"]).is_absolute() or ".." in Path(job["script"]).parts:
+            raise ValueError("job script must be repository-relative without parent traversal")
+        job_id = job["id"]
         if job_id in seen:
             raise ValueError(f"duplicate job id {job_id!r}")
         seen.add(job_id)
-        interval = int(job["interval_min"])
-        if interval < 1 or interval > 24 * 60:
+        interval = job["interval_min"]
+        if type(interval) is not int or interval < 1 or interval > 24 * 60:
             raise ValueError(f"job {job_id}: interval_min out of range")
         run_level = str(job.get("run_level") or "Limited")
         if run_level not in {"Limited", "Highest"}:
