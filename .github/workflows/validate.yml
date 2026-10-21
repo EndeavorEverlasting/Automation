@@ -340,3 +340,24 @@ jobs:
           name: automation-validation-receipts
           path: Outputs/*.json
           if-no-files-found: error
+
+  silent-cron-powershell-parser:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Parse generated silent registration without modifying Task Scheduler
+        shell: pwsh
+        run: |
+          $raw = python capabilities/windows-silent-scheduled-task/silent_cron.py render --registry capabilities/windows-silent-scheduled-task/fixtures/registry.synthetic.v1.json --job-id demo_tick --repo-root capabilities/windows-silent-scheduled-task
+          if ($LASTEXITCODE -ne 0) { throw "Silent-cron render failed" }
+          $plan = $raw | ConvertFrom-Json
+          if (-not $plan.ok -or $plan.apply) { throw "Not an offline render" }
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseInput($plan.powershell, [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -ne 0) { throw ($parseErrors | Out-String) }
+          if ($plan.powershell.Contains("Unregister-ScheduledTask")) { throw "Destructive unregister remains" }
