@@ -29,8 +29,10 @@ def classify_status(fields: dict[str, str], *, present: bool) -> str:
     status = (fields.get("Status") or "").strip().lower()
     if state == "disabled" or status == "disabled":
         return STATE_DISABLED
-    if status in {"ready", "running", "queued"} or state == "enabled":
+    if status in {"ready", "running", "queued"}:
         return STATE_READY
-    if status:
-        return STATE_READY if state != "disabled" else STATE_DISABLED
+    if status and status not in {"ready", "running", "queued"}:
+        return STATE_UNKNOWN
+    if state == "enabled":
+        return STATE_READY
     return STATE_UNKNOWN
