@@ -167,6 +167,9 @@ class SilentCronCapabilityTests(unittest.TestCase):
         ps = render_register_powershell(job, pythonw=Path("C:/Python/pythonw.exe"),
                                          repo_root=CAP)
         self.assertIn("$task = 'Owner''s $Task'", ps)
+        job["task_name"] = "Operator" + chr(0x2019) + "s Task"
+        ps_curly = render_register_powershell(job, pythonw=Path("C:/Python/pythonw.exe"), repo_root=CAP)
+        self.assertIn(chr(0x2019) * 2, ps_curly)
         self.assertIn(" -Force | Out-Null", ps)
         self.assertNotIn("-RepetitionDuration", ps)
         self.assertNotIn("Unregister-ScheduledTask", ps)
@@ -199,6 +202,15 @@ class SilentCronCapabilityTests(unittest.TestCase):
         sys.path.insert(0, str(CAP))
         from core.schtasks_parse import classify_status
         self.assertEqual(classify_status({"Status": "Could not start", "Scheduled Task State": "Enabled"}, present=True), "UNKNOWN")
+
+    def test_missing_pythonw_is_typed_failure(self):
+        from unittest.mock import patch
+        sys.path.insert(0, str(CAP))
+        from core.ensure import ensure_job
+        with patch("core.ensure.resolve_pythonw", side_effect=FileNotFoundError("no pythonw")):
+            result = ensure_job("demo_tick", registry=FIXTURES / "registry.synthetic.v1.json", repo_root=CAP, apply=True)
+        self.assertFalse(result["ok"])
+        self.assertIn("no pythonw", result["error"])
 
     def test_render_requires_explicit_consumer_root(self):
         proc = subprocess.run([sys.executable, str(CLI), "render", "--registry",
