@@ -109,8 +109,12 @@ class SilentCronCapabilityTests(unittest.TestCase):
         self.assertIn("demo_tick.py", ps)
 
     def test_task_to_run_classifier_anchors_on_executable(self) -> None:
-        sys.path.insert(0, str(CAP))
-        from core.pythonw import task_to_run_is_silent_pythonw
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("silent_cron_pythonw_test", CAP / "core" / "pythonw.py")
+        self.assertIsNotNone(spec)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        task_to_run_is_silent_pythonw = module.task_to_run_is_silent_pythonw
 
         self.assertTrue(
             task_to_run_is_silent_pythonw(
@@ -189,6 +193,11 @@ class SilentCronCapabilityTests(unittest.TestCase):
                                 repo_root=CAP, apply=True)
         self.assertFalse(packet["ok"])
         self.assertEqual(packet["error"], "OSError")
+
+    def test_unknown_schtasks_state_is_not_ready(self):
+        sys.path.insert(0, str(CAP))
+        from core.schtasks_parse import classify_status
+        self.assertEqual(classify_status({"Status": "Could not start", "Scheduled Task State": "Enabled"}, present=True), "UNKNOWN")
 
     def test_render_requires_explicit_consumer_root(self):
         proc = subprocess.run([sys.executable, str(CLI), "render", "--registry",
