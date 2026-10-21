@@ -1,0 +1,19 @@
+{
+  "schema_version": "artifact-sync-receipt/v1",
+  "binding_id": "example-provider-backed-document",
+  "operation": "reconcile",
+  "artifact_action": "format",
+  "checkpoint_trigger": "after_mutation",
+  "state": "SYNCED",
+  "authority": "provider",
+  "artifact_kind": "native_document",
+  "local_materialization_mode": "ephemeral",
+  "provider_freshness_checked": true,
+  "baseline_checked": true,
+  "conflict_checked": true,
+  "provider_write_performed": false,
+  "read_back_verified": false,
+  "required_fidelity_dimensions": ["identity","content","structure","presentation"],
+  "verified_fidelity_dimensions": ["identity","content","structure"],
+  "proof_ceiling": "Negative canary: local derivative is formatted but authoritative provider presentation was not updated or verified."
+}
