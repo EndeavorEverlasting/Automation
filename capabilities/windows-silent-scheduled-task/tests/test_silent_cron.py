@@ -132,6 +132,71 @@ class SilentCronCapabilityTests(unittest.TestCase):
         self.assertIn("windows-silent-scheduled-task", readme)
         self.assertIn("CORE_IMPLEMENTED_WINDOWS_HOST", readme)
 
+    def test_registry_rejects_unsafe_values(self):
+        import tempfile
+        sys.path.insert(0, str(CAP))
+        from core.registry import load_registry
+        original = json.loads((FIXTURES / "registry.synthetic.v1.json").read_text(encoding="utf-8"))
+        for field, value in (("interval_min", True), ("interval_min", 4.5),
+                             ("interval_min", "15"), ("script", ""),
+                             ("script", "../unsafe.py")):
+            altered = json.loads(json.dumps(original))
+            altered["jobs"][0][field] = value
+            with tempfile.TemporaryDirectory() as tmp:
+                target = Path(tmp) / "reg.json"
+                target.write_text(json.dumps(altered), encoding="utf-8")
+                with self.assertRaises(ValueError):
+                    load_registry(target)
+        altered = json.loads(json.dumps(original))
+        altered["schema_version"] = altered.pop("schema")
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "reg.json"
+            target.write_text(json.dumps(altered), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                load_registry(target)
+
+    def test_render_single_quotes_and_no_destructive_unregister(self):
+        sys.path.insert(0, str(CAP))
+        from core.ensure import render_register_powershell
+        job = json.loads((FIXTURES / "registry.synthetic.v1.json").read_text())["jobs"][0]
+        job["task_name"] = "Owner's $Task"
+        ps = render_register_powershell(job, pythonw=Path("C:/Python/pythonw.exe"),
+                                         repo_root=CAP)
+        self.assertIn("$task = 'Owner''s $Task'", ps)
+        self.assertIn(" -Force | Out-Null", ps)
+        self.assertNotIn("Unregister-ScheduledTask", ps)
+        self.assertIn("-Hidden", ps)
+
+    def test_render_has_no_installed_pythonw_dependency(self):
+        from unittest.mock import patch
+        import tempfile
+        sys.path.insert(0, str(CAP))
+        from core.ensure import ensure_job
+        with patch("core.ensure.resolve_pythonw", side_effect=RuntimeError("must not probe host")):
+            packet = ensure_job("demo_tick", registry=FIXTURES / "registry.synthetic.v1.json",
+                                repo_root=CAP, apply=False)
+        self.assertTrue(packet["ok"])
+        self.assertFalse(packet["apply"])
+        self.assertIn("pythonw.exe", packet["powershell"])
+
+    def test_apply_transport_failure_is_a_typed_receipt(self):
+        from unittest.mock import patch
+        sys.path.insert(0, str(CAP))
+        from core.ensure import ensure_job
+        with patch("core.ensure.resolve_pythonw", return_value=Path("C:/Python/pythonw.exe")), \
+             patch("core.ensure.discreet_run", side_effect=OSError("transport denied")):
+            packet = ensure_job("demo_tick", registry=FIXTURES / "registry.synthetic.v1.json",
+                                repo_root=CAP, apply=True)
+        self.assertFalse(packet["ok"])
+        self.assertEqual(packet["error"], "OSError")
+
+    def test_render_requires_explicit_consumer_root(self):
+        proc = subprocess.run([sys.executable, str(CLI), "render", "--registry",
+                               str(FIXTURES / "registry.synthetic.v1.json"),
+                               "--job-id", "demo_tick"], capture_output=True, text=True)
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("--repo-root is required", proc.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
