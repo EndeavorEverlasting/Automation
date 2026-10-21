@@ -3,32 +3,65 @@
   "$id": "automation.windows-silent-scheduled-task.registry/v1",
   "title": "Windows silent scheduled-task job registry",
   "type": "object",
-  "required": ["schema", "jobs"],
+  "required": [
+    "schema",
+    "jobs"
+  ],
   "additionalProperties": true,
   "properties": {
     "schema": {
       "const": "automation.windows-silent-scheduled-task.registry/v1"
     },
-    "description": { "type": "string" },
+    "description": {
+      "type": "string"
+    },
     "jobs": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["id", "task_name", "script", "interval_min"],
+        "required": [
+          "id",
+          "task_name",
+          "script",
+          "interval_min"
+        ],
         "additionalProperties": true,
         "properties": {
-          "id": { "type": "string", "minLength": 1 },
-          "task_name": { "type": "string", "minLength": 1 },
-          "title": { "type": "string" },
-          "purpose": { "type": "string" },
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "task_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
           "script": {
             "type": "string",
-            "description": "Repository-relative path to the Python entry script"
+            "description": "Repository-relative path to the Python entry script",
+            "minLength": 1
           },
-          "args": { "type": "string" },
-          "interval_min": { "type": "integer", "minimum": 1, "maximum": 1440 },
-          "run_level": { "type": "string", "enum": ["Limited", "Highest"] }
+          "args": {
+            "type": "string"
+          },
+          "interval_min": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "run_level": {
+            "type": "string",
+            "enum": [
+              "Limited",
+              "Highest"
+            ]
+          }
         }
       }
     }
