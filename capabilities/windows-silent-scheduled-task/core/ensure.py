@@ -12,7 +12,9 @@ from .win_subprocess import run as discreet_run
 
 
 def _ps_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
+    for quote in ("'", "\u2018", "\u2019", "\u201a", "\u201b"):
+        value = value.replace(quote, quote * 2)
+    return "'" + value + "'"
 
 
 def render_register_powershell(
@@ -98,10 +100,13 @@ def ensure_job(
 ) -> dict[str, Any]:
     """Render (and optionally apply) a silent registration for one job."""
     job = job_by_id(job_id, registry)
-    pythonw = resolve_pythonw() if apply else Path("C:/Synthetic/Python/pythonw.exe")
-    script_path = (repo_root / str(job["script"])).resolve()
-    if repo_root.resolve() not in script_path.parents:
-        raise ValueError("script must remain inside declared repository root")
+    try:
+        pythonw = resolve_pythonw() if apply else Path("C:/Synthetic/Python/pythonw.exe")
+        script_path = (repo_root / str(job["script"])).resolve()
+        if repo_root.resolve() not in script_path.parents:
+            raise ValueError("script must remain inside declared repository root")
+    except (OSError, ValueError) as exc:
+        return {"ok": False, "id": job_id, "action": "ensure", "error": str(exc), "apply": apply}
     if not script_path.is_file():
         return {
             "ok": False,
