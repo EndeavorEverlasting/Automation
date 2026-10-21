@@ -349,6 +349,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Probe native indefinite trigger (without task registration)
+        shell: pwsh
+        run: |
+          $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 15)
+          if ($null -eq $trigger -or $null -eq $trigger.Repetition) { throw 'Repetition trigger unsupported' }
+          Write-Host ('Duration=' + [string]$trigger.Repetition.Duration)
+
       - name: Parse generated silent registration without modifying Task Scheduler
         shell: pwsh
         run: |
