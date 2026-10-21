@@ -5,13 +5,14 @@
   "canonical_catalog": {
     "repository": "EndeavorEverlasting/TokenCorridor",
     "path": "harness/upstream-intelligence/catalog.v1.json",
-    "candidate_commit_sha": "0cd10d8ae500102a122c0850dbd14f246d777d49",
-    "state": "PR_242_NOT_YET_CONSUMER_CERTIFIED"
+    "pinned_commit_sha": "2f9f27b962780fe2e37c3cc522f51ae168c6e68d",
+    "state": "MERGED_SOURCE_AVAILABLE_HOST_CONSUMPTION_UNOBSERVED"
   },
   "reusable_lookup": {
     "repository": "EndeavorEverlasting/Automation",
     "path": "capabilities/upstream-reference-discovery/lookup.py",
-    "pr": 36,
+    "pinned_commit_sha": "43102eb70342d1c12ed587895bc969d68bb65576",
+    "state": "MERGED_AND_CI_TESTED",
     "required_for_basic_discovery": false
   },
   "original_source_workbooks": [
