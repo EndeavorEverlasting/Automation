@@ -354,7 +354,8 @@ jobs:
         run: |
           $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 15)
           if ($null -eq $trigger -or $null -eq $trigger.Repetition) { throw 'Repetition trigger unsupported' }
-          Write-Host ('Duration=' + [string]$trigger.Repetition.Duration)
+          if ($trigger.Repetition.Duration) { throw 'Expected no expiration duration on indefinite trigger' }
+          Write-Host 'Indefinite trigger supported without explicit duration'
 
       - name: Parse generated silent registration without modifying Task Scheduler
         shell: pwsh
