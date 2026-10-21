@@ -1,0 +1,10 @@
+---
+description: P97 prior art, skill/design-source lookup, Codex/OpenCode candidates and UX reference discovery for Automation.
+globs:
+  - "docs/**"
+  - "harness/**"
+  - "src/**"
+  - ".agents/**"
+alwaysApply: false
+---
+Load `.agents/skills/upstream-intelligence/SKILL.md` and `harness/upstream-intelligence/consumer.v1.json` when looking up an upstream agent skill, product design resource or donor. Research pointer != installed/local/approved; preserve domain owner and root AGENTS.
