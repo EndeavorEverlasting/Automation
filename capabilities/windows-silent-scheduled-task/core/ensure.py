@@ -1,7 +1,6 @@
 """Render and optionally apply silent Task Scheduler registrations."""
 from __future__ import annotations
 
-import json
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -10,6 +9,10 @@ from .pythonw import resolve_pythonw, task_to_run_is_silent_pythonw
 from .registry import job_by_id
 from .schtasks_parse import classify_status, parse_schtasks_list
 from .win_subprocess import run as discreet_run
+
+
+def _ps_literal(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
 
 
 def render_register_powershell(
@@ -31,10 +34,10 @@ def render_register_powershell(
     arg = f'"{script_path}"' + (f" {args}" if args else "")
     return f"""
 $ErrorActionPreference = 'Stop'
-$pythonw = {json.dumps(str(pythonw))}
-$repo = {json.dumps(str(repo_root.resolve()))}
-$task = {json.dumps(task_name)}
-$arg = {json.dumps(arg)}
+$pythonw = {_ps_literal(str(pythonw))}
+$repo = {_ps_literal(str(repo_root.resolve()))}
+$task = {_ps_literal(task_name)}
+$arg = {_ps_literal(arg)}
 $action = New-ScheduledTaskAction -Execute $pythonw -Argument $arg -WorkingDirectory $repo
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) `
   -RepetitionInterval (New-TimeSpan -Minutes {interval}) `
@@ -42,11 +45,8 @@ $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) `
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
   -StartWhenAvailable -MultipleInstances IgnoreNew -Hidden
 $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel {run_level}
-if (Get-ScheduledTask -TaskName $task -ErrorAction SilentlyContinue) {{
-  Unregister-ScheduledTask -TaskName $task -Confirm:$false
-}}
 Register-ScheduledTask -TaskName $task -Action $action -Trigger $trigger `
-  -Settings $settings -Principal $principal | Out-Null
+  -Settings $settings -Principal $principal -Force | Out-Null
 Write-Output "OK $task"
 """.strip()
 
@@ -99,8 +99,10 @@ def ensure_job(
 ) -> dict[str, Any]:
     """Render (and optionally apply) a silent registration for one job."""
     job = job_by_id(job_id, registry)
-    pythonw = resolve_pythonw()
-    script_path = repo_root / str(job["script"])
+    pythonw = resolve_pythonw() if apply else Path("C:/Synthetic/Python/pythonw.exe")
+    script_path = (repo_root / str(job["script"])).resolve()
+    if repo_root.resolve() not in script_path.parents:
+        raise ValueError("script must remain inside declared repository root")
     if not script_path.is_file():
         return {
             "ok": False,
@@ -122,20 +124,15 @@ def ensure_job(
     }
     if not apply:
         return result
-    proc = discreet_run(
-        [
-            "powershell",
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-Command",
-            ps,
-        ],
-        capture_output=True,
-        text=True,
-        timeout=90,
-        check=False,
-    )
+    try:
+        proc = discreet_run(
+            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps],
+            capture_output=True, text=True, timeout=90, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        result.update(ok=False, repair_mode="register", error=type(exc).__name__,
+                      proof_ceiling="live registration unverified; existing task preserved where provider allows")
+        return result
     present, raw = query_schtasks(str(job["task_name"]))
     classified = classify_schtasks_list(raw, present=present)
     result.update(
