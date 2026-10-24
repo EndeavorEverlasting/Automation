@@ -14,6 +14,14 @@ Both independent provider records must bind the same `task_key` as the packet; l
 
 The claim reader MUST obtain `issued_at_epoch` from the authoritative claim producer, not reconstruct it from the receipt, current clock, or caller input. This is a fail-closed tightening of the candidate v1 claim adapter shape: adapters without issuance evidence are rejected. A receipt predating its current claim cannot be promoted merely because it is within TTL and matches the same resource/head/fence. The gate remains adapter-asserted until trusted provider provenance and executor fencing are independently established.
 
+## In-flight claim/head consistency (PS-0131)
+
+The preflight now snapshots and **re-reads** both the claim and repository head after retrieving the receipt. If the authoritative claim changes (including revocation, renewal, token or fence turnover), the repository head moves, or either re-read fails, admission is rejected. It also checks the wall clock again after provider reads so an initially valid lease cannot pass merely because the provider call ran past its deadline. An injected `now_epoch` is strictly a deterministic test input, not a live clock attestation.
+
+A provider adapter must tolerate two fresh claim reads and two fresh head reads per preflight. Each read must independently contact its authority or use a provider-guaranteed linearizable snapshot; returning cached or caller-controlled dictionaries defeats this check. A mutable first response is copied before the second read.
+
+**This is not atomic executor fencing.** A claim can still turn over immediately after the second read, and an ABA transition cannot be excluded by two observations alone. The executor must enforce the live fencing token at the actual side-effect boundary, with the provider's atomic compare-and-write or equivalent guarded operation. Never use the preflight return value as a permission to perform unfenced external writes.
+
 ## Explicit boundaries
 
 - This preflight **does not allocate or atomically renew a claim**. The existing `lease_ledger.py` owns local SQLite lease transitions; a real host/provider adapter must bind a current claim to its own durable state.
