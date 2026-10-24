@@ -234,5 +234,50 @@ class DurableLeaseTests(unittest.TestCase):
                 "SELECT name FROM sqlite_master WHERE name='app_effects'").fetchone())
 
 
+    def test_fenced_sqlite_effect_rejects_transaction_escape(self):
+        import sqlite3
+        lease = self.db.claim("workerA")
+        escapes = {
+            "commit": lambda cx: cx.commit(),
+            "rollback": lambda cx: cx.rollback(),
+            "executescript": lambda cx: cx.executescript("SELECT 1;"),
+            "sql-commit": lambda cx: cx.execute("COMMIT"),
+            "savepoint": lambda cx: cx.execute("SAVEPOINT escaped"),
+            "attach": lambda cx: cx.execute("ATTACH DATABASE ':memory:' AS escaped"),
+        }
+        for i, (label, escape) in enumerate(escapes.items()):
+            with self.subTest(escape=label):
+                def apply(cx):
+                    cx.execute("CREATE TABLE app_effects (value TEXT)")
+                    cx.execute("INSERT INTO app_effects VALUES ('must-rollback')")
+                    escape(cx)
+                with self.assertRaises(sqlite3.DatabaseError):
+                    self.db.apply_fenced_sqlite_effect(
+                        "job-0", "workerA", lease["fence"],
+                        effect_id=f"escape-{i}", payload_sha256=DIGEST, apply=apply)
+                with sqlite3.connect(self.db.path) as cx:
+                    self.assertIsNone(cx.execute(
+                        "SELECT name FROM sqlite_master WHERE name='app_effects'").fetchone())
+                    self.assertIsNone(cx.execute(
+                        "SELECT name FROM sqlite_master WHERE name='fenced_effects'").fetchone())
+
+    def test_fenced_sqlite_effect_caught_transaction_escape_stays_atomic(self):
+        import sqlite3
+        lease = self.db.claim("workerA")
+        def apply(cx):
+            cx.execute("CREATE TABLE app_effects (value TEXT)")
+            cx.execute("INSERT INTO app_effects VALUES ('safe')")
+            with self.assertRaises(sqlite3.DatabaseError):
+                cx.commit()
+            cx.execute("INSERT INTO app_effects VALUES ('also-safe')")
+        outcome = self.db.apply_fenced_sqlite_effect(
+            "job-0", "workerA", lease["fence"],
+            effect_id="caught-escape", payload_sha256=DIGEST, apply=apply)
+        self.assertEqual(outcome["state"], "SQLITE_EFFECT_APPLIED")
+        with sqlite3.connect(self.db.path) as cx:
+            self.assertEqual(cx.execute("SELECT COUNT(*) FROM app_effects").fetchone()[0], 2)
+            self.assertEqual(cx.execute("SELECT COUNT(*) FROM fenced_effects").fetchone()[0], 1)
+
+
 if __name__ == "__main__":
     unittest.main()
