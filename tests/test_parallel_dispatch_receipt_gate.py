@@ -18,11 +18,11 @@ def fixture():
              actor="trusted-executor", owner="Automation", resource_id="repo_main",
              expected_head=HEAD, claim_token="claim:17", receipt_ref="receipt:42",
              max_age_seconds=120)
-    c = dict(lane_id=p["lane_id"], actor=p["actor"], owner=p["owner"],
+    c = dict(task_key=p["task_key"], lane_id=p["lane_id"], actor=p["actor"], owner=p["owner"],
              resource_id=p["resource_id"], expected_head=HEAD,
              claim_token=p["claim_token"], state="ACTIVE",
              issued_at_epoch=NOW - 60, deadline_epoch=NOW + 90, fence=7)
-    r = dict(receipt_ref=p["receipt_ref"], lane_id=p["lane_id"],
+    r = dict(receipt_ref=p["receipt_ref"], task_key=p["task_key"], lane_id=p["lane_id"],
              actor=p["actor"], owner=p["owner"], resource_id=p["resource_id"],
              head=HEAD, evidence_sha256=DIGEST, observed_at_epoch=NOW - 30,
              state="PROVIDER_VERIFIED", fence=7)
@@ -94,6 +94,24 @@ class ReceiptGateTests(unittest.TestCase):
         c["issued_at_epoch"] = r["observed_at_epoch"]
         result = attempt(p, c, r)
         self.assertEqual(result["state"], "ADAPTER_ASSERTED_PREFLIGHT_ONLY")
+
+    def test_cross_task_claim_or_receipt_replay_rejected(self):
+        # All other lane/resource/actor/fence/head fields match: task identity
+        # must still be bound by BOTH independent provider records.
+        for provider_record in ("claim", "receipt"):
+            with self.subTest(provider_record=provider_record):
+                p, c, r = fixture()
+                (c if provider_record == "claim" else r)["task_key"] = "OTHER-TASK"
+                with self.assertRaisesRegex(gate.AdmissionError, "task_key mismatch"):
+                    attempt(p, c, r)
+
+    def test_missing_provider_task_identity_fails_closed(self):
+        for provider_record in ("claim", "receipt"):
+            with self.subTest(provider_record=provider_record):
+                p, c, r = fixture()
+                del (c if provider_record == "claim" else r)["task_key"]
+                with self.assertRaisesRegex(gate.AdmissionError, "missing or unexpected"):
+                    attempt(p, c, r)
 
     def test_wrong_actor_owner_or_lane_rejected(self):
         for field in ("actor", "owner", "lane_id", "resource_id"):
