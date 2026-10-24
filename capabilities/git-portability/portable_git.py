@@ -129,7 +129,7 @@ def restore_archive(archive_path: Path, dest: Path) -> dict:
                 shutil.copyfileobj(inp, out, 1024 * 1024)
             if sha256(bundle) != manifest["bundle_sha256"]:
                 raise PortabilityError("ARCHIVE_HASH_MISMATCH")
-            git("clone", "--no-local", str(bundle), str(dest))
+            git("clone", "--mirror", str(bundle), str(dest))
     restored = git("rev-parse", "HEAD", cwd=dest)
     if restored != manifest["head"]:
         raise PortabilityError("RESTORED_HEAD_MISMATCH")
@@ -155,7 +155,11 @@ def upload_to_rclone(archive: Path, remote: str) -> dict:
         if p.returncode:
             raise PortabilityError("REMOTE_TRANSFER_FAILED")
         return p
-    if run("lsf", remote).stdout:
+    remote_dir, _, name = remote.rpartition("/")
+    if not name or not remote_dir:
+        raise PortabilityError("REMOTE_MUST_INCLUDE_FILENAME")
+    listing = run("lsf", remote_dir).stdout.decode("utf-8", "replace").splitlines()
+    if name in listing:
         raise PortabilityError("REMOTE_DESTINATION_ALREADY_EXISTS")
     run("copyto", str(archive), remote)
     proc = subprocess.Popen(["rclone", "cat", remote], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
