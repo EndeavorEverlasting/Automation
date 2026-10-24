@@ -23,6 +23,15 @@ Next: A verified FirstMate live-crew adapter must consume a checked, host-attest
 See `docs/PARALLEL_DISPATCH.md` for the plan and semantic boundaries.
 
 
+## PS-0131 authenticated receipt/claim preflight — nonproduction candidate
+
+The provider-neutral `receipt_gate.py` implements a fail-closed preflight requiring
+a current claim, immutable repository head, and independently retrieved receipt.
+Read [RECEIPT_GATE.md](RECEIPT_GATE.md) before use: the adapter's provenance must
+be authenticated outside this module, and external side effects still require
+executor-side fencing. Synthetic test success **does not** establish a production
+writer or a trusted provider claim.
+
 ## AUTO-PD1 persistent admission slice (source candidate)
 
 The reusable lease_ledger.py adds **single-host SQLite persistence** on top of
