@@ -86,15 +86,30 @@ def preflight(packet: dict[str, Any], *,
     # Read fresh claim, provider receipt and current revision. A failure to
     # contact any provider must fail closed; it must never become admission.
     try:
-        claim = _exact_record(claim_reader(p["resource_id"], p["claim_token"]),
-                              _CLAIM_FIELDS, "claim")
-        receipt = _exact_record(receipt_reader(p["receipt_ref"]),
-                                _RECEIPT_FIELDS, "receipt")
+        # Snapshot provider values: an adapter may reuse a mutable dict.
+        # Re-read the claim and head after the receipt read to detect lease
+        # turnover/revocation or branch movement during the preflight window.
+        claim = dict(_exact_record(claim_reader(p["resource_id"], p["claim_token"]),
+                                   _CLAIM_FIELDS, "claim"))
+        receipt = dict(_exact_record(receipt_reader(p["receipt_ref"]),
+                                     _RECEIPT_FIELDS, "receipt"))
         observed_head = head_reader(p["resource_id"])
+        confirmed_claim = dict(_exact_record(claim_reader(p["resource_id"], p["claim_token"]),
+                                             _CLAIM_FIELDS, "confirmed claim"))
+        confirmed_head = head_reader(p["resource_id"])
     except AdmissionError:
         raise
     except Exception as exc:
         raise AdmissionError("provider read unavailable") from exc
+
+    if confirmed_claim != claim:
+        raise AdmissionError("claim changed during preflight")
+    if confirmed_head != observed_head:
+        raise AdmissionError("head changed during preflight")
+    # Live calls may outlast an initially valid lease or freshness window.
+    # Re-check wall-clock time after all provider reads. An injected fixed
+    # clock keeps synthetic tests deterministic; it cannot attest real time.
+    now = _epoch(time.time() if now_epoch is None else now_epoch, "now_epoch")
 
     for key in ("task_key", "lane_id", "actor", "owner", "resource_id", "expected_head", "claim_token"):
         if claim[key] != p[key]:
@@ -111,7 +126,7 @@ def preflight(packet: dict[str, Any], *,
     if issued_at > now:
         raise AdmissionError("claim issued in future")
     if deadline <= now:
-        raise AdmissionError("claim expired")
+        raise AdmissionError("claim expired during preflight")
 
     for key in ("receipt_ref", "task_key", "lane_id", "actor", "owner", "resource_id"):
         if receipt[key] != p[key]:
