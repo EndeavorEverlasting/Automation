@@ -56,6 +56,17 @@ workers or fence external side effects. Native adapters must enforce their own
 idempotency/fencing. Expiry allows two claim attempts per item by default.
 Worker failures block dependents; worker success reports never unblock them.
 
+
+**PS-0131 local SQLite fence canary:** `LeaseLedger.apply_fenced_sqlite_effect(...)`
+atomically validates the current lease, runs a trusted same-connection SQLite
+callback, and records a stable effect ID/payload digest under one transaction.
+Stale workers, conflicting replays and expiry during SQL work roll back; duplicate
+identical effects are no-ops. See [RECEIPT_GATE.md](RECEIPT_GATE.md) and the
+six focused lease-ledger regression methods. This is **single-host same-database
+fencing only**, not a production authenticated provider adapter, cross-host
+lease, filesystem/API side-effect fence, or permission to launch agents.
+
+
 **Strict proof ceiling:** SQLite transactions and a 100-item synthetic fixture
 do NOT demonstrate real model agent sessions, provider authentication, safe
 cross-host distributed leases, completed changes, actual live parallelism, or
