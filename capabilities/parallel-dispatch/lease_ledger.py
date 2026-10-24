@@ -192,3 +192,61 @@ class LeaseLedger:
             counts = cx.execute("SELECT status, COUNT(*) FROM lanes GROUP BY status").fetchall()
             return {"schema": SCHEMA, "states": {row[0]: row[1] for row in counts},
                     "proof_ceiling": "SINGLE_HOST_SQLITE_LEASE_LEDGER_NOT_NATIVE_AGENT_DISPATCH"}
+
+    def apply_fenced_sqlite_effect(
+        self, lane_id: str, worker: str, fence: int, *,
+        effect_id: str, payload_sha256: str,
+        apply: Callable[[sqlite3.Connection], None],
+    ) -> dict:
+        """Atomically fence and deduplicate an effect IN THIS SQLite database.
+
+        The trusted host callback may perform SQLite operations only on the
+        supplied connection. External API calls, files, subprocesses, and
+        commits/rollbacks inside the callback are NOT supported or fenced.
+        This is a single-host transactional integration canary, not a
+        production provider adapter or an external side-effect permission.
+        """
+        for value, label in ((lane_id, "lane_id"), (worker, "worker"),
+                             (effect_id, "effect_id")):
+            if not isinstance(value, str) or not IDENTIFIER.fullmatch(value):
+                raise AdmissionError(f"{label}: invalid identity")
+        if not isinstance(payload_sha256, str) or not DIGEST.fullmatch(payload_sha256):
+            raise AdmissionError("payload_sha256: valid digest required")
+        if not callable(apply):
+            raise AdmissionError("trusted SQLite callback required")
+
+        with self._connection() as cx:
+            # Serialize the claim check, application and idempotency receipt.
+            # A stale worker cannot pass after a newer fence has been issued.
+            cx.execute("BEGIN IMMEDIATE")
+            self._leased(cx, lane_id, worker, fence, self.clock())
+            cx.execute("""CREATE TABLE IF NOT EXISTS fenced_effects (
+                effect_id TEXT PRIMARY KEY, lane_id TEXT NOT NULL,
+                payload_sha256 TEXT NOT NULL, fence INTEGER NOT NULL,
+                applied_at REAL NOT NULL)""")
+            prior = cx.execute(
+                "SELECT lane_id, payload_sha256 FROM fenced_effects WHERE effect_id=?",
+                (effect_id,),
+            ).fetchone()
+            if prior is not None:
+                if prior["lane_id"] != lane_id or prior["payload_sha256"] != payload_sha256:
+                    raise AdmissionError("effect identity reused with conflicting payload or lane")
+                return {"schema": SCHEMA, "lane_id": lane_id, "effect_id": effect_id,
+                        "state": "SQLITE_EFFECT_ALREADY_APPLIED",
+                        "proof_ceiling": "SINGLE_HOST_SQLITE_ONLY_NOT_EXTERNAL_FENCING"}
+
+            apply(cx)
+            if not cx.in_transaction:
+                raise AdmissionError("SQLite callback ended the guarded transaction")
+            # If a callback was slow, expiry must abort the entire transaction.
+            # Also reject a callback that tried to alter its own lease.
+            self._leased(cx, lane_id, worker, fence, self.clock())
+            cx.execute(
+                "INSERT INTO fenced_effects "
+                "(effect_id, lane_id, payload_sha256, fence, applied_at) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (effect_id, lane_id, payload_sha256, fence, self.clock()),
+            )
+        return {"schema": SCHEMA, "lane_id": lane_id, "effect_id": effect_id,
+                "state": "SQLITE_EFFECT_APPLIED",
+                "proof_ceiling": "SINGLE_HOST_SQLITE_ONLY_NOT_EXTERNAL_FENCING"}
