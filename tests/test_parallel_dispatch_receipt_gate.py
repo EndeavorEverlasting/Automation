@@ -21,7 +21,7 @@ def fixture():
     c = dict(lane_id=p["lane_id"], actor=p["actor"], owner=p["owner"],
              resource_id=p["resource_id"], expected_head=HEAD,
              claim_token=p["claim_token"], state="ACTIVE",
-             deadline_epoch=NOW + 90, fence=7)
+             issued_at_epoch=NOW - 60, deadline_epoch=NOW + 90, fence=7)
     r = dict(receipt_ref=p["receipt_ref"], lane_id=p["lane_id"],
              actor=p["actor"], owner=p["owner"], resource_id=p["resource_id"],
              head=HEAD, evidence_sha256=DIGEST, observed_at_epoch=NOW - 30,
@@ -65,6 +65,35 @@ class ReceiptGateTests(unittest.TestCase):
         c["fence"] = 8
         with self.assertRaisesRegex(gate.AdmissionError, "fence mismatch"):
             attempt(p, c, r)
+
+    def test_preclaim_receipt_replay_rejected(self):
+        p, c, r = fixture()
+        c["issued_at_epoch"] = NOW - 20
+        # Receipt is fresh, matching identity/head/fence, but older than claim.
+        with self.assertRaisesRegex(gate.AdmissionError, "predates claim"):
+            attempt(p, c, r)
+
+    def test_claim_issuance_bounds_and_missing_field(self):
+        for change, message in (
+            ({"issued_at_epoch": NOW + 1}, "issued in future"),
+            ({"issued_at_epoch": NOW + 91}, "window invalid"),
+            ({"issued_at_epoch": 0}, "invalid epoch"),
+        ):
+            with self.subTest(change=change):
+                p, c, r = fixture()
+                c.update(change)
+                with self.assertRaisesRegex(gate.AdmissionError, message):
+                    attempt(p, c, r)
+        p, c, r = fixture()
+        del c["issued_at_epoch"]
+        with self.assertRaisesRegex(gate.AdmissionError, "missing or unexpected"):
+            attempt(p, c, r)
+
+    def test_receipt_at_claim_issuance_boundary_is_admitted_only_as_assertion(self):
+        p, c, r = fixture()
+        c["issued_at_epoch"] = r["observed_at_epoch"]
+        result = attempt(p, c, r)
+        self.assertEqual(result["state"], "ADAPTER_ASSERTED_PREFLIGHT_ONLY")
 
     def test_wrong_actor_owner_or_lane_rejected(self):
         for field in ("actor", "owner", "lane_id", "resource_id"):
