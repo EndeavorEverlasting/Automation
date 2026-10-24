@@ -53,4 +53,14 @@ The native manifest parity test enforces `run.py::ID` and `receipt_gate.py::_NAT
 - **Proof ceiling:** `SQLITE_EFFECT_APPLIED` / `SQLITE_EFFECT_ALREADY_APPLIED` demonstrate **single-host, same-database transactional fencing only**. They do not prove provider-authenticated claims, cross-host exclusivity, filesystem fencing, external service compare-and-write, or agent execution. This primitive does not call or replace `receipt_gate.preflight` and must not be treated as a production executor permission.
 - **Regression floor:** local concurrent replay (one SQL effect), claim expiry and turnover, duplicate-key conflict, callback rollback, and expiry-during-callback rollback are covered in `tests/test_parallel_dispatch_lease_ledger.py`. Hosted tests verify source behavior, not a physical provider's fencing.
 
+**Transactional callback safety:** The trusted same-connection callback must not
+manage transactions or attach databases. SQLite authorizer enforcement rejects
+COMMIT, ROLLBACK, SAVEPOINT, ATTACH and DETACH (including implicit commits from
+`executescript`) before they can escape the guarded transaction. Regressions
+verify that attempted transaction escape rolls back both effect data and its
+idempotency receipt, and that a caught denial leaves the transaction intact.
+The callback remains trusted Python code with a privileged connection; it could
+remove the authorizer deliberately. This guard does **not** sandbox hostile code,
+authenticate providers, or fence external effects.
+
 **Next:** build an independently authenticated claim/receipt/head adapter and prove a real provider's atomic compare-and-write at its own side-effect boundary, with collision and turnover-after-preflight tests. Keep this PR draft until those production gates and independent review are complete.
