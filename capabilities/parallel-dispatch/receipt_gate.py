@@ -22,7 +22,7 @@ _FIELDS = frozenset({"schema", "task_key", "lane_id", "actor", "owner",
                      "max_age_seconds"})
 _CLAIM_FIELDS = frozenset({"lane_id", "actor", "owner", "resource_id",
                            "expected_head", "claim_token", "state",
-                           "deadline_epoch", "fence"})
+                           "issued_at_epoch", "deadline_epoch", "fence"})
 _RECEIPT_FIELDS = frozenset({"receipt_ref", "lane_id", "actor", "owner",
                              "resource_id", "head", "evidence_sha256",
                              "observed_at_epoch", "state", "fence"})
@@ -104,7 +104,13 @@ def preflight(packet: dict[str, Any], *,
     fence = claim["fence"]
     if type(fence) is not int or fence <= 0:
         raise AdmissionError("claim fence invalid")
-    if _epoch(claim["deadline_epoch"], "claim deadline") <= now:
+    issued_at = _epoch(claim["issued_at_epoch"], "claim issued_at")
+    deadline = _epoch(claim["deadline_epoch"], "claim deadline")
+    if deadline <= issued_at:
+        raise AdmissionError("claim window invalid")
+    if issued_at > now:
+        raise AdmissionError("claim issued in future")
+    if deadline <= now:
         raise AdmissionError("claim expired")
 
     for key in ("receipt_ref", "lane_id", "actor", "owner", "resource_id"):
@@ -121,7 +127,9 @@ def preflight(packet: dict[str, Any], *,
     observed_at = _epoch(receipt["observed_at_epoch"], "receipt timestamp")
     if observed_at > now or now - observed_at > ttl:
         raise AdmissionError("receipt missing freshness")
-    if observed_at >= _epoch(claim["deadline_epoch"], "claim deadline"):
+    if observed_at < issued_at:
+        raise AdmissionError("receipt predates claim")
+    if observed_at >= deadline:
         raise AdmissionError("receipt outside claim window")
 
     return {"schema": SCHEMA, "state": "ADAPTER_ASSERTED_PREFLIGHT_ONLY",
