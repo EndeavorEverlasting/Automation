@@ -202,7 +202,9 @@ class LeaseLedger:
 
         The trusted host callback may perform SQLite operations only on the
         supplied connection. External API calls, files, subprocesses, and
-        commits/rollbacks inside the callback are NOT supported or fenced.
+        transaction controls (commit/rollback/executescript, SAVEPOINT, ATTACH)
+        are rejected by SQLite's authorizer while the callback runs. This is
+        defense against accidental misuse, NOT a sandbox for hostile callbacks.
         This is a single-host transactional integration canary, not a
         production provider adapter or an external side-effect permission.
         """
@@ -235,7 +237,22 @@ class LeaseLedger:
                         "state": "SQLITE_EFFECT_ALREADY_APPLIED",
                         "proof_ceiling": "SINGLE_HOST_SQLITE_ONLY_NOT_EXTERNAL_FENCING"}
 
-            apply(cx)
+            # A trusted callback can accidentally call commit(), rollback(),
+            # executescript(), or transaction SQL. Block those operations at
+            # SQLite's authorizer boundary BEFORE they escape this transaction.
+            # This is defensive against mistakes, not a sandbox for hostile code:
+            # the callback still receives a privileged connection.
+            def guard(action, _arg1, _arg2, _database, _source):
+                if action in (sqlite3.SQLITE_TRANSACTION, sqlite3.SQLITE_SAVEPOINT,
+                              sqlite3.SQLITE_ATTACH, sqlite3.SQLITE_DETACH):
+                    return sqlite3.SQLITE_DENY
+                return sqlite3.SQLITE_OK
+
+            cx.set_authorizer(guard)
+            try:
+                apply(cx)
+            finally:
+                cx.set_authorizer(None)
             if not cx.in_transaction:
                 raise AdmissionError("SQLite callback ended the guarded transaction")
             # If a callback was slow, expiry must abort the entire transaction.
