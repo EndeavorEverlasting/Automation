@@ -1,0 +1,13 @@
+Folder: \
+HostName:                         DESKTOP
+TaskName:                         \Noisy-Console-Tick
+Next Run Time:                    10/21/2026 6:00:00 PM
+Status:                           Ready
+Logon Mode:                       Interactive only
+Last Run Time:                    10/21/2026 5:45:00 PM
+Last Result:                      0
+Author:                           DESKTOP\operator
+Task To Run:                      C:\Python\Launcher\py.exe -3 "C:\repo\tick.py"
+Start In:                         C:\repo
+Comment:                          N/A
+Scheduled Task State:             Enabled

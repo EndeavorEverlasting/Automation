@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/EndeavorEverlasting/Automation/capabilities/ghidra-bootstrap/schemas/manifest.v1.json",
+  "title": "automation.ghidra-bootstrap.v1",
+  "type": "object",
+  "required": ["schema", "capability_id", "ghidra", "jdk", "agreement"],
+  "properties": {
+    "schema": { "const": "automation.ghidra-bootstrap.v1" },
+    "capability_id": { "const": "ghidra-bootstrap" },
+    "owner": { "type": "string" },
+    "ghidra": {
+      "type": "object",
+      "required": ["version", "zip_name", "url", "sha256", "settings_dir_name", "java_min"],
+      "properties": {
+        "version": { "type": "string" },
+        "release_name": { "type": "string" },
+        "tag": { "type": "string" },
+        "zip_name": { "type": "string" },
+        "url": { "type": "string", "format": "uri" },
+        "sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
+        "settings_dir_name": { "type": "string" },
+        "java_min": { "type": "integer", "minimum": 21 }
+      }
+    },
+    "jdk": {
+      "type": "object",
+      "required": ["winget_id", "major"],
+      "properties": {
+        "winget_id": { "type": "string" },
+        "major": { "type": "integer", "minimum": 21 }
+      }
+    },
+    "agreement": {
+      "type": "object",
+      "required": ["property", "accepted_value"],
+      "properties": {
+        "property": { "const": "USER_AGREEMENT" },
+        "accepted_value": { "const": "ACCEPT" },
+        "rationale": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": true
+}

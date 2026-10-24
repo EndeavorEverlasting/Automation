@@ -1,0 +1,32 @@
+{
+  "schema_version": "automation-capability/v1",
+  "capability_id": "ghidra-bootstrap",
+  "status": "CORE_IMPLEMENTED_WINDOWS_HOST",
+  "purpose": "Deterministic agent-free Windows bootstrap for pinned Ghidra releases, including non-interactive user-agreement accept equivalent to the GUI I-agree gate.",
+  "core_owner": "capabilities/ghidra-bootstrap/Bootstrap-Ghidra.ps1",
+  "entrypoints": {
+    "cmd": "capabilities/ghidra-bootstrap/Bootstrap-Ghidra.cmd",
+    "root_shim": "Bootstrap-Ghidra.cmd",
+    "prove_synthetic": "capabilities/ghidra-bootstrap/Prove-GhidraBootstrap.ps1"
+  },
+  "artifacts": {
+    "manifest": "capabilities/ghidra-bootstrap/ghidra-bootstrap.manifest.json",
+    "manifest_schema": "capabilities/ghidra-bootstrap/schemas/manifest.v1.json"
+  },
+  "runtime_boundary": {
+    "default_mutation": "LOCAL_TOOL_INSTALL_AND_USER_PREFERENCES",
+    "default_install_root": "%LOCALAPPDATA%\\Automation\\ghidra-bootstrap\\tools",
+    "network": "Downloads pinned Ghidra zip from GitHub Releases unless -SkipDownload",
+    "supported_execution": [
+      "WINDOWS_OPERATOR_WORKSTATION",
+      "CI_SYNTHETIC_AGREEMENT_PROOF"
+    ]
+  },
+  "non_goals": [
+    "malware-lab case/VM policy",
+    "sample detonation",
+    "non-Windows hosts in this revision",
+    "IDA/JADX/Kuna installation"
+  ],
+  "proof_ceiling": "Synthetic fixture proves agreement seeding and launch.properties patch. Full download/SHA/smoke requires a Windows host with network and JDK."
+}

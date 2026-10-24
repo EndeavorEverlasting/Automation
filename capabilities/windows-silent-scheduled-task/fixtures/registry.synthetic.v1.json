@@ -1,0 +1,16 @@
+{
+  "schema": "automation.windows-silent-scheduled-task.registry/v1",
+  "description": "Synthetic consumer registry for unit tests (no live Task Scheduler).",
+  "jobs": [
+    {
+      "id": "demo_tick",
+      "task_name": "Automation-SilentCron-DemoTick",
+      "title": "Demo Tick",
+      "purpose": "Synthetic silent tick for contract tests",
+      "script": "fixtures/demo_tick.py",
+      "args": "--apply",
+      "interval_min": 15,
+      "run_level": "Limited"
+    }
+  ]
+}

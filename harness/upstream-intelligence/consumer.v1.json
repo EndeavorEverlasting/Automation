@@ -1,0 +1,81 @@
+{
+  "schema_version": "upstream-intelligence-consumer/v1",
+  "consumer_repository": "EndeavorEverlasting/Automation",
+  "consumer_name": "Automation",
+  "canonical_catalog": {
+    "repository": "EndeavorEverlasting/TokenCorridor",
+    "path": "harness/upstream-intelligence/catalog.v1.json",
+    "pinned_commit_sha": "2f9f27b962780fe2e37c3cc522f51ae168c6e68d",
+    "state": "MERGED_SOURCE_AVAILABLE_HOST_CONSUMPTION_UNOBSERVED"
+  },
+  "reusable_lookup": {
+    "repository": "EndeavorEverlasting/Automation",
+    "path": "capabilities/upstream-reference-discovery/lookup.py",
+    "pinned_commit_sha": "43102eb70342d1c12ed587895bc969d68bb65576",
+    "state": "MERGED_AND_CI_TESTED",
+    "required_for_basic_discovery": false
+  },
+  "original_source_workbooks": [
+    "00 - Upstream Intelligence Library — Registry.xlsx (Google Drive / research; 2026-10-20)",
+    "PS-0132 — Work & Codex Skills Radar — Inventory 2026-10-18.xlsx (Google Drive / skill and runtime inventory)"
+  ],
+  "project_boundary": "Generic public reusable capability research; project-specific decisions stay in consumers. No personal Google Drive materials in this public repository.",
+  "scope": "Offline public-reference seed only. No full source-workbook replication, local skill install, code/font license clearance or automatic product adoption.",
+  "resources": [
+    {
+      "id": "openai-skills",
+      "name": "OpenAI skills",
+      "category": "engineering-skill",
+      "kind": "public_reference",
+      "mechanism": "Registered upstream research seed; inspect source and licensing before use",
+      "locator": "https://github.com/openai/skills",
+      "installed_locally": false,
+      "source_provenance": "User provided upstream-source and skills workbook snapshots",
+      "state": "REGISTERED_REFERENCE"
+    },
+    {
+      "id": "wayfinder",
+      "name": "Matt Pocock Wayfinder",
+      "category": "planning/agent-skill",
+      "kind": "public_reference",
+      "mechanism": "Registered upstream research seed; inspect source and licensing before use",
+      "locator": "https://github.com/mattpocock/skills/blob/main/skills/engineering/wayfinder/SKILL.md",
+      "installed_locally": false,
+      "source_provenance": "User provided upstream-source and skills workbook snapshots",
+      "state": "REGISTERED_REFERENCE"
+    },
+    {
+      "id": "rea",
+      "name": "Reverse Engineer Anything",
+      "category": "reverse-engineering/agent-skill",
+      "kind": "public_reference",
+      "mechanism": "Registered upstream research seed; inspect source and licensing before use",
+      "locator": "https://github.com/morluto/rea",
+      "installed_locally": false,
+      "source_provenance": "User provided upstream-source and skills workbook snapshots",
+      "state": "REGISTERED_REFERENCE"
+    },
+    {
+      "id": "open-design",
+      "name": "Open Design",
+      "category": "design-skills",
+      "kind": "public_reference",
+      "mechanism": "Registered upstream research seed; inspect source and licensing before use",
+      "locator": "https://github.com/nexu-io/open-design",
+      "installed_locally": false,
+      "source_provenance": "User provided upstream-source and skills workbook snapshots",
+      "state": "REGISTERED_REFERENCE"
+    },
+    {
+      "id": "impeccable",
+      "name": "Impeccable",
+      "category": "product-design",
+      "kind": "public_reference",
+      "mechanism": "Registered upstream research seed; inspect source and licensing before use",
+      "locator": "https://github.com/pbakaus/impeccable",
+      "installed_locally": false,
+      "source_provenance": "User provided upstream-source and skills workbook snapshots",
+      "state": "REGISTERED_REFERENCE"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "schema_version": "automation-capability/v1",
+  "capability_id": "windows-silent-scheduled-task",
+  "status": "CORE_IMPLEMENTED_WINDOWS_HOST",
+  "purpose": "Reusable Windows silent scheduled-task primitives: pythonw.exe resolution, Hidden Task Scheduler registration rendering, schtasks silent classification, and CREATE_NO_WINDOW child-process helpers so consumer repos do not fork noisy console cron.",
+  "core_owns": [
+    "resolve_pythonw",
+    "task_to_run silent_pythonw classification",
+    "schtasks LIST parse/classify",
+    "registry schema validation",
+    "PowerShell register render (Hidden + pythonw)",
+    "win_subprocess CREATE_NO_WINDOW helpers"
+  ],
+  "adapters_own": [
+    "consumer job registries and script paths",
+    "product-specific interval/run_level policy",
+    "live Task Scheduler apply authorization on operator workstations"
+  ],
+  "core_owner": "capabilities/windows-silent-scheduled-task/core/",
+  "entrypoint": "capabilities/windows-silent-scheduled-task/silent_cron.py",
+  "entrypoints": {
+    "cli": "capabilities/windows-silent-scheduled-task/silent_cron.py",
+    "powershell": "capabilities/windows-silent-scheduled-task/Register-SilentCron.ps1"
+  },
+  "artifacts": {
+    "registry_schema": "capabilities/windows-silent-scheduled-task/schemas/silent-cron-registry.v1.json",
+    "synthetic_registry": "capabilities/windows-silent-scheduled-task/fixtures/registry.synthetic.v1.json"
+  },
+  "runtime_boundary": {
+    "default_mutation": "NONE_UNTIL_ENSURE_APPLY",
+    "network": "none",
+    "supported_execution": [
+      "WINDOWS_OPERATOR_WORKSTATION_APPLY",
+      "CI_SYNTHETIC_CLASSIFY_AND_RENDER"
+    ]
+  },
+  "non_goals": [
+    "owning qBit or TokenCorridor product tick scripts",
+    "replacing consumer Work Graph / wake selection logic",
+    "hiding UAC or interactive installers",
+    "non-Windows schedulers in this revision",
+    "claiming live Task Scheduler registration from CI"
+  ],
+  "production_use_path": "UNDECLARED",
+  "proof_ceiling": "Synthetic fixtures prove pythonw detection, registry validation, and PowerShell render shape. Live Register-ScheduledTask requires an interactive Windows operator session with --apply.",
+  "prior_art": [
+    "qbit-config win_subprocess.py + cubit_cron ensure + Register-SilentCronTasks.ps1",
+    "TokenCorridor tooling/runtime/win_discreet_subprocess.py + Install-TokenCorridorWake.ps1 -RepairSilent"
+  ]
+}

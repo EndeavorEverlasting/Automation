@@ -78,6 +78,35 @@ Admitted capabilities:
 - [`agent-hook-runtime`](capabilities/agent-hook-runtime/CAPABILITY.md) — status `CORE_IMPLEMENTED_CURSOR_ADAPTER_DIAGNOSTIC_ONLY`; separates JSON-stdio host transport/schema proof from consumer policy and emits privacy-safe runtime receipts.
 - [`social-publication`](capabilities/social-publication/CAPABILITY.md) — status `PROGRAM_DESIGN_PROTOTYPE_PROVEN`; approval-bound, provider-neutral text publication with a LinkedIn adapter prototype. Live OAuth/network publication remains unproven.
 - [`document-formatting`](capabilities/document-formatting/CAPABILITY.md) — status `COMPILER_IR_PROTOTYPE_PROVEN_GOOGLE_DOCS_PLAN_ADAPTER_PROVEN`; reusable consumer profiles plus deterministic semantic compilation to provider-neutral IR and a fail-closed Google Docs adapter plan.
+- [`ghidra-bootstrap`](capabilities/ghidra-bootstrap/CAPABILITY.md) — status `CORE_IMPLEMENTED_WINDOWS_HOST`; deterministic agent-free Ghidra download/verify/install plus non-interactive `USER_AGREEMENT=ACCEPT` (same gate as GUI **I agree**).
+- [`windows-silent-scheduled-task`](capabilities/windows-silent-scheduled-task/CAPABILITY.md) — status `CORE_IMPLEMENTED_WINDOWS_HOST`; reusable `pythonw.exe` + Hidden Task Scheduler registration/classification so consumer repos stop forking noisy console cron. Live `--apply` is operator-gated; synthetic fixtures prove CI.
+
+Windows silent scheduled task:
+
+```powershell
+python capabilities/windows-silent-scheduled-task/silent_cron.py resolve-pythonw
+python capabilities/windows-silent-scheduled-task/silent_cron.py classify-fixture `
+  --fixture capabilities/windows-silent-scheduled-task/fixtures/schtasks-list.pythonw.fixture.txt
+python capabilities/windows-silent-scheduled-task/silent_cron.py render `
+  --registry capabilities/windows-silent-scheduled-task/fixtures/registry.synthetic.v1.json `
+  --job-id demo_tick `
+  --repo-root capabilities/windows-silent-scheduled-task
+```
+
+Seam review: [docs/WINDOWS_SILENT_SCHEDULED_TASK_SEAM_REVIEW.md](docs/WINDOWS_SILENT_SCHEDULED_TASK_SEAM_REVIEW.md). Consumers keep their own tick scripts and registries; Automation owns silent launch/register/classify.
+
+Ghidra bootstrap (Windows):
+
+```bat
+Bootstrap-Ghidra.cmd
+Bootstrap-Ghidra.cmd -InstallRoot D:\tools
+```
+
+Default install root: `%LOCALAPPDATA%\Automation\ghidra-bootstrap\tools`. Synthetic agreement proof:
+
+```powershell
+pwsh -File capabilities\ghidra-bootstrap\Prove-GhidraBootstrap.ps1
+```
 
 Document-formatting portable plan:
 
