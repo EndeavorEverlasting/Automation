@@ -20,10 +20,10 @@ _REF = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,191}$")
 _FIELDS = frozenset({"schema", "task_key", "lane_id", "actor", "owner",
                      "resource_id", "expected_head", "claim_token", "receipt_ref",
                      "max_age_seconds"})
-_CLAIM_FIELDS = frozenset({"lane_id", "actor", "owner", "resource_id",
+_CLAIM_FIELDS = frozenset({"task_key", "lane_id", "actor", "owner", "resource_id",
                            "expected_head", "claim_token", "state",
                            "issued_at_epoch", "deadline_epoch", "fence"})
-_RECEIPT_FIELDS = frozenset({"receipt_ref", "lane_id", "actor", "owner",
+_RECEIPT_FIELDS = frozenset({"receipt_ref", "task_key", "lane_id", "actor", "owner",
                              "resource_id", "head", "evidence_sha256",
                              "observed_at_epoch", "state", "fence"})
 
@@ -96,7 +96,7 @@ def preflight(packet: dict[str, Any], *,
     except Exception as exc:
         raise AdmissionError("provider read unavailable") from exc
 
-    for key in ("lane_id", "actor", "owner", "resource_id", "expected_head", "claim_token"):
+    for key in ("task_key", "lane_id", "actor", "owner", "resource_id", "expected_head", "claim_token"):
         if claim[key] != p[key]:
             raise AdmissionError(f"claim {key} mismatch")
     if claim["state"] != "ACTIVE":
@@ -113,7 +113,7 @@ def preflight(packet: dict[str, Any], *,
     if deadline <= now:
         raise AdmissionError("claim expired")
 
-    for key in ("receipt_ref", "lane_id", "actor", "owner", "resource_id"):
+    for key in ("receipt_ref", "task_key", "lane_id", "actor", "owner", "resource_id"):
         if receipt[key] != p[key]:
             raise AdmissionError(f"receipt {key} mismatch")
     if receipt["state"] != "PROVIDER_VERIFIED":
