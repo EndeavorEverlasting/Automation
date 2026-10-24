@@ -1,0 +1,28 @@
+{
+  "schema_version": "automation-capability/v1",
+  "capability_id": "git-portability",
+  "status": "INCUBATING_LOCAL_PUBLIC_REPO_CORE",
+  "purpose": "Produce content-hashed, recoverable Git history bundles for provider migration without dependence on the original hosting account.",
+  "semantic_contract": "git-portability/v1",
+  "entrypoint": "capabilities/git-portability/portable_git.py",
+  "core_owns": [
+    "local Git history backup",
+    "branch/tag ref integrity",
+    "offline mirror restore",
+    "portable manifest receipts",
+    "fail-closed source/content guards"
+  ],
+  "adapters_own": [
+    "authenticated provider inventory",
+    "GitHub/GitLab/Gitea profile provisioning",
+    "credential/secret controls",
+    "Google Drive/rclone remotes",
+    "private archive encryption",
+    "Git LFS and submodule data preservation"
+  ],
+  "supported_execution": [
+    "LOCAL_AGENT_RUNTIME",
+    "CI_SYNTHETIC"
+  ],
+  "proof_ceiling": "Synthetic public Git repositories, offline archive verification and mirror restoration only. User profile ZIP is a separate verified snapshot. No real provider account discovery, encrypted private estate backup, scheduled run or Drive-rclone live proof."
+}
