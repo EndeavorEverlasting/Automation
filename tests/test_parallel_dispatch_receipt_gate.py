@@ -113,6 +113,72 @@ class ReceiptGateTests(unittest.TestCase):
                 with self.assertRaisesRegex(gate.AdmissionError, "missing or unexpected"):
                     attempt(p, c, r)
 
+    def test_claim_turnover_during_provider_reads_fails_closed(self):
+        # A claim may be revoked or replaced while receipt/head reads run.
+        # The first valid snapshot alone must not authorize preflight.
+        for mutation in ({"fence": 8}, {"state": "REVOKED"},
+                         {"claim_token": "claim:18"}):
+            with self.subTest(mutation=mutation):
+                p, c, r = fixture()
+                calls = [0]
+                def read_claim(*_):
+                    calls[0] += 1
+                    return c if calls[0] == 1 else {**c, **mutation}
+                with self.assertRaisesRegex(gate.AdmissionError, "changed during preflight"):
+                    gate.preflight(p, claim_reader=read_claim,
+                                   receipt_reader=lambda *_: r,
+                                   head_reader=lambda *_: HEAD, now_epoch=NOW)
+                self.assertEqual(calls[0], 2)
+
+    def test_mutable_claim_snapshot_cannot_hide_turnover(self):
+        p, c, r = fixture()
+        calls = [0]
+        def read_claim(*_):
+            calls[0] += 1
+            if calls[0] == 2:
+                c["fence"] = 8  # Same mutable provider dictionary, new lease.
+            return c
+        with self.assertRaisesRegex(gate.AdmissionError, "changed during preflight"):
+            gate.preflight(p, claim_reader=read_claim,
+                           receipt_reader=lambda *_: r,
+                           head_reader=lambda *_: HEAD, now_epoch=NOW)
+
+    def test_head_turnover_during_provider_reads_fails_closed(self):
+        p, c, r = fixture()
+        calls = [0]
+        def read_head(*_):
+            calls[0] += 1
+            return HEAD if calls[0] == 1 else "f" * 40
+        with self.assertRaisesRegex(gate.AdmissionError, "head changed during preflight"):
+            gate.preflight(p, claim_reader=lambda *_: c,
+                           receipt_reader=lambda *_: r,
+                           head_reader=read_head, now_epoch=NOW)
+        self.assertEqual(calls[0], 2)
+
+    def test_provider_recheck_failure_fails_closed(self):
+        p, c, r = fixture()
+        calls = [0]
+        def read_claim(*_):
+            calls[0] += 1
+            if calls[0] == 2:
+                raise ConnectionError("claim authority unavailable")
+            return c
+        with self.assertRaisesRegex(gate.AdmissionError, "provider read unavailable"):
+            gate.preflight(p, claim_reader=read_claim,
+                           receipt_reader=lambda *_: r,
+                           head_reader=lambda *_: HEAD, now_epoch=NOW)
+
+    def test_claim_expiry_during_provider_reads_fails_closed(self):
+        from unittest.mock import patch
+        p, c, r = fixture()
+        # The provider returned a valid claim at the start, but the reads
+        # consumed the remaining lease. No preflight admission is possible.
+        with patch.object(gate.time, "time", side_effect=[NOW - 5, NOW + 91]):
+            with self.assertRaisesRegex(gate.AdmissionError, "expired during preflight"):
+                gate.preflight(p, claim_reader=lambda *_: c,
+                               receipt_reader=lambda *_: r,
+                               head_reader=lambda *_: HEAD)
+
     def test_wrong_actor_owner_or_lane_rejected(self):
         for field in ("actor", "owner", "lane_id", "resource_id"):
             with self.subTest(field=field):
