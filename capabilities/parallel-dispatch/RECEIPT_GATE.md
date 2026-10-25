@@ -53,6 +53,16 @@ The native manifest parity test enforces `run.py::ID` and `receipt_gate.py::_NAT
 - **Proof ceiling:** `SQLITE_EFFECT_APPLIED` / `SQLITE_EFFECT_ALREADY_APPLIED` demonstrate **single-host, same-database transactional fencing only**. They do not prove provider-authenticated claims, cross-host exclusivity, filesystem fencing, external service compare-and-write, or agent execution. This primitive does not call or replace `receipt_gate.preflight` and must not be treated as a production executor permission.
 - **Regression floor:** local concurrent replay (one SQL effect), claim expiry and turnover, duplicate-key conflict, callback rollback, and expiry-during-callback rollback are covered in `tests/test_parallel_dispatch_lease_ledger.py`. Hosted tests verify source behavior, not a physical provider's fencing.
 
+**Ledger control-plane isolation:** While the trusted callback runs, the
+SQLite authorizer rejects INSERT/UPDATE/DELETE and DROP/ALTER of the ledger's
+`lanes`, `metadata`, and `fenced_effects` tables. It also rejects PRAGMA
+and trigger DDL, which could otherwise bypass the intended control-plane
+boundary. Ordinary application-table creation and SQL effects remain allowed.
+The authorizer is cleared before the ledger writes its own receipt. These are
+defenses against accidental or buggy trusted callbacks, **not** hostile-Python
+sandboxing or external/cross-host fencing. Native regressions cover eleven
+negative SQL cases, rollback, and a caught-denial success path.
+
 **Transactional callback safety:** The trusted same-connection callback must not
 manage transactions or attach databases. SQLite authorizer enforcement rejects
 COMMIT, ROLLBACK, SAVEPOINT, ATTACH and DETACH (including implicit commits from
