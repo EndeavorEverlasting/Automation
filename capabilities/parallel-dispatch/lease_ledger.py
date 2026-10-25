@@ -242,9 +242,24 @@ class LeaseLedger:
             # SQLite's authorizer boundary BEFORE they escape this transaction.
             # This is defensive against mistakes, not a sandbox for hostile code:
             # the callback still receives a privileged connection.
-            def guard(action, _arg1, _arg2, _database, _source):
+            # Control-plane tables are owned by the ledger, not the
+            # application-effect callback. The callback may create/write its
+            # own tables but must not edit leases, configuration or receipts.
+            protected = frozenset({"lanes", "metadata", "fenced_effects"})
+            def guard(action, arg1, arg2, _database, _source):
                 if action in (sqlite3.SQLITE_TRANSACTION, sqlite3.SQLITE_SAVEPOINT,
-                              sqlite3.SQLITE_ATTACH, sqlite3.SQLITE_DETACH):
+                              sqlite3.SQLITE_ATTACH, sqlite3.SQLITE_DETACH,
+                              sqlite3.SQLITE_PRAGMA, sqlite3.SQLITE_CREATE_TRIGGER,
+                              sqlite3.SQLITE_CREATE_TEMP_TRIGGER,
+                              sqlite3.SQLITE_DROP_TRIGGER,
+                              sqlite3.SQLITE_DROP_TEMP_TRIGGER):
+                    return sqlite3.SQLITE_DENY
+                if (action in (sqlite3.SQLITE_INSERT, sqlite3.SQLITE_UPDATE,
+                               sqlite3.SQLITE_DELETE, sqlite3.SQLITE_DROP_TABLE)
+                        and isinstance(arg1, str) and arg1.lower() in protected):
+                    return sqlite3.SQLITE_DENY
+                if (action == sqlite3.SQLITE_ALTER_TABLE
+                        and isinstance(arg2, str) and arg2.lower() in protected):
                     return sqlite3.SQLITE_DENY
                 return sqlite3.SQLITE_OK
 
