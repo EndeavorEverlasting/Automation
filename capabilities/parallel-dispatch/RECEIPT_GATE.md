@@ -73,4 +73,6 @@ The callback remains trusted Python code with a privileged connection; it could
 remove the authorizer deliberately. This guard does **not** sandbox hostile code,
 authenticate providers, or fence external effects.
 
+**Lease clock integrity:** The local SQLite ledger now rejects nonnumeric, Boolean, nonfinite, zero and negative host-clock values before claim, heartbeat, report and fenced-effect transitions. The fenced effect rechecks clock integrity after the callback; a malformed later clock reading aborts and rolls back its SQL mutation and receipt. These checks do **not** authenticate clock origin, prevent a plausible but inaccurate positive wall-clock reading, establish cross-host time consistency, or replace an external atomic fence.
+
 **Next:** build an independently authenticated claim/receipt/head adapter and prove a real provider's atomic compare-and-write at its own side-effect boundary, with collision and turnover-after-preflight tests. Keep this PR draft until those production gates and independent review are complete.
