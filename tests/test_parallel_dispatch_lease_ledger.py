@@ -261,6 +261,69 @@ class DurableLeaseTests(unittest.TestCase):
                     self.assertIsNone(cx.execute(
                         "SELECT name FROM sqlite_master WHERE name='fenced_effects'").fetchone())
 
+    def test_fenced_sqlite_effect_denies_control_table_mutation(self):
+        import sqlite3
+        lease = self.db.claim("workerA")
+        attacks = (
+            "UPDATE metadata SET value='99' WHERE key='max_concurrent'",
+            "DELETE FROM metadata WHERE key='max_concurrent'",
+            "INSERT INTO metadata (key, value) VALUES ('unauthorized', '1')",
+            "UPDATE lanes SET status='VERIFIED' WHERE id='job-1'",
+            "DELETE FROM lanes WHERE id='job-1'",
+            "INSERT INTO fenced_effects (effect_id, lane_id, payload_sha256, fence, applied_at) "
+            "VALUES ('forged', 'job-0', '" + DIGEST + "', 1, 1)",
+            "DELETE FROM fenced_effects",
+            "DROP TABLE lanes",
+            "ALTER TABLE lanes RENAME TO escaped_lanes",
+            "PRAGMA writable_schema=ON",
+            "CREATE TRIGGER escape_guard AFTER INSERT ON app_effects BEGIN "
+            "DELETE FROM metadata; END",
+        )
+        with sqlite3.connect(self.db.path) as cx:
+            initial_config = cx.execute(
+                "SELECT value FROM metadata WHERE key='max_concurrent'").fetchone()[0]
+        for i, sql in enumerate(attacks):
+            with self.subTest(sql=sql):
+                def apply(cx):
+                    cx.execute("CREATE TABLE app_effects (value TEXT)")
+                    cx.execute("INSERT INTO app_effects VALUES ('transient')")
+                    cx.execute(sql)
+                with self.assertRaises(sqlite3.DatabaseError):
+                    self.db.apply_fenced_sqlite_effect(
+                        "job-0", "workerA", lease["fence"],
+                        effect_id=f"control-{i}", payload_sha256=DIGEST, apply=apply)
+                with sqlite3.connect(self.db.path) as cx:
+                    self.assertIsNone(cx.execute(
+                        "SELECT name FROM sqlite_master WHERE name='app_effects'").fetchone())
+                    self.assertIsNone(cx.execute(
+                        "SELECT name FROM sqlite_master WHERE name='fenced_effects'").fetchone())
+                    self.assertEqual(cx.execute(
+                        "SELECT value FROM metadata WHERE key='max_concurrent'").fetchone()[0],
+                        initial_config)
+                    self.assertEqual(cx.execute(
+                        "SELECT status FROM lanes WHERE id='job-1'").fetchone()[0],
+                        "PENDING")
+
+    def test_fenced_sqlite_effect_caught_control_denial_preserves_atomicity(self):
+        import sqlite3
+        lease = self.db.claim("workerA")
+        def apply(cx):
+            cx.execute("CREATE TABLE app_effects (value TEXT)")
+            with self.assertRaises(sqlite3.DatabaseError):
+                cx.execute("DELETE FROM metadata")
+            cx.execute("INSERT INTO app_effects VALUES ('allowed')")
+        result = self.db.apply_fenced_sqlite_effect(
+            "job-0", "workerA", lease["fence"], effect_id="caught-control",
+            payload_sha256=DIGEST, apply=apply)
+        self.assertEqual(result["state"], "SQLITE_EFFECT_APPLIED")
+        with sqlite3.connect(self.db.path) as cx:
+            self.assertEqual(cx.execute(
+                "SELECT COUNT(*) FROM app_effects").fetchone()[0], 1)
+            self.assertEqual(cx.execute(
+                "SELECT COUNT(*) FROM fenced_effects").fetchone()[0], 1)
+            self.assertIsNotNone(cx.execute(
+                "SELECT value FROM metadata WHERE key='max_concurrent'").fetchone())
+
     def test_fenced_sqlite_effect_caught_transaction_escape_stays_atomic(self):
         import sqlite3
         lease = self.db.claim("workerA")
