@@ -342,5 +342,49 @@ class DurableLeaseTests(unittest.TestCase):
             self.assertEqual(cx.execute("SELECT COUNT(*) FROM fenced_effects").fetchone()[0], 1)
 
 
+    def test_invalid_clock_rejected_before_lease_transitions(self):
+        for bad in (float("nan"), float("inf"), float("-inf"), 0, -1, True, "1000"):
+            with self.subTest(clock=repr(bad)):
+                bad_clock = LeaseLedger(self.db.path, clock=lambda value=bad: value)
+                with self.assertRaises(AdmissionError):
+                    bad_clock.claim("workerA")
+        self.assertEqual(self.db.snapshot()["states"], {"PENDING": 3})
+
+    def test_invalid_clock_rejected_by_active_lease_operations(self):
+        lease = self.db.claim("workerA")
+        for bad in (float("nan"), float("inf"), float("-inf"), 0, -1, True, "1000"):
+            with self.subTest(clock=repr(bad)):
+                bad_clock = LeaseLedger(self.db.path, clock=lambda value=bad: value)
+                with self.assertRaises(AdmissionError):
+                    bad_clock.heartbeat("job-0", "workerA", lease["fence"])
+                with self.assertRaises(AdmissionError):
+                    bad_clock.report("job-0", "workerA", lease["fence"],
+                                     evidence_sha256=DIGEST, succeeded=True)
+                with self.assertRaises(AdmissionError):
+                    bad_clock.apply_fenced_sqlite_effect(
+                        "job-0", "workerA", lease["fence"],
+                        effect_id="bad-clock", payload_sha256=DIGEST,
+                        apply=lambda cx: cx.execute("CREATE TABLE app_effects (value TEXT)"))
+        self.assertEqual(self.db.snapshot()["states"]["LEASED"], 1)
+
+    def test_clock_failure_during_fenced_effect_rolls_back(self):
+        import sqlite3
+        lease = self.db.claim("workerA")
+        ticks = iter((1000.0, float("nan")))
+        bad_clock = LeaseLedger(self.db.path, clock=lambda: next(ticks))
+        def apply(cx):
+            cx.execute("CREATE TABLE app_effects (value TEXT)")
+            cx.execute("INSERT INTO app_effects VALUES ('must-rollback')")
+        with self.assertRaises(AdmissionError):
+            bad_clock.apply_fenced_sqlite_effect(
+                "job-0", "workerA", lease["fence"],
+                effect_id="late-clock", payload_sha256=DIGEST, apply=apply)
+        with sqlite3.connect(self.db.path) as cx:
+            self.assertIsNone(cx.execute(
+                "SELECT name FROM sqlite_master WHERE name='app_effects'").fetchone())
+            self.assertIsNone(cx.execute(
+                "SELECT name FROM sqlite_master WHERE name='fenced_effects'").fetchone())
+
+
 if __name__ == "__main__":
     unittest.main()
