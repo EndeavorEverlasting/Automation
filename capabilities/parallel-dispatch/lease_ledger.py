@@ -9,6 +9,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 import importlib.util
 import json
+import math
 from pathlib import Path
 import re
 import sqlite3
@@ -39,6 +40,17 @@ class LeaseLedger:
     def __init__(self, path: Path, *, clock: Callable[[], float] = time.time):
         self.path = Path(path)
         self.clock = clock
+
+    def _now(self) -> float:
+        # A malformed host clock must never turn an expired lease into a
+        # valid claim or let an application effect commit with invalid time.
+        # This checks input integrity; it does not authenticate the clock or
+        # protect against a finite but inaccurate wall-clock reading.
+        value = self.clock()
+        if (isinstance(value, bool) or not isinstance(value, (int, float))
+                or not math.isfinite(value) or value <= 0):
+            raise AdmissionError("clock must return a finite positive epoch")
+        return float(value)
 
     @contextmanager
     def _connection(self):
@@ -89,7 +101,7 @@ class LeaseLedger:
             raise AdmissionError("opaque worker identifier required")
         if type(ttl_seconds) is not int or not 1 <= ttl_seconds <= 3600:
             raise AdmissionError("ttl_seconds must be between 1 and 3600")
-        now = self.clock()
+        now = self._now()
         with self._connection() as cx:
             cx.execute("BEGIN IMMEDIATE")
             config = cx.execute("SELECT value FROM metadata WHERE key='max_concurrent'").fetchone()
@@ -151,7 +163,7 @@ class LeaseLedger:
     def heartbeat(self, lane_id: str, worker: str, fence: int, *, ttl_seconds: int = 120):
         if type(ttl_seconds) is not int or not 1 <= ttl_seconds <= 3600:
             raise AdmissionError("invalid heartbeat ttl")
-        now = self.clock()
+        now = self._now()
         with self._connection() as cx:
             cx.execute("BEGIN IMMEDIATE")
             self._leased(cx, lane_id, worker, fence, now)
@@ -164,7 +176,7 @@ class LeaseLedger:
             raise AdmissionError("receipt SHA256 required; raw evidence belongs outside ledger")
         if type(succeeded) is not bool:
             raise AdmissionError("succeeded must be boolean")
-        now = self.clock()
+        now = self._now()
         with self._connection() as cx:
             cx.execute("BEGIN IMMEDIATE")
             self._leased(cx, lane_id, worker, fence, now)
@@ -221,7 +233,7 @@ class LeaseLedger:
             # Serialize the claim check, application and idempotency receipt.
             # A stale worker cannot pass after a newer fence has been issued.
             cx.execute("BEGIN IMMEDIATE")
-            self._leased(cx, lane_id, worker, fence, self.clock())
+            self._leased(cx, lane_id, worker, fence, self._now())
             cx.execute("""CREATE TABLE IF NOT EXISTS fenced_effects (
                 effect_id TEXT PRIMARY KEY, lane_id TEXT NOT NULL,
                 payload_sha256 TEXT NOT NULL, fence INTEGER NOT NULL,
@@ -272,12 +284,12 @@ class LeaseLedger:
                 raise AdmissionError("SQLite callback ended the guarded transaction")
             # If a callback was slow, expiry must abort the entire transaction.
             # Also reject a callback that tried to alter its own lease.
-            self._leased(cx, lane_id, worker, fence, self.clock())
+            self._leased(cx, lane_id, worker, fence, self._now())
             cx.execute(
                 "INSERT INTO fenced_effects "
                 "(effect_id, lane_id, payload_sha256, fence, applied_at) "
                 "VALUES (?, ?, ?, ?, ?)",
-                (effect_id, lane_id, payload_sha256, fence, self.clock()),
+                (effect_id, lane_id, payload_sha256, fence, self._now()),
             )
         return {"schema": SCHEMA, "lane_id": lane_id, "effect_id": effect_id,
                 "state": "SQLITE_EFFECT_APPLIED",
