@@ -48,9 +48,15 @@ class LeaseLedger:
         # protect against a finite but inaccurate wall-clock reading.
         value = self.clock()
         if (isinstance(value, bool) or not isinstance(value, (int, float))
-                or not math.isfinite(value) or value <= 0):
+                or value <= 0):
             raise AdmissionError("clock must return a finite positive epoch")
-        return float(value)
+        try:
+            normalized = float(value)
+        except (OverflowError, ValueError, TypeError) as exc:
+            raise AdmissionError("clock must return a finite positive epoch") from exc
+        if not math.isfinite(normalized):
+            raise AdmissionError("clock must return a finite positive epoch")
+        return normalized
 
     @contextmanager
     def _connection(self):
