@@ -121,5 +121,290 @@ class DurableLeaseTests(unittest.TestCase):
             self.db.heartbeat("job-0", "workerA", first["fence"])
 
 
+    def test_fenced_sqlite_effect_applies_once_and_replays_without_mutation(self):
+        import sqlite3
+        lease = self.db.claim("workerA")
+        calls = [0]
+        def apply(cx):
+            calls[0] += 1
+            cx.execute("CREATE TABLE IF NOT EXISTS app_effects (value TEXT)")
+            cx.execute("INSERT INTO app_effects VALUES ('once')")
+        args = dict(lane_id="job-0", worker="workerA", fence=lease["fence"],
+                    effect_id="effect-1", payload_sha256=DIGEST, apply=apply)
+        first = self.db.apply_fenced_sqlite_effect(**args)
+        replay = self.db.apply_fenced_sqlite_effect(**args)
+        self.assertEqual(first["state"], "SQLITE_EFFECT_APPLIED")
+        self.assertEqual(replay["state"], "SQLITE_EFFECT_ALREADY_APPLIED")
+        self.assertIn("NOT_EXTERNAL_FENCING", first["proof_ceiling"])
+        self.assertEqual(calls[0], 1)
+        with sqlite3.connect(self.db.path) as cx:
+            self.assertEqual(cx.execute("SELECT COUNT(*) FROM app_effects").fetchone()[0], 1)
+            self.assertEqual(cx.execute("SELECT COUNT(*) FROM fenced_effects").fetchone()[0], 1)
+
+    def test_fenced_sqlite_effect_rejects_stale_worker_after_turnover(self):
+        import sqlite3
+        first = self.db.claim("workerA", ttl_seconds=5)
+        self.now[0] += 6
+        second = self.db.claim("workerB", ttl_seconds=5)
+        self.assertGreater(second["fence"], first["fence"])
+        def apply(cx):
+            cx.execute("CREATE TABLE IF NOT EXISTS app_effects (value TEXT)")
+            cx.execute("INSERT INTO app_effects VALUES ('fresh')")
+        with self.assertRaisesRegex(AdmissionError, "stale, expired or unowned"):
+            self.db.apply_fenced_sqlite_effect("job-0", "workerA", first["fence"],
+                effect_id="turnover", payload_sha256=DIGEST, apply=apply)
+        applied = self.db.apply_fenced_sqlite_effect("job-0", "workerB", second["fence"],
+            effect_id="turnover", payload_sha256=DIGEST, apply=apply)
+        self.assertEqual(applied["state"], "SQLITE_EFFECT_APPLIED")
+        with sqlite3.connect(self.db.path) as cx:
+            self.assertEqual(cx.execute("SELECT COUNT(*) FROM app_effects").fetchone()[0], 1)
+
+    def test_fenced_sqlite_effect_rolls_back_callback_failure(self):
+        import sqlite3
+        lease = self.db.claim("workerA")
+        def broken(cx):
+            cx.execute("CREATE TABLE app_effects (value TEXT)")
+            cx.execute("INSERT INTO app_effects VALUES ('not-committed')")
+            raise RuntimeError("simulated local failure")
+        with self.assertRaisesRegex(RuntimeError, "simulated"):
+            self.db.apply_fenced_sqlite_effect("job-0", "workerA", lease["fence"],
+                effect_id="rollback", payload_sha256=DIGEST, apply=broken)
+        with sqlite3.connect(self.db.path) as cx:
+            self.assertIsNone(cx.execute(
+                "SELECT name FROM sqlite_master WHERE name='app_effects'").fetchone())
+        def good(cx):
+            cx.execute("CREATE TABLE app_effects (value TEXT)")
+            cx.execute("INSERT INTO app_effects VALUES ('committed')")
+        self.db.apply_fenced_sqlite_effect("job-0", "workerA", lease["fence"],
+            effect_id="rollback", payload_sha256=DIGEST, apply=good)
+        with sqlite3.connect(self.db.path) as cx:
+            self.assertEqual(cx.execute("SELECT value FROM app_effects").fetchone()[0],
+                             "committed")
+
+    def test_fenced_sqlite_effect_rejects_conflicting_reuse_and_lane(self):
+        first = self.db.claim("workerA")
+        def apply(cx):
+            cx.execute("CREATE TABLE IF NOT EXISTS app_effects (value TEXT)")
+            cx.execute("INSERT INTO app_effects VALUES ('first')")
+        self.db.apply_fenced_sqlite_effect("job-0", "workerA", first["fence"],
+            effect_id="shared-key", payload_sha256=DIGEST, apply=apply)
+        with self.assertRaisesRegex(AdmissionError, "conflicting payload or lane"):
+            self.db.apply_fenced_sqlite_effect("job-0", "workerA", first["fence"],
+                effect_id="shared-key", payload_sha256="b"*64, apply=apply)
+        self.db.report("job-0", "workerA", first["fence"],
+                       evidence_sha256=DIGEST, succeeded=True)
+        second = self.db.claim("workerB")
+        self.assertEqual(second["lane_id"], "job-1")
+        with self.assertRaisesRegex(AdmissionError, "conflicting payload or lane"):
+            self.db.apply_fenced_sqlite_effect("job-1", "workerB", second["fence"],
+                effect_id="shared-key", payload_sha256=DIGEST, apply=apply)
+
+    def test_fenced_sqlite_effect_concurrent_replays_apply_once(self):
+        import sqlite3
+        lease = self.db.claim("workerA")
+        calls = [0]
+        def apply(cx):
+            calls[0] += 1
+            cx.execute("CREATE TABLE IF NOT EXISTS app_effects (value TEXT)")
+            cx.execute("INSERT INTO app_effects VALUES ('once')")
+        def run(_):
+            return self.db.apply_fenced_sqlite_effect(
+                "job-0", "workerA", lease["fence"], effect_id="parallel",
+                payload_sha256=DIGEST, apply=apply)["state"]
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            states = list(pool.map(run, range(8)))
+        self.assertEqual(states.count("SQLITE_EFFECT_APPLIED"), 1)
+        self.assertEqual(states.count("SQLITE_EFFECT_ALREADY_APPLIED"), 7)
+        self.assertEqual(calls[0], 1)
+        with sqlite3.connect(self.db.path) as cx:
+            self.assertEqual(cx.execute("SELECT COUNT(*) FROM app_effects").fetchone()[0], 1)
+
+    def test_fenced_sqlite_effect_expiry_during_callback_rolls_back(self):
+        import sqlite3
+        lease = self.db.claim("workerA", ttl_seconds=5)
+        def slow(cx):
+            cx.execute("CREATE TABLE app_effects (value TEXT)")
+            cx.execute("INSERT INTO app_effects VALUES ('expired')")
+            self.now[0] += 6
+        with self.assertRaisesRegex(AdmissionError, "stale, expired or unowned"):
+            self.db.apply_fenced_sqlite_effect("job-0", "workerA", lease["fence"],
+                effect_id="late", payload_sha256=DIGEST, apply=slow)
+        with sqlite3.connect(self.db.path) as cx:
+            self.assertIsNone(cx.execute(
+                "SELECT name FROM sqlite_master WHERE name='app_effects'").fetchone())
+
+
+    def test_fenced_sqlite_effect_rejects_transaction_escape(self):
+        import sqlite3
+        lease = self.db.claim("workerA")
+        escapes = {
+            "commit": lambda cx: cx.commit(),
+            "rollback": lambda cx: cx.rollback(),
+            "executescript": lambda cx: cx.executescript("SELECT 1;"),
+            "sql-commit": lambda cx: cx.execute("COMMIT"),
+            "savepoint": lambda cx: cx.execute("SAVEPOINT escaped"),
+            "attach": lambda cx: cx.execute("ATTACH DATABASE ':memory:' AS escaped"),
+        }
+        for i, (label, escape) in enumerate(escapes.items()):
+            with self.subTest(escape=label):
+                def apply(cx):
+                    cx.execute("CREATE TABLE app_effects (value TEXT)")
+                    cx.execute("INSERT INTO app_effects VALUES ('must-rollback')")
+                    escape(cx)
+                with self.assertRaises(sqlite3.DatabaseError):
+                    self.db.apply_fenced_sqlite_effect(
+                        "job-0", "workerA", lease["fence"],
+                        effect_id=f"escape-{i}", payload_sha256=DIGEST, apply=apply)
+                with sqlite3.connect(self.db.path) as cx:
+                    self.assertIsNone(cx.execute(
+                        "SELECT name FROM sqlite_master WHERE name='app_effects'").fetchone())
+                    self.assertIsNone(cx.execute(
+                        "SELECT name FROM sqlite_master WHERE name='fenced_effects'").fetchone())
+
+    def test_fenced_sqlite_effect_denies_control_table_mutation(self):
+        import sqlite3
+        lease = self.db.claim("workerA")
+        attacks = (
+            "UPDATE metadata SET value='99' WHERE key='max_concurrent'",
+            "DELETE FROM metadata WHERE key='max_concurrent'",
+            "INSERT INTO metadata (key, value) VALUES ('unauthorized', '1')",
+            "UPDATE lanes SET status='VERIFIED' WHERE id='job-1'",
+            "DELETE FROM lanes WHERE id='job-1'",
+            "INSERT INTO fenced_effects (effect_id, lane_id, payload_sha256, fence, applied_at) "
+            "VALUES ('forged', 'job-0', '" + DIGEST + "', 1, 1)",
+            "DELETE FROM fenced_effects",
+            "DROP TABLE lanes",
+            "ALTER TABLE lanes RENAME TO escaped_lanes",
+            "PRAGMA writable_schema=ON",
+            "CREATE TRIGGER escape_guard AFTER INSERT ON app_effects BEGIN "
+            "DELETE FROM metadata; END",
+        )
+        with sqlite3.connect(self.db.path) as cx:
+            initial_config = cx.execute(
+                "SELECT value FROM metadata WHERE key='max_concurrent'").fetchone()[0]
+        for i, sql in enumerate(attacks):
+            with self.subTest(sql=sql):
+                def apply(cx):
+                    cx.execute("CREATE TABLE app_effects (value TEXT)")
+                    cx.execute("INSERT INTO app_effects VALUES ('transient')")
+                    cx.execute(sql)
+                with self.assertRaises(sqlite3.DatabaseError):
+                    self.db.apply_fenced_sqlite_effect(
+                        "job-0", "workerA", lease["fence"],
+                        effect_id=f"control-{i}", payload_sha256=DIGEST, apply=apply)
+                with sqlite3.connect(self.db.path) as cx:
+                    self.assertIsNone(cx.execute(
+                        "SELECT name FROM sqlite_master WHERE name='app_effects'").fetchone())
+                    self.assertIsNone(cx.execute(
+                        "SELECT name FROM sqlite_master WHERE name='fenced_effects'").fetchone())
+                    self.assertEqual(cx.execute(
+                        "SELECT value FROM metadata WHERE key='max_concurrent'").fetchone()[0],
+                        initial_config)
+                    self.assertEqual(cx.execute(
+                        "SELECT status FROM lanes WHERE id='job-1'").fetchone()[0],
+                        "PENDING")
+
+    def test_fenced_sqlite_effect_caught_control_denial_preserves_atomicity(self):
+        import sqlite3
+        lease = self.db.claim("workerA")
+        def apply(cx):
+            cx.execute("CREATE TABLE app_effects (value TEXT)")
+            with self.assertRaises(sqlite3.DatabaseError):
+                cx.execute("DELETE FROM metadata")
+            cx.execute("INSERT INTO app_effects VALUES ('allowed')")
+        result = self.db.apply_fenced_sqlite_effect(
+            "job-0", "workerA", lease["fence"], effect_id="caught-control",
+            payload_sha256=DIGEST, apply=apply)
+        self.assertEqual(result["state"], "SQLITE_EFFECT_APPLIED")
+        with sqlite3.connect(self.db.path) as cx:
+            self.assertEqual(cx.execute(
+                "SELECT COUNT(*) FROM app_effects").fetchone()[0], 1)
+            self.assertEqual(cx.execute(
+                "SELECT COUNT(*) FROM fenced_effects").fetchone()[0], 1)
+            self.assertIsNotNone(cx.execute(
+                "SELECT value FROM metadata WHERE key='max_concurrent'").fetchone())
+
+    def test_fenced_sqlite_effect_caught_transaction_escape_stays_atomic(self):
+        import sqlite3
+        lease = self.db.claim("workerA")
+        def apply(cx):
+            cx.execute("CREATE TABLE app_effects (value TEXT)")
+            cx.execute("INSERT INTO app_effects VALUES ('safe')")
+            with self.assertRaises(sqlite3.DatabaseError):
+                cx.commit()
+            cx.execute("INSERT INTO app_effects VALUES ('also-safe')")
+        outcome = self.db.apply_fenced_sqlite_effect(
+            "job-0", "workerA", lease["fence"],
+            effect_id="caught-escape", payload_sha256=DIGEST, apply=apply)
+        self.assertEqual(outcome["state"], "SQLITE_EFFECT_APPLIED")
+        with sqlite3.connect(self.db.path) as cx:
+            self.assertEqual(cx.execute("SELECT COUNT(*) FROM app_effects").fetchone()[0], 2)
+            self.assertEqual(cx.execute("SELECT COUNT(*) FROM fenced_effects").fetchone()[0], 1)
+
+
+    def test_invalid_clock_rejected_before_lease_transitions(self):
+        for bad in (float("nan"), float("inf"), float("-inf"), 0, -1, True, "1000", 10 ** 400):
+            with self.subTest(clock=repr(bad)):
+                bad_clock = LeaseLedger(self.db.path, clock=lambda value=bad: value)
+                with self.assertRaises(AdmissionError):
+                    bad_clock.claim("workerA")
+        self.assertEqual(self.db.snapshot()["states"], {"PENDING": 3})
+
+    def test_invalid_clock_rejected_by_active_lease_operations(self):
+        lease = self.db.claim("workerA")
+        for bad in (float("nan"), float("inf"), float("-inf"), 0, -1, True, "1000", 10 ** 400):
+            with self.subTest(clock=repr(bad)):
+                bad_clock = LeaseLedger(self.db.path, clock=lambda value=bad: value)
+                with self.assertRaises(AdmissionError):
+                    bad_clock.heartbeat("job-0", "workerA", lease["fence"])
+                with self.assertRaises(AdmissionError):
+                    bad_clock.report("job-0", "workerA", lease["fence"],
+                                     evidence_sha256=DIGEST, succeeded=True)
+                with self.assertRaises(AdmissionError):
+                    bad_clock.apply_fenced_sqlite_effect(
+                        "job-0", "workerA", lease["fence"],
+                        effect_id="bad-clock", payload_sha256=DIGEST,
+                        apply=lambda cx: cx.execute("CREATE TABLE app_effects (value TEXT)"))
+        self.assertEqual(self.db.snapshot()["states"]["LEASED"], 1)
+
+    def test_clock_failure_during_fenced_effect_rolls_back(self):
+        import sqlite3
+        lease = self.db.claim("workerA")
+        ticks = iter((1000.0, float("nan")))
+        bad_clock = LeaseLedger(self.db.path, clock=lambda: next(ticks))
+        def apply(cx):
+            cx.execute("CREATE TABLE app_effects (value TEXT)")
+            cx.execute("INSERT INTO app_effects VALUES ('must-rollback')")
+        with self.assertRaises(AdmissionError):
+            bad_clock.apply_fenced_sqlite_effect(
+                "job-0", "workerA", lease["fence"],
+                effect_id="late-clock", payload_sha256=DIGEST, apply=apply)
+        with sqlite3.connect(self.db.path) as cx:
+            self.assertIsNone(cx.execute(
+                "SELECT name FROM sqlite_master WHERE name='app_effects'").fetchone())
+            self.assertIsNone(cx.execute(
+                "SELECT name FROM sqlite_master WHERE name='fenced_effects'").fetchone())
+
+
+    def test_overflowing_clock_during_sql_effect_rolls_back(self):
+        import sqlite3
+        lease = self.db.claim("workerA")
+        ticks = iter((1000.0, 10 ** 400))
+        bad_clock = LeaseLedger(self.db.path, clock=lambda: next(ticks))
+        def apply(cx):
+            cx.execute("CREATE TABLE app_effects (value TEXT)")
+            cx.execute("INSERT INTO app_effects VALUES ('must-rollback')")
+        with self.assertRaisesRegex(AdmissionError, "finite positive epoch"):
+            bad_clock.apply_fenced_sqlite_effect(
+                "job-0", "workerA", lease["fence"],
+                effect_id="overflow-clock", payload_sha256=DIGEST, apply=apply)
+        with sqlite3.connect(self.db.path) as cx:
+            self.assertIsNone(cx.execute(
+                "SELECT name FROM sqlite_master WHERE name='app_effects'").fetchone())
+            self.assertIsNone(cx.execute(
+                "SELECT name FROM sqlite_master WHERE name='fenced_effects'").fetchone())
+
+
+
 if __name__ == "__main__":
     unittest.main()
