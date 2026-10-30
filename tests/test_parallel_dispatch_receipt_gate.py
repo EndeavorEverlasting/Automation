@@ -233,5 +233,28 @@ class ReceiptGateTests(unittest.TestCase):
             attempt(p, c, r)
 
 
+    def test_unrepresentable_provider_epochs_fail_as_admission_errors(self):
+        # Python math.isfinite(int) raises OverflowError for huge integers.
+        # Provider-supplied time must fail closed with the gate's own error.
+        huge = 10 ** 400
+        p, c, r = fixture()
+        with self.assertRaisesRegex(gate.AdmissionError, "now_epoch: invalid epoch"):
+            gate.preflight(p, claim_reader=lambda *_: c,
+                           receipt_reader=lambda *_: r,
+                           head_reader=lambda *_: HEAD, now_epoch=huge)
+        for field in ("issued_at_epoch", "deadline_epoch"):
+            with self.subTest(field=field):
+                p, c, r = fixture()
+                c[field] = huge
+                with self.assertRaisesRegex(gate.AdmissionError, "invalid epoch"):
+                    attempt(p, c, r)
+        p, c, r = fixture()
+        r["observed_at_epoch"] = huge
+        with self.assertRaisesRegex(gate.AdmissionError, "invalid epoch"):
+            attempt(p, c, r)
+        self.assertEqual(attempt(*fixture())["state"], "ADAPTER_ASSERTED_PREFLIGHT_ONLY")
+
+
+
 if __name__ == "__main__":
     unittest.main()
