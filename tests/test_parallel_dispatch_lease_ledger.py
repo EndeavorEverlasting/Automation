@@ -343,7 +343,7 @@ class DurableLeaseTests(unittest.TestCase):
 
 
     def test_invalid_clock_rejected_before_lease_transitions(self):
-        for bad in (float("nan"), float("inf"), float("-inf"), 0, -1, True, "1000"):
+        for bad in (float("nan"), float("inf"), float("-inf"), 0, -1, True, "1000", 10 ** 400):
             with self.subTest(clock=repr(bad)):
                 bad_clock = LeaseLedger(self.db.path, clock=lambda value=bad: value)
                 with self.assertRaises(AdmissionError):
@@ -352,7 +352,7 @@ class DurableLeaseTests(unittest.TestCase):
 
     def test_invalid_clock_rejected_by_active_lease_operations(self):
         lease = self.db.claim("workerA")
-        for bad in (float("nan"), float("inf"), float("-inf"), 0, -1, True, "1000"):
+        for bad in (float("nan"), float("inf"), float("-inf"), 0, -1, True, "1000", 10 ** 400):
             with self.subTest(clock=repr(bad)):
                 bad_clock = LeaseLedger(self.db.path, clock=lambda value=bad: value)
                 with self.assertRaises(AdmissionError):
@@ -384,6 +384,26 @@ class DurableLeaseTests(unittest.TestCase):
                 "SELECT name FROM sqlite_master WHERE name='app_effects'").fetchone())
             self.assertIsNone(cx.execute(
                 "SELECT name FROM sqlite_master WHERE name='fenced_effects'").fetchone())
+
+
+    def test_overflowing_clock_during_sql_effect_rolls_back(self):
+        import sqlite3
+        lease = self.db.claim("workerA")
+        ticks = iter((1000.0, 10 ** 400))
+        bad_clock = LeaseLedger(self.db.path, clock=lambda: next(ticks))
+        def apply(cx):
+            cx.execute("CREATE TABLE app_effects (value TEXT)")
+            cx.execute("INSERT INTO app_effects VALUES ('must-rollback')")
+        with self.assertRaisesRegex(AdmissionError, "finite positive epoch"):
+            bad_clock.apply_fenced_sqlite_effect(
+                "job-0", "workerA", lease["fence"],
+                effect_id="overflow-clock", payload_sha256=DIGEST, apply=apply)
+        with sqlite3.connect(self.db.path) as cx:
+            self.assertIsNone(cx.execute(
+                "SELECT name FROM sqlite_master WHERE name='app_effects'").fetchone())
+            self.assertIsNone(cx.execute(
+                "SELECT name FROM sqlite_master WHERE name='fenced_effects'").fetchone())
+
 
 
 if __name__ == "__main__":
