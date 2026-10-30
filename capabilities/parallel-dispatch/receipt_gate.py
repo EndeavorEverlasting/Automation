@@ -45,9 +45,15 @@ def _ref(value: Any, label: str) -> str:
 
 
 def _epoch(value: Any, label: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
         raise AdmissionError(f"{label}: invalid epoch")
-    return float(value)
+    try:
+        normalized = float(value)
+    except (OverflowError, ValueError, TypeError) as exc:
+        raise AdmissionError(f"{label}: invalid epoch") from exc
+    if not math.isfinite(normalized):
+        raise AdmissionError(f"{label}: invalid epoch")
+    return normalized
 
 
 def _exact_record(value: Any, fields: frozenset[str], label: str) -> dict[str, Any]:
