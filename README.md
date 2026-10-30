@@ -68,6 +68,11 @@ The short version:
 - secrets and runtime state never belong in source control;
 - "ubiquitous" is a direction backed by validation, not an unsupported compatibility claim.
 
+## Git-provider portability (incubating)
+
+- [Git portability contract](capabilities/git-portability/CAPABILITY.md) — create/verify an offline Git-history bundle, safely restore exact refs, and optionally upload public source through a separately configured Google Drive/rclone adapter. This is **not yet an account-wide backup**, encrypted private mirror, or provider bootstrapper. Tokens/credentials never belong in this repository. TokenCorridor's prompt registry and judgment ownership remain upstream.
+- Run `python -m unittest discover -s tests -p 'test_git_portability.py' -v` for synthetic recovery proof. See the capability's successor gates before deploying unattended.
+
 ## Capabilities
 
 Admitted capabilities:

@@ -4,6 +4,10 @@
 AgentSwitchboard is a retired product; source evidence and verified legacy caller compatibility only. TokenCorridor owns the product control plane: prompts, routing, dispatch authority, Work Graph, proofs and website. Automation provides reusable mechanisms; native agents/FirstMate are runtimes, not products. Technical cleanup does not reopen retirement. Do not create new AgentSwitchboard product lanes or infer ownership from historical docs.
 
 
+## Git portability incubation — discoverable owner
+
+For loss-of-provider recovery and portable Git profile bootstrapping, consult `capabilities/git-portability/CAPABILITY.md` and its `git-portability/v1` CLI/receipt contract. Do not reinvent a prompt registry or provider credentials. The local public repo bundle/restore proof is not private-estate backup or live Google Drive publication proof. Honor the incumbent seam-boundary and migration-collision gates.
+
 ## Repository identity
 
 This repository is a **ubiquitous automation substrate**.
