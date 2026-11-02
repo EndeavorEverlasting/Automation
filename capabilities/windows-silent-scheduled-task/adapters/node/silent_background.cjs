@@ -68,6 +68,9 @@ function spawnBackground(executable, args = [], options = {}) {
     writeReceipt(location, packet);
     return { status: packet.status, receiptPath: location, child: null };
   }
+  // Fail closed before scheduled execution when private diagnostics are
+  // unavailable. Do not make intentional app launches depend on this store.
+  if (executionClass === "SILENT_BACKGROUND") writeReceipt(location, packet);
   // stdio ignore avoids display and surprise input; existing consumer-owned
   // writers should retain detailed private output logs independently.
   const child = spawn(executable, args, {
@@ -77,19 +80,19 @@ function spawnBackground(executable, args = [], options = {}) {
   });
   packet.status = "SPAWNED_NOT_CERTIFIED";
   packet.pid = child.pid == null ? null : child.pid;
-  writeReceipt(location, packet);
+  if (executionClass === "SILENT_BACKGROUND") writeReceipt(location, packet);
   child.on("error", (err) => {
     packet.status = "LAUNCH_FAILED";
     packet.reason_code = err.code || err.name || "CHILD_ERROR";
-    writeReceipt(location, packet);
+    if (executionClass === "SILENT_BACKGROUND") writeReceipt(location, packet);
   });
   child.on("exit", (code, signal) => {
     if (packet.status === "LAUNCH_FAILED") return;
     packet.status = signal ? "TERMINATED" : (code === 0 ? "SUCCEEDED" : "NONZERO");
     packet.returncode = code;
     if (signal) packet.signal = signal;
-    writeReceipt(location, packet);
+    if (executionClass === "SILENT_BACKGROUND") writeReceipt(location, packet);
   });
-  return { status: packet.status, receiptPath: location, child };
+  return { status: packet.status, receiptPath: executionClass === "SILENT_BACKGROUND" ? location : null, child };
 }
 module.exports = { CONTRACT, decision, spawnBackground };
