@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "automation.entire-local-continuous.receipt/v1",
+  "title": "Entire-local continuous development receipt",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "contract_id",
+    "repository",
+    "entire_classification",
+    "blockers",
+    "ready_for_afk_continuous",
+    "proof_ceiling"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "automation.entire-local-continuous.receipt/v1"
+    },
+    "contract_id": {
+      "type": "string",
+      "const": "automation.entire-local-continuous/v1"
+    },
+    "repository": { "type": "string", "minLength": 1 },
+    "entire_classification": { "type": "object" },
+    "workflow_invariance": { "type": ["object", "null"] },
+    "afk_admission": { "type": ["object", "null"] },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "blockers": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "ready_for_afk_continuous": { "type": "boolean" },
+    "proof_ceiling": { "type": "string" }
+  }
+}

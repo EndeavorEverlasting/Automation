@@ -1,0 +1,6 @@
+{
+  "enabled": true,
+  "agents": ["cursor"],
+  "active_sessions": [],
+  "error": null
+}

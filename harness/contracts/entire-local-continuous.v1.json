@@ -1,0 +1,35 @@
+{
+  "contract_id": "automation.entire-local-continuous/v1",
+  "title": "Entire-local continuous development admission",
+  "owner": "capabilities/entire-local-continuous",
+  "entrypoint": "capabilities/entire-local-continuous/continuous_local.py",
+  "related_contracts": [
+    "automation.windows-silent-scheduled-task.registry/v1",
+    "automation.silent-background/v1",
+    "endeavor.entire-fleet-plan/v1"
+  ],
+  "invariants": [
+    "GitHub Actions is optional evidence and must remain unchanged by Entire enablement lanes",
+    "Scheduled AFK work must admit through windows-silent-scheduled-task with SILENT_BACKGROUND and pythonw",
+    "Initial Entire enablement is local-only with session push skipped until remote checkpoint policy is resolved",
+    "Admission classification is not live enablement, due-time observation, or fullscreen certification"
+  ],
+  "blocker_states": [
+    "ENTIRE_MISSING",
+    "DIRTY_BLOCKED",
+    "NOT_SET_UP",
+    "DOCTOR_FAILED",
+    "WORKFLOW_DRIFT",
+    "REMOTE_PUSH_WITHOUT_POLICY",
+    "ACTIONS_REQUIRED_CLAIM",
+    "SILENCE_BYPASS",
+    "CONSOLE_CRON_PROPOSED",
+    "INTERACTIVE_SCHEDULED_CLASS"
+  ],
+  "proof_ceiling": "SUPPLIED_EVIDENCE_CLASSIFICATION",
+  "forbidden_claims": [
+    "Actions green is required for AFK continuous development",
+    "SILENT_CERTIFIED from admit-afk alone",
+    "Remote checkpoint push authorized by local enable"
+  ]
+}

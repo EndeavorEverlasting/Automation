@@ -1,0 +1,12 @@
+{
+  "job_id": "noisy_agent_cron",
+  "task_name": "AgentInventedConsoleCron",
+  "silence_owner": "custom-local-script",
+  "execution_class": "INTERACTIVE",
+  "scheduled_execute": "powershell.exe",
+  "actions_policy": "GITHUB_ACTIONS_REQUIRED",
+  "entire_mode": "PUSH_SESSIONS",
+  "entire_enable_flags": ["--agent", "cursor"],
+  "may_disrupt_fullscreen": true,
+  "preserves_existing_clock": false
+}

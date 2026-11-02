@@ -48,6 +48,13 @@ jobs:
           python -m py_compile capabilities/windows-silent-scheduled-task/core/*.py capabilities/windows-silent-scheduled-task/silent_cron.py
           python capabilities/windows-silent-scheduled-task/silent_cron.py render --registry capabilities/windows-silent-scheduled-task/fixtures/registry.synthetic.v1.json --job-id demo_tick --repo-root capabilities/windows-silent-scheduled-task
 
+      - name: Entire-local continuous admission gates
+        run: |
+          python -m unittest discover -s capabilities/entire-local-continuous/tests -p 'test_*.py' -v
+          python -m py_compile capabilities/entire-local-continuous/core/continuous_local.py capabilities/entire-local-continuous/continuous_local.py
+          python capabilities/entire-local-continuous/continuous_local.py admit-afk --proposal capabilities/entire-local-continuous/fixtures/afk-proposal.admitted.v1.json
+          python capabilities/entire-local-continuous/continuous_local.py admit-afk --proposal capabilities/entire-local-continuous/fixtures/afk-proposal.console-rejected.v1.json && exit 1 || test $? -eq 2
+
       - name: Set up Node for SILENT_BACKGROUND adapter
         uses: actions/setup-node@v4
         with:

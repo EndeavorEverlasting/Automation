@@ -17,6 +17,11 @@ future consumers) needs the same silent-launch contract. Product tick *scripts*
 stay in the consumer; the reusable launch/register/classify machinery belongs
 here.
 
+AFK continuous development that also uses Entire CLI / Actions-optional proof
+must pass `capabilities/entire-local-continuous` admission **before** inventing
+a new scheduler job. Silence alone does not authorize Actions-required loops or
+remote Entire checkpoint push.
+
 ## Prior art → incubation
 
 | Source | What moved here |

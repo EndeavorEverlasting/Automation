@@ -16,3 +16,9 @@ playwright-profile/
 .env
 .env.*
 !.env.example
+
+# Entire CLI local session/checkpoint metadata (never commit transcripts)
+.entire/
+# Cursor Entire hooks installed by local `entire enable --local`
+.cursor/hooks.json
+# Preserve tracked Cursor rules under .cursor/rules/
