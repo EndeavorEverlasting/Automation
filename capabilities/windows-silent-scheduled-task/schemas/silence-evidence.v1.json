@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "automation.windows-silent-scheduled-task.silence-evidence/v1",
+  "title": "Read-only Windows scheduled-task silence evidence snapshot",
+  "type": "object",
+  "required": [
+    "schema",
+    "tasks"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "automation.windows-silent-scheduled-task.silence-evidence/v1"
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "task_name",
+          "task_to_run",
+          "hidden"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "task_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "task_to_run": {
+            "type": "string",
+            "minLength": 1
+          },
+          "hidden": {
+            "type": "boolean"
+          },
+          "launcher_no_window": {
+            "type": "boolean",
+            "description": "Explicit consumer claim; never sufficient for certification."
+          },
+          "last_result": {
+            "type": [
+              "string",
+              "integer",
+              "null"
+            ]
+          },
+          "due_time": {
+            "type": "object",
+            "required": [
+              "due_time_matched",
+              "samples",
+              "console_title_hits",
+              "foreground_preserved"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "due_time_matched": {
+                "type": "boolean"
+              },
+              "samples": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "console_title_hits": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "sync_process_samples": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "foreground_preserved": {
+                "type": "boolean"
+              }
+            }
+          },
+          "certification": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "child_processes": {
+                "enum": [
+                  "CERTIFIED",
+                  "UNKNOWN",
+                  "NOT_CERTIFIED"
+                ]
+              },
+              "focus": {
+                "enum": [
+                  "CERTIFIED",
+                  "UNKNOWN",
+                  "NOT_CERTIFIED"
+                ]
+              },
+              "focus_mode": {
+                "enum": [
+                  "fullscreen",
+                  "foreground",
+                  "unknown"
+                ]
+              },
+              "proof_ref": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
