@@ -131,5 +131,28 @@ class SilentBackgroundClassTests(unittest.TestCase):
                 _windows_options({"creationflags": 0x00000008})
 
 
+    def test_missing_private_receipt_blocks_background_before_spawn(self):
+        with tempfile.TemporaryDirectory() as temp, \
+             patch("core.silent_background._persist", side_effect=PermissionError("no receipt")) as persist, \
+             patch("core.silent_background.subprocess.run") as run:
+            guard = SilentBackground(job_id="tick", receipt_dir=Path(temp))
+            with self.assertRaises(PermissionError):
+                guard.execute(["git", "status"])
+            persist.assert_called_once()
+            run.assert_not_called()
+
+    def test_interactive_ui_does_not_need_background_receipt_store(self):
+        with tempfile.TemporaryDirectory() as temp, \
+             patch("core.silent_background._persist", side_effect=PermissionError("no receipt")), \
+             patch("core.silent_background.subprocess.run") as run:
+            run.return_value.returncode = 0
+            result = SilentBackground(job_id="manual", receipt_dir=Path(temp)).execute(
+                ["my-app.exe"], execution_class="INTERACTIVE"
+            )
+            self.assertEqual(result["status"], "SUCCEEDED")
+            self.assertIsNone(result["receipt_path"])
+            run.assert_called_once()
+
+
 if __name__ == "__main__":
     unittest.main()
