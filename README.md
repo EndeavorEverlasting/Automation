@@ -73,6 +73,18 @@ The short version:
 - [Git portability contract](capabilities/git-portability/CAPABILITY.md) — create/verify an offline Git-history bundle, safely restore exact refs, and optionally upload public source through a separately configured Google Drive/rclone adapter. This is **not yet an account-wide backup**, encrypted private mirror, or provider bootstrapper. Tokens/credentials never belong in this repository. TokenCorridor's prompt registry and judgment ownership remain upstream.
 - Run `python -m unittest discover -s tests -p 'test_git_portability.py' -v` for synthetic recovery proof. See the capability's successor gates before deploying unattended.
 
+## Entire-local continuous development (incubating)
+
+- [Entire-local continuous contract](capabilities/entire-local-continuous/CAPABILITY.md) — Actions-optional AFK continuity: classify Entire status, prove `.github/workflows` invariance, and **fail-closed admit** silent cron proposals so agents cannot ship console hosts, Actions-required loops, or remote checkpoint push without policy.
+- Pair with [windows-silent-scheduled-task](capabilities/windows-silent-scheduled-task/CAPABILITY.md) for `pythonw` / `SILENT_BACKGROUND`. Fleet adoption scripts stay in github-config.
+- Seam review: [docs/ENTIRE_LOCAL_CONTINUOUS_SEAM_REVIEW.md](docs/ENTIRE_LOCAL_CONTINUOUS_SEAM_REVIEW.md).
+
+```powershell
+python capabilities/entire-local-continuous/continuous_local.py admit-afk `
+  --proposal capabilities/entire-local-continuous/fixtures/afk-proposal.admitted.v1.json
+python -m unittest discover -s capabilities/entire-local-continuous/tests -p 'test_*.py' -v
+```
+
 ## Capabilities
 
 Admitted capabilities:
@@ -85,6 +97,7 @@ Admitted capabilities:
 - [`document-formatting`](capabilities/document-formatting/CAPABILITY.md) — status `COMPILER_IR_PROTOTYPE_PROVEN_GOOGLE_DOCS_PLAN_ADAPTER_PROVEN`; reusable consumer profiles plus deterministic semantic compilation to provider-neutral IR and a fail-closed Google Docs adapter plan.
 - [`ghidra-bootstrap`](capabilities/ghidra-bootstrap/CAPABILITY.md) — status `CORE_IMPLEMENTED_WINDOWS_HOST`; deterministic agent-free Ghidra download/verify/install plus non-interactive `USER_AGREEMENT=ACCEPT` (same gate as GUI **I agree**).
 - [`windows-silent-scheduled-task`](capabilities/windows-silent-scheduled-task/CAPABILITY.md) — status `CORE_IMPLEMENTED_WINDOWS_HOST`; reusable `pythonw.exe` + Hidden Task Scheduler registration/classification so consumer repos stop forking noisy console cron. Live `--apply` is operator-gated; synthetic fixtures prove CI.
+- [`entire-local-continuous`](capabilities/entire-local-continuous/CAPABILITY.md) — status `CORE_IMPLEMENTED_OFFLINE_ADMISSION`; Entire + silence admission for Actions-optional AFK continuous development. Live Entire enable and fullscreen certification remain separate gates.
 
 Windows silent scheduled task:
 

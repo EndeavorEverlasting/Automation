@@ -1,0 +1,63 @@
+{
+  "schema_version": "automation-capability/v1",
+  "capability_id": "entire-local-continuous",
+  "status": "CORE_IMPLEMENTED_OFFLINE_ADMISSION",
+  "purpose": "Incubate Actions-optional continuous local development: Entire CLI session/checkpoint continuity, workflow-digest invariance, and fail-closed AFK silent-cron admission so agents cannot invent console-flashing jobs or treat GitHub Actions as required velocity.",
+  "core_owns": [
+    "entire status classification into typed adoption/blocker states",
+    "GitHub Actions workflow digest invariance check",
+    "AFK continuous-loop admission against silence + Entire + Actions-optional rules",
+    "portable continuous-local receipts"
+  ],
+  "adapters_own": [
+    "fleet inventory and workstation enable scripts (github-config)",
+    "live entire enable/doctor/session mutation",
+    "consumer tick scripts and Task Scheduler apply",
+    "repository-owned validators used as semantic proof"
+  ],
+  "core_owner": "capabilities/entire-local-continuous/core/",
+  "entrypoint": "capabilities/entire-local-continuous/continuous_local.py",
+  "entrypoints": {
+    "cli": "capabilities/entire-local-continuous/continuous_local.py",
+    "classify": "capabilities/entire-local-continuous/continuous_local.py classify-status",
+    "workflows": "capabilities/entire-local-continuous/continuous_local.py check-workflows",
+    "admit": "capabilities/entire-local-continuous/continuous_local.py admit-afk",
+    "receipt": "capabilities/entire-local-continuous/continuous_local.py receipt"
+  },
+  "artifacts": {
+    "contract": "automation.entire-local-continuous/v1",
+    "receipt_schema": "capabilities/entire-local-continuous/schemas/continuous-local-receipt.v1.json",
+    "proposal_schema": "capabilities/entire-local-continuous/schemas/afk-proposal.v1.json",
+    "admitted_fixture": "capabilities/entire-local-continuous/fixtures/afk-proposal.admitted.v1.json",
+    "rejected_fixture": "capabilities/entire-local-continuous/fixtures/afk-proposal.console-rejected.v1.json"
+  },
+  "related_owners": {
+    "silence": "capabilities/windows-silent-scheduled-task",
+    "fleet_entire_adoption": "EndeavorEverlasting/github-config docs/entire/",
+    "prompt_kit": "EndeavorEverlasting/TokenCorridor"
+  },
+  "runtime_boundary": {
+    "default_mutation": "NONE",
+    "network": "none",
+    "supported_execution": [
+      "CI_SYNTHETIC_ADMISSION",
+      "OFFLINE_RECEIPT_CLASSIFICATION",
+      "OPERATOR_SUPPLIED_ENTIRE_STATUS"
+    ]
+  },
+  "non_goals": [
+    "owning github-config fleet inventory or Invoke-EntireRepoLocalAdoption.ps1",
+    "replacing windows-silent-scheduled-task registration",
+    "publishing Entire checkpoints or deciding remote checkpoint destinations",
+    "claiming live fullscreen silence from admission alone",
+    "making GitHub Actions green a prerequisite for AFK continuous development"
+  ],
+  "production_use_path": "UNDECLARED",
+  "proof_ceiling": "Synthetic fixtures prove classification, workflow invariance, and AFK admission. Live entire enable/doctor and due-time/fullscreen silence remain separate proof gates.",
+  "prior_art": [
+    "github-config docs/entire/ADOPTION-PLAN.md + Invoke-EntireRepoLocalAdoption.ps1",
+    "PiShark ENTIRE-LOCAL-PROOF-GROUNDWORK Actions-optional offline floor",
+    "EscapeHatch submission-sync pythonw SILENT_BACKGROUND consumer",
+    "Automation windows-silent-scheduled-task PR #40/#41"
+  ]
+}

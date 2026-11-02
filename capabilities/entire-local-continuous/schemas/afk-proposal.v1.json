@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "automation.entire-local-continuous.afk-proposal/v1",
+  "title": "AFK continuous development admission proposal",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "job_id": { "type": "string", "minLength": 1 },
+    "task_name": { "type": "string", "minLength": 1 },
+    "schedule_kind": { "type": "string" },
+    "silence_owner": {
+      "type": "string",
+      "const": "capabilities/windows-silent-scheduled-task"
+    },
+    "execution_class": {
+      "type": "string",
+      "enum": ["SILENT_BACKGROUND"]
+    },
+    "scheduled_execute": { "type": "string", "minLength": 1 },
+    "launcher": { "type": "string", "minLength": 1 },
+    "actions_policy": {
+      "type": "string",
+      "enum": ["OPTIONAL_UNCHANGED", "ABSENT_OK", "OPTIONAL"]
+    },
+    "entire_mode": {
+      "type": "string",
+      "enum": ["LOCAL_ONLY_INITIAL", "LOCAL_ONLY", "ENABLED_LOCAL", "VALIDATED_LOCAL"]
+    },
+    "entire_enable_flags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "may_disrupt_fullscreen": { "type": "boolean", "const": false },
+    "preserves_existing_clock": { "type": "boolean" }
+  }
+}

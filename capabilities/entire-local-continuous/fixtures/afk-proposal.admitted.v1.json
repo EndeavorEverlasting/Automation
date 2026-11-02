@@ -1,0 +1,12 @@
+{
+  "job_id": "demo_afk_tick",
+  "task_name": "AutomationDemoAfkTick",
+  "silence_owner": "capabilities/windows-silent-scheduled-task",
+  "execution_class": "SILENT_BACKGROUND",
+  "scheduled_execute": "pythonw.exe",
+  "actions_policy": "OPTIONAL_UNCHANGED",
+  "entire_mode": "LOCAL_ONLY_INITIAL",
+  "entire_enable_flags": ["--local", "--skip-push-sessions", "--agent", "cursor"],
+  "may_disrupt_fullscreen": false,
+  "preserves_existing_clock": true
+}

@@ -8,6 +8,17 @@ AgentSwitchboard is a retired product; source evidence and verified legacy calle
 
 For loss-of-provider recovery and portable Git profile bootstrapping, consult `capabilities/git-portability/CAPABILITY.md` and its `git-portability/v1` CLI/receipt contract. Do not reinvent a prompt registry or provider credentials. The local public repo bundle/restore proof is not private-estate backup or live Google Drive publication proof. Honor the incumbent seam-boundary and migration-collision gates.
 
+## Entire-local continuous development + silent AFK cron — discoverable owner
+
+Automation incubates **Actions-optional continuous local development**. Do not invent console-flashing cron jobs, treat GitHub Actions as required AFK velocity, or push Entire session transcripts to a public origin by default.
+
+Mandatory owners before creating/repairing scheduled AFK work:
+
+1. `capabilities/entire-local-continuous/CAPABILITY.md` — admit AFK proposals (`admit-afk`), classify `entire status --json`, prove workflow digest invariance.
+2. `capabilities/windows-silent-scheduled-task/CAPABILITY.md` — `pythonw.exe`, Hidden registration, `SILENT_BACKGROUND`, silence evidence audit, non-bypassable registry admission.
+
+Fleet Entire inventory/adoption scripts remain in `EndeavorEverlasting/github-config` (`docs/entire/`). Live enablement stays local-first: `entire enable --local --skip-push-sessions --agent <used>`. Ignore `.entire/`; never mutate `.github/workflows/**` in an Entire lane. Admission is not due-time or fullscreen certification.
+
 ## Repository identity
 
 This repository is a **ubiquitous automation substrate**.
