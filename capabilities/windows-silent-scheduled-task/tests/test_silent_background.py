@@ -106,5 +106,30 @@ class SilentBackgroundClassTests(unittest.TestCase):
                 guard.execute(["git", "status"], stdout=subprocess.PIPE)
 
 
+    def test_explicit_interactive_class_preserves_inherited_io(self):
+        with tempfile.TemporaryDirectory() as temp, patch("core.silent_background.subprocess.run") as run:
+            run.return_value.returncode = 0
+            guard = SilentBackground(job_id="manual", receipt_dir=Path(temp))
+            receipt = guard.execute(["unknown-gui.exe"], execution_class="INTERACTIVE")
+            self.assertEqual(receipt["status"], "SUCCEEDED")
+            options = run.call_args.kwargs
+            self.assertNotIn("stdin", options)
+            self.assertNotIn("capture_output", options)
+            self.assertNotIn("creationflags", options)
+            self.assertEqual(receipt["execution_class"], "INTERACTIVE")
+
+    def test_windows_new_console_conflict_is_rejected(self):
+        class Info:
+            def __init__(self):
+                self.dwFlags = 0
+                self.wShowWindow = 1
+        with patch("core.silent_background.sys.platform", "win32"), \
+             patch("core.silent_background.subprocess.STARTUPINFO", Info, create=True):
+            with self.assertRaisesRegex(ValueError, "conflict"):
+                _windows_options({"creationflags": 0x00000010})
+            with self.assertRaisesRegex(ValueError, "conflict"):
+                _windows_options({"creationflags": 0x00000008})
+
+
 if __name__ == "__main__":
     unittest.main()
