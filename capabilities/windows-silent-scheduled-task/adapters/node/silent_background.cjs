@@ -73,7 +73,7 @@ function spawnBackground(executable, args = [], options = {}) {
   const child = spawn(executable, args, {
     cwd: options.cwd, env: options.env,
     windowsHide: executionClass === "SILENT_BACKGROUND",
-    shell: false, stdio: "ignore"
+    shell: false, stdio: executionClass === "SILENT_BACKGROUND" ? "ignore" : "inherit"
   });
   packet.status = "SPAWNED_NOT_CERTIFIED";
   packet.pid = child.pid == null ? null : child.pid;
@@ -84,6 +84,7 @@ function spawnBackground(executable, args = [], options = {}) {
     writeReceipt(location, packet);
   });
   child.on("exit", (code, signal) => {
+    if (packet.status === "LAUNCH_FAILED") return;
     packet.status = signal ? "TERMINATED" : (code === 0 ? "SUCCEEDED" : "NONZERO");
     packet.returncode = code;
     if (signal) packet.signal = signal;
