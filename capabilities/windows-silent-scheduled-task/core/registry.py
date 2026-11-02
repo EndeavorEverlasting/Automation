@@ -64,3 +64,19 @@ def job_by_id(job_id: str, path: Path) -> dict[str, Any]:
         if str(job["id"]) == job_id:
             return job
     raise KeyError(f"unknown job id {job_id!r}")
+
+def validate_registration_inputs(registry: Path, repo_root: Path) -> list[dict[str, Any]]:
+    """Validate every registered job before any render or live scheduler mutation.
+
+    A valid target cannot be installed while any sibling is unsafe. Use the
+    returned validated snapshot downstream; do not re-read mutable input.
+    """
+    root = repo_root.resolve()
+    jobs = list_jobs(registry)
+    for job in jobs:
+        script = (root / job["script"]).resolve()
+        if root not in script.parents or not script.is_file() or script.suffix.lower() != ".py":
+            raise ValueError(
+                f"job {job['id']}: script must be an existing Python file inside repo-root"
+            )
+    return jobs

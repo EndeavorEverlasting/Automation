@@ -262,5 +262,45 @@ class SilentCronCapabilityTests(unittest.TestCase):
                 load_registry(reg)
 
 
+class DirectEnsureAdmissionTests(unittest.TestCase):
+    """Protect the direct render/apply path, not just the preflight command."""
+
+    def test_invalid_other_job_blocks_target_before_host_probe(self):
+        from unittest.mock import patch
+        import tempfile
+        from core.ensure import ensure_job
+        fixture = json.loads((FIXTURES / "registry.synthetic.v1.json").read_text())
+        fixture["jobs"].append(dict(fixture["jobs"][0], id="unsafe_second",
+                                    task_name="Unsafe Second", script="CAPABILITY.md"))
+        with tempfile.TemporaryDirectory() as temp:
+            registry = Path(temp) / "registry.json"
+            registry.write_text(json.dumps(fixture))
+            with patch("core.ensure.resolve_pythonw", side_effect=AssertionError("host touched")):
+                outcome = ensure_job("demo_tick", registry=registry, repo_root=CAP, apply=True)
+        self.assertFalse(outcome["ok"])
+        self.assertIn("unsafe_second", outcome["error"])
+
+    def test_unknown_job_is_typed_rejection(self):
+        from core.ensure import ensure_job
+        outcome = ensure_job("not_registered", registry=FIXTURES / "registry.synthetic.v1.json",
+                             repo_root=CAP, apply=False)
+        self.assertFalse(outcome["ok"])
+        self.assertIn("unknown job id", outcome["error"])
+
+    def test_preflight_rejects_same_invalid_sibling(self):
+        import tempfile
+        fixture = json.loads((FIXTURES / "registry.synthetic.v1.json").read_text())
+        fixture["jobs"].append(dict(fixture["jobs"][0], id="unsafe_second",
+                                    task_name="Unsafe Second", script="CAPABILITY.md"))
+        with tempfile.TemporaryDirectory() as temp:
+            registry = Path(temp) / "registry.json"
+            registry.write_text(json.dumps(fixture))
+            proc = subprocess.run([sys.executable, str(CLI), "preflight", "--registry",
+                                   str(registry), "--repo-root", str(CAP)],
+                                  capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 2)
+        self.assertEqual(json.loads(proc.stdout)["status"], "REJECTED_PREFLIGHT")
+
+
 if __name__ == "__main__":
     unittest.main()

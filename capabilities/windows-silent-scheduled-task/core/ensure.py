@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from .pythonw import resolve_pythonw, task_to_run_is_silent_pythonw
-from .registry import job_by_id
+from .registry import validate_registration_inputs
 from .schtasks_parse import classify_status, parse_schtasks_list
 from .win_subprocess import run as discreet_run
 
@@ -99,13 +99,16 @@ def ensure_job(
     apply: bool = False,
 ) -> dict[str, Any]:
     """Render (and optionally apply) a silent registration for one job."""
-    job = job_by_id(job_id, registry)
     try:
+        jobs = validate_registration_inputs(registry, repo_root)
+        job = next((item for item in jobs if item["id"] == job_id), None)
+        if job is None:
+            raise KeyError(f"unknown job id {job_id!r}")
         pythonw = resolve_pythonw() if apply else Path("C:/Synthetic/Python/pythonw.exe")
         script_path = (repo_root / str(job["script"])).resolve()
         if repo_root.resolve() not in script_path.parents:
             raise ValueError("script must remain inside declared repository root")
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError, KeyError) as exc:
         return {"ok": False, "id": job_id, "action": "ensure", "error": str(exc), "apply": apply}
     if not script_path.is_file():
         return {
