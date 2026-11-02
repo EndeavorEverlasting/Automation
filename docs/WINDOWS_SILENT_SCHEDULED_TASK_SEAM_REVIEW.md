@@ -87,3 +87,26 @@ This admission does **not** claim those deletions are already complete.
 | Live operator | `--apply` + `query-task` on a Windows workstation |
 
 CI must not claim live Task Scheduler registration.
+
+
+## Addendum — due-time / multi-consumer evidence seam (2026-11-02)
+
+- **Owner:** Automation core owns evidence classification; consumers retain
+  task registration, observation collection, scheduler permissions, tick scripts,
+  and any live focus/fullscreen certification.
+- **Semantic input/output:** `automation.windows-silent-scheduled-task.silence-evidence/v1`
+  → `automation.windows-silent-scheduled-task.silence-audit/v1`.
+- **Normal consumer knowledge:** task ID/name, scheduler command, hidden bit,
+  optional due-time sampling and explicit certification, plus stable CLI.
+  No donor repository, internal scheduler ID, prompt registry or user-specific path.
+- **Discoverability:** root README → capability CAPABILITY.md → CLI/schema/tests.
+- **Portability canary:** test copies only `core/silence_audit.py` into an
+  isolated folder, imports and classifies without Automation internals.
+- **Negative cases:** console-subsystem launcher cannot be promoted by zero-hit
+  observation; a console hit overrides prior certification; Hidden PowerShell
+  remains a review item; absent fullscreen/child proof never certifies.
+- **Remaining adoption:** at least one live downstream consumer must adopt the
+  versioned audit interface, remove duplicate classification, and prove a live
+  due-time and fullscreen focus session before broad certification claims.
+- **Result:** isolated classifier portable in synthetic tests; downstream scar
+  deletion and Windows runtime certification remain open.
