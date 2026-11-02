@@ -110,3 +110,28 @@ CI must not claim live Task Scheduler registration.
   due-time and fullscreen focus session before broad certification claims.
 - **Result:** isolated classifier portable in synthetic tests; downstream scar
   deletion and Windows runtime certification remain open.
+
+
+## Addendum — SILENT_BACKGROUND child-chain and installer seam (2026-11-02)
+
+- **Owner:** Automation defines the opt-in execution class, Python policy,
+  Node child-spawn adapter, read-only reinstall preflight, and private result
+  receipt schema. Consumer applications still own clocks, ticks, intentional
+  user-facing UI, detailed private logs, authentication and operator decisions.
+- **Minimal consumer inputs:** `job_id`, explicit argument vector, optionally
+  approved console tools, and versioned registry with `SILENT_BACKGROUND`.
+  Consumers do not require donor paths, upstream prompt routers or a new daemon.
+- **Normal outcomes:** `DEFERRED_INTERACTION`, `SPAWNED_NOT_CERTIFIED`,
+  `SUCCEEDED`, `NONZERO`, `TIMEOUT`, `LAUNCH_FAILED` plus reason codes.
+- **Enforcement limits:** `CREATE_NO_WINDOW` / `windowsHide` protects direct
+  console launches, not arbitrary GUI descendants. Each nested spawn must opt
+  into the shared class; close the gap with live child/focus certification.
+- **Isolated canary:** Python module imports when copied alone, and Node adapter
+  requires only Node built-ins. Each has negative UI/installer/shell tests.
+- **Consumer migration:** retain existing schedules and application receipts;
+  pin a tested Automation revision, integrate its wrapper at product-owned
+  child spawn sites and installer preflight, then remove replaced local forks
+  only after parity and due-time observation. Track consumer adoption
+  independently from this upstream implementation.
+- **Proof state:** upstream portable execution surface implemented and gated in
+  CI; no unattended production activation or real fullscreen game run is claimed.
