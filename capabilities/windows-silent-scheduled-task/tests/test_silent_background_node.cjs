@@ -51,3 +51,23 @@ test("Node Powershell policy requires noninteractive mode", () => {
   assert.equal(decision("pwsh.exe", ["-NonInteractive", "-NoProfile", "-Command", "Read-Host"]), "POWERSHELL_INTERACTIVE_ACTION");
   assert.equal(decision("pwsh.exe", ["-NonInteractive", "-NoProfile", "-File", "tick.ps1"]), null);
 });
+
+
+test("Node receipt path failure blocks unattended launch before spawning", () => temporary((dir) => {
+  const notDirectory = path.join(dir, "regular-file");
+  fs.writeFileSync(notDirectory, "not-a-directory");
+  assert.throws(() => spawnBackground(process.execPath, ["-e", "process.exit(0)"],
+    { jobId: "tick", receiptDir: notDirectory }), /ENOTDIR|EEXIST/);
+}));
+test("Intentional interactive launch keeps inherited stdio and does not require receipts", async () => temporary(async (dir) => {
+  const notDirectory = path.join(dir, "regular-file");
+  fs.writeFileSync(notDirectory, "not-a-directory");
+  const p = spawnBackground(process.execPath, ["-e", "process.exit(0)"],
+    { jobId: "manual", receiptDir: notDirectory, executionClass: "INTERACTIVE" });
+  assert.equal(p.receiptPath, null);
+  assert.ok(p.child);
+  await new Promise((resolve, reject) => {
+    p.child.once("exit", resolve);
+    p.child.once("error", reject);
+  });
+}));
