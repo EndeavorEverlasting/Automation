@@ -26,6 +26,7 @@ from core.ensure import (  # noqa: E402
 )
 from core.pythonw import resolve_pythonw  # noqa: E402
 from core.registry import list_jobs, load_registry  # noqa: E402
+from core.silence_audit import audit_evidence  # noqa: E402
 
 
 def _print(obj: object) -> None:
@@ -40,6 +41,13 @@ def main(argv: list[str] | None = None) -> int:
 
     p_fix = sub.add_parser("classify-fixture", help="Classify a captured schtasks /FO LIST dump")
     p_fix.add_argument("--fixture", type=Path, required=True)
+
+    p_audit = sub.add_parser("audit-evidence", help="Read-only, multi-repository silence evidence classification")
+    p_audit.add_argument("--input", type=Path, required=True, help="JSON snapshot using silence-evidence/v1")
+
+    p_pre = sub.add_parser("preflight", help="Read-only preinstall check of every scheduled SILENT_BACKGROUND job")
+    p_pre.add_argument("--registry", type=Path, required=True)
+    p_pre.add_argument("--repo-root", type=Path, required=True)
 
     p_list = sub.add_parser("list-jobs", help="List jobs from a consumer registry")
     p_list.add_argument("--registry", type=Path, required=True)
@@ -72,6 +80,42 @@ def main(argv: list[str] | None = None) -> int:
         text = args.fixture.read_text(encoding="utf-8")
         _print(classify_schtasks_list(text, present=True))
         return 0
+
+    if args.cmd == "audit-evidence":
+        try:
+            snapshot = json.loads(args.input.read_text(encoding="utf-8"))
+            _print(audit_evidence(snapshot))
+            return 0
+        except (OSError, ValueError, TypeError) as exc:
+            _print({"ok": False, "error": type(exc).__name__, "reason": str(exc), "mutation": "NONE"})
+            return 2
+
+    if args.cmd == "preflight":
+        try:
+            jobs = list_jobs(args.registry)
+            root = args.repo_root.resolve()
+            checked = []
+            for job in jobs:
+                script = (root / job["script"]).resolve()
+                if root not in script.parents or not script.is_file() or script.suffix.lower() != ".py":
+                    raise ValueError(f"job {job['id']}: script must be an existing Python file inside repo-root")
+                checked.append({
+                    "id": job["id"], "task_name": job["task_name"],
+                    "execution_class": job["execution_class"],
+                    "registration_launcher": "pythonw.exe", "hidden": True,
+                    "interval_min": job["interval_min"],
+                })
+            _print({
+                "ok": True, "status": "REGISTRATION_POLICY_CONFORMANT",
+                "contract": "automation.silent-background/v1",
+                "mutation": "NONE", "job_count": len(checked), "jobs": checked,
+                "proof_ceiling": "READ_ONLY_INSTALL_PREFLIGHT_NOT_RUNTIME_CERTIFICATION"
+            })
+            return 0
+        except (OSError, ValueError, TypeError) as exc:
+            _print({"ok": False, "status": "REJECTED_PREFLIGHT", "mutation": "NONE",
+                    "error": type(exc).__name__, "reason": str(exc)})
+            return 2
 
     if args.cmd == "list-jobs":
         load_registry(args.registry)

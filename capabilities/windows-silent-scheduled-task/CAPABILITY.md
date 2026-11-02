@@ -73,3 +73,152 @@ python capabilities/windows-silent-scheduled-task/silent_cron.py ensure `
 
 - **Synthetic (CI):** fixture classify + registry load + PowerShell render contains `pythonw` and `-Hidden`
 - **Live:** operator `--apply` on Windows; verify `silent_pythonw=true` via `query-task` or Task Scheduler UI
+
+
+## Multi-repository silence evidence audit (read-only)
+
+The capability now accepts a **supplied snapshot** from any consumer, without
+opening Task Scheduler or mutating tasks. Each consumer owns collection of
+installed-task metadata, due-time samples, and child/focus certification;
+Automation owns their stable classification and comparison.
+
+```powershell
+python capabilities/windows-silent-scheduled-task/silent_cron.py audit-evidence `
+  --input capabilities/windows-silent-scheduled-task/fixtures/silence-evidence.synthetic.v1.json
+```
+
+Input schema: `schemas/silence-evidence.v1.json` with semantic ID
+`automation.windows-silent-scheduled-task.silence-evidence/v1`.
+Output semantic ID: `automation.windows-silent-scheduled-task.silence-audit/v1`.
+
+The input `tasks[]` accepts independent task IDs, exact Task Scheduler
+`task_to_run`, explicit `hidden`, optional `launcher_no_window`,
+`last_result`, `due_time` counts (including zero-flash and foreground checks),
+and a separately sourced `certification` record. It works across any number
+of repositories without importing their runtime modules. Never put actual
+workstation paths, private logs, or employee/client metadata into tracked
+fixtures.
+
+**Independent output dimensions:**
+
+- `launcher_class`: PYTHONW, HIDDEN_POWERSHELL,
+  DECLARED_WINDOWLESS_NODE, CONSOLE_RISK, UNKNOWN.
+- `launcher_compliant`: whether the supplied launcher meets the metadata gate.
+- `silence_state`: REVIEW, LAUNCHER_COMPLIANT, DUE_TIME_OBSERVED,
+  FLASH_OBSERVED, or SILENT_CERTIFIED.
+- `silence_review`: queue flag distinct from `silence_state`; Hidden
+  PowerShell and declared Node wrappers remain review items until certified.
+- `functional_state`: ZERO, NONZERO, UNKNOWN from task `last_result`.
+  A nonzero tick result is not evidence of a foreground flash.
+- `reason_codes` and summary counts preserve the actual gaps.
+
+**Certification gate:** `SILENT_CERTIFIED` is emitted only when the task is
+launcher-compliant, a matched due-time sample has positive sample count, zero
+console hits and preserved foreground, plus a supplied explicit
+`child_processes=CERTIFIED`, `focus=CERTIFIED`,
+`focus_mode=fullscreen` and nonempty `proof_ref`.
+The audit verifies *the shape and logical sufficiency of reported evidence*,
+not the source receipt's authenticity or actual Windows behavior.
+`proof_ceiling=SUPPLIED_EVIDENCE_CLASSIFICATION_NOT_LIVE_PROVIDER_VALIDATION`
+is always included. A Chrome-foreground sample does not certify a fullscreen
+game, and launcher Hidden alone never certifies the child-process chain.
+
+The implementation is a dependency-light `core/silence_audit.py` module.
+The isolated consumer canary copies that file alone into a temporary directory
+and imports it without Automation or any donor checkout. Consumers can either
+pin and call the stable CLI or copy the capability through an approved versioned
+distribution; avoid independently editing shared classification rules.
+
+Test without workstation mutation:
+
+```powershell
+python -m unittest discover -s capabilities/windows-silent-scheduled-task/tests -p 'test_*.py' -v
+```
+
+No scheduler installation, task repair, full-screen test or live provider
+certification occurs as part of the audit or its synthetic tests.
+
+
+## SILENT_BACKGROUND execution class — chain policy and reinstall guard
+
+Contract: `automation.silent-background/v1` (execution) and
+`automation.silent-background.receipt/v1` (private receipt schema).
+This is an **extension of the same Windows silent scheduled-task capability**,
+not a second cron service. The existing Task Scheduler/AFK/logon triggers,
+app-owned timers, product functions, and product-specific receipt writers stay
+where they are. Intentional application launches remain `INTERACTIVE`.
+
+**Consumer usage (Python child process):**
+
+```python
+from core.silent_background import SilentBackground
+
+policy = SilentBackground(job_id="my-product-tick")
+outcome = policy.execute(["git", "status", "--porcelain"], execution_class="SILENT_BACKGROUND")
+# outcome: SUCCEEDED / NONZERO / DEFERRED_INTERACTION / TIMEOUT / LAUNCH_FAILED
+# private receipt: %LOCALAPPDATA%\Automation\SilentBackground\receipts\
+```
+
+On Windows the policy sets `CREATE_NO_WINDOW` and a hidden `STARTUPINFO`,
+closes stdin, captures bounded result metadata rather than displaying a popup,
+and rejects `shell=True`, `cmd`, GUI/browser/installer launchers, unknown
+executables, and interactive PowerShell calls by default. A consumer may declare
+additional **approved console tools**; that is a provenance/approval decision,
+not a runtime certification. If user input, elevation, authentication or a
+visual installer is necessary, retain the job and emit
+`DEFERRED_INTERACTION` with a private receipt instead of prompting.
+
+**Consumer usage (Node child process):**
+
+```js
+const { spawnBackground } = require("./silent_background.cjs");
+const { status, child, receiptPath } = spawnBackground(
+  "node.exe", ["worker.js"], { jobId: "my-product-tick" }
+);
+```
+
+The distributable Node adapter is
+`adapters/node/silent_background.cjs`; it enforces `windowsHide:true`,
+`shell:false` and ignored stdio for scheduled descendants, and records a
+private lifecycle receipt. It does **not** replace an app's existing
+application-specific log/outbox. An explicit `INTERACTIVE` invocation
+preserves inherited IO and visible application behavior.
+
+**Installer / update hook:** Registries still use
+`automation.windows-silent-scheduled-task.registry/v1`; missing
+`execution_class` defaults to `SILENT_BACKGROUND` for legacy consumers,
+and explicitly declaring `INTERACTIVE` is rejected by this silent
+registration capability. Run a read-only gate before `ensure --apply`:
+
+```powershell
+python capabilities/windows-silent-scheduled-task/silent_cron.py preflight `
+  --registry capabilities/windows-silent-scheduled-task/fixtures/registry.synthetic.v1.json `
+  --repo-root capabilities/windows-silent-scheduled-task
+```
+
+`preflight` validates all job identities and ownership-relative Python scripts,
+rejects duplicate Task Scheduler names, and reports the expected `pythonw`
+and Hidden registration without touching the scheduler. Existing non-Python
+launchers remain consumer-owned until their adapters are independently
+certified; **do not replace/disable them by forcing this Python registration**.
+
+**Proof ladder:** install preflight → launch policy receipt → due-time sample
+→ explicit child-chain and fullscreen focus certification. None may be
+substituted for a later stage. The shared wrapper cannot control arbitrary
+grandchildren that ignore it, or GUI APIs called inside a child; adopt it
+at every subprocess boundary and certify the actual observed chain.
+
+**CI tests:**
+
+```sh
+python -m unittest discover -s capabilities/windows-silent-scheduled-task/tests -p "test_*.py" -v
+node --test capabilities/windows-silent-scheduled-task/tests/test_silent_background_node.cjs
+```
+
+**Consumer adoption:** pin a specific Automation revision; copy its published
+module/adapters unchanged or use a pinned integration. Wire every scheduled
+child launcher and installer preflight, preserve existing clock/cadence and
+receipt writers, run isolated consumer tests, then delete proven duplicates
+with a regression that prevents their return. Do not install a new scheduler,
+change live task configuration, or migrate to app-owned timers without an
+explicitly scoped change and live follow-up validation.

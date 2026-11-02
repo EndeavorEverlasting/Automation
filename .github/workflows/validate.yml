@@ -48,6 +48,14 @@ jobs:
           python -m py_compile capabilities/windows-silent-scheduled-task/core/*.py capabilities/windows-silent-scheduled-task/silent_cron.py
           python capabilities/windows-silent-scheduled-task/silent_cron.py render --registry capabilities/windows-silent-scheduled-task/fixtures/registry.synthetic.v1.json --job-id demo_tick --repo-root capabilities/windows-silent-scheduled-task
 
+      - name: Set up Node for SILENT_BACKGROUND adapter
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Silent background Node adapter regression gates
+        run: node --test capabilities/windows-silent-scheduled-task/tests/test_silent_background_node.cjs
+
       - name: Unit and contract tests
         run: python -m unittest discover -s tests -v
 

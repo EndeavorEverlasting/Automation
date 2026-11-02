@@ -20,6 +20,7 @@ def load_registry(path: Path) -> dict[str, Any]:
     if not isinstance(jobs, list) or not jobs:
         raise ValueError("registry.jobs must be a non-empty list")
     seen: set[str] = set()
+    seen_task_names: set[str] = set()
     for job in jobs:
         if not isinstance(job, dict):
             raise ValueError("each job must be an object")
@@ -35,6 +36,14 @@ def load_registry(path: Path) -> dict[str, Any]:
         if job_id in seen:
             raise ValueError(f"duplicate job id {job_id!r}")
         seen.add(job_id)
+        task_name_key = job["task_name"].casefold()
+        if task_name_key in seen_task_names:
+            raise ValueError(f"duplicate Task Scheduler task name {job['task_name']!r}")
+        seen_task_names.add(task_name_key)
+        execution_class = job.get("execution_class", "SILENT_BACKGROUND")
+        if execution_class != "SILENT_BACKGROUND":
+            raise ValueError(f"job {job_id}: scheduled silent registry requires SILENT_BACKGROUND")
+        job["execution_class"] = execution_class
         interval = job["interval_min"]
         if type(interval) is not int or interval < 1 or interval > 24 * 60:
             raise ValueError(f"job {job_id}: interval_min out of range")

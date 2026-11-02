@@ -61,6 +61,10 @@
               "Limited",
               "Highest"
             ]
+          },
+          "execution_class": {
+            "const": "SILENT_BACKGROUND",
+            "description": "Scheduled jobs in this capability must never be interactive; omitted legacy entries default to SILENT_BACKGROUND"
           }
         }
       }

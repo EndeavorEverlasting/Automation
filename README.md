@@ -163,3 +163,43 @@ This repository began as a small automation sandbox. Early experiments may preda
 ### Portable slide-flow compiler
 
 `capabilities/slide-flow-compiler/` turns explicit semantic workflows and style-token profiles into deterministic editable slide geometry and a **side-effect-free Google Slides request plan**. It does not connect to, overwrite or visually certify a live presentation. Start with [the capability contract](capabilities/slide-flow-compiler/CAPABILITY.md), then run `node --test capabilities/slide-flow-compiler/tests/test_compile.mjs`. Operational sources, private links and preferred-style registries stay consumer-owned.
+
+
+### Cross-repository scheduled-task silence evidence
+
+The existing [Windows silent scheduled task capability](capabilities/windows-silent-scheduled-task/CAPABILITY.md)
+also provides a read-only, versioned `audit-evidence` command covering
+launcher class, Hidden metadata, due-time console/focus observation,
+child/fullscreen certification and separate functional result state.
+
+```powershell
+python capabilities/windows-silent-scheduled-task/silent_cron.py audit-evidence `
+  --input capabilities/windows-silent-scheduled-task/fixtures/silence-evidence.synthetic.v1.json
+```
+
+Consumers provide evidence snapshots; they do **not** install an additional
+cron daemon or duplicate the classification implementation. The audit does
+not query or change Task Scheduler, and a reported `SILENT_CERTIFIED` state
+does not authenticate the source proof receipt.
+
+
+### SILENT_BACKGROUND process-chain enforcement
+
+The same Windows scheduled-task capability now exposes opt-in Python
+`core/silent_background.py` and Node
+`adapters/node/silent_background.cjs` execution classes, a private
+`automation.silent-background/v1` receipt contract, and a read-only
+`preflight` gate for reinstall/update registries.
+
+```powershell
+python capabilities/windows-silent-scheduled-task/silent_cron.py preflight `
+  --registry capabilities/windows-silent-scheduled-task/fixtures/registry.synthetic.v1.json `
+  --repo-root capabilities/windows-silent-scheduled-task
+```
+
+Existing Task Scheduler triggers, AFK clocks, in-app timers and job logic are
+preserved. The contract fails closed on interactive child operations; it does
+not silently uninstall, disable or change tasks. Consult the
+[capability guide](capabilities/windows-silent-scheduled-task/CAPABILITY.md)
+before consuming it from another repository. Launcher compliance, due-time
+observation, child-process proof, fullscreen focus and job success are separate.

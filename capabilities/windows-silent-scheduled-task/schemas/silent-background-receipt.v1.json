@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "automation.silent-background.receipt/v1",
+  "title": "SILENT_BACKGROUND launch and child outcome receipt",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "timestamp_utc",
+    "job_id",
+    "execution_class",
+    "command_digest",
+    "executable",
+    "status",
+    "mutated_scheduler",
+    "proof_ceiling"
+  ],
+  "properties": {
+    "schema": {
+      "const": "automation.silent-background/v1"
+    },
+    "timestamp_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "job_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
+    },
+    "execution_class": {
+      "enum": [
+        "SILENT_BACKGROUND",
+        "INTERACTIVE"
+      ]
+    },
+    "command_digest": {
+      "type": "string",
+      "minLength": 16
+    },
+    "executable": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status": {
+      "enum": [
+        "DEFERRED_INTERACTION",
+        "PENDING",
+        "SPAWNED_NOT_CERTIFIED",
+        "SUCCEEDED",
+        "NONZERO",
+        "TIMEOUT",
+        "LAUNCH_FAILED",
+        "TERMINATED"
+      ]
+    },
+    "reason_code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "mutated_scheduler": {
+      "const": false
+    },
+    "proof_ceiling": {
+      "const": "LAUNCH_POLICY_ONLY_NOT_DESCENDANT_OR_FULLSCREEN_CERTIFIED"
+    },
+    "returncode": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "pid": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "stdout_bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stderr_bytes": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}

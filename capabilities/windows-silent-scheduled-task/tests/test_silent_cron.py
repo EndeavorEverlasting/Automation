@@ -220,5 +220,47 @@ class SilentCronCapabilityTests(unittest.TestCase):
         self.assertIn("--repo-root is required", proc.stderr)
 
 
+    def test_read_only_preflight_reuses_existing_registry(self):
+        proc = subprocess.run(
+            [sys.executable, str(CLI), "preflight",
+             "--registry", str(FIXTURES / "registry.synthetic.v1.json"),
+             "--repo-root", str(CAP)],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr + proc.stdout)
+        result = json.loads(proc.stdout)
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["job_count"], 1)
+        self.assertEqual(result["jobs"][0]["execution_class"], "SILENT_BACKGROUND")
+        self.assertEqual(result["status"], "REGISTRATION_POLICY_CONFORMANT")
+        self.assertEqual(result["mutation"], "NONE")
+
+    def test_reinstall_policy_rejects_interactive_class_and_duplicate_names(self):
+        import tempfile
+        sys.path.insert(0, str(CAP))
+        from core.registry import load_registry
+        fixture = json.loads((FIXTURES / "registry.synthetic.v1.json").read_text())
+        changed = json.loads(json.dumps(fixture))
+        changed["jobs"][0]["execution_class"] = "INTERACTIVE"
+        with tempfile.TemporaryDirectory() as temp:
+            reg = Path(temp) / "bad.json"
+            reg.write_text(json.dumps(changed))
+            with self.assertRaisesRegex(ValueError, "requires SILENT_BACKGROUND"):
+                load_registry(reg)
+            proc = subprocess.run(
+                [sys.executable, str(CLI), "preflight",
+                 "--registry", str(reg), "--repo-root", str(CAP)],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(proc.returncode, 2)
+            self.assertEqual(json.loads(proc.stdout)["status"], "REJECTED_PREFLIGHT")
+            changed = json.loads(json.dumps(fixture))
+            second = dict(changed["jobs"][0], id="other", task_name=changed["jobs"][0]["task_name"].lower())
+            changed["jobs"].append(second)
+            reg.write_text(json.dumps(changed))
+            with self.assertRaisesRegex(ValueError, "duplicate Task Scheduler task name"):
+                load_registry(reg)
+
+
 if __name__ == "__main__":
     unittest.main()
