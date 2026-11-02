@@ -73,3 +73,67 @@ python capabilities/windows-silent-scheduled-task/silent_cron.py ensure `
 
 - **Synthetic (CI):** fixture classify + registry load + PowerShell render contains `pythonw` and `-Hidden`
 - **Live:** operator `--apply` on Windows; verify `silent_pythonw=true` via `query-task` or Task Scheduler UI
+
+
+## Multi-repository silence evidence audit (read-only)
+
+The capability now accepts a **supplied snapshot** from any consumer, without
+opening Task Scheduler or mutating tasks. Each consumer owns collection of
+installed-task metadata, due-time samples, and child/focus certification;
+Automation owns their stable classification and comparison.
+
+```powershell
+python capabilities/windows-silent-scheduled-task/silent_cron.py audit-evidence `
+  --input capabilities/windows-silent-scheduled-task/fixtures/silence-evidence.synthetic.v1.json
+```
+
+Input schema: `schemas/silence-evidence.v1.json` with semantic ID
+`automation.windows-silent-scheduled-task.silence-evidence/v1`.
+Output semantic ID: `automation.windows-silent-scheduled-task.silence-audit/v1`.
+
+The input `tasks[]` accepts independent task IDs, exact Task Scheduler
+`task_to_run`, explicit `hidden`, optional `launcher_no_window`,
+`last_result`, `due_time` counts (including zero-flash and foreground checks),
+and a separately sourced `certification` record. It works across any number
+of repositories without importing their runtime modules. Never put actual
+workstation paths, private logs, or employee/client metadata into tracked
+fixtures.
+
+**Independent output dimensions:**
+
+- `launcher_class`: PYTHONW, HIDDEN_POWERSHELL,
+  DECLARED_WINDOWLESS_NODE, CONSOLE_RISK, UNKNOWN.
+- `launcher_compliant`: whether the supplied launcher meets the metadata gate.
+- `silence_state`: REVIEW, LAUNCHER_COMPLIANT, DUE_TIME_OBSERVED,
+  FLASH_OBSERVED, or SILENT_CERTIFIED.
+- `silence_review`: queue flag distinct from `silence_state`; Hidden
+  PowerShell and declared Node wrappers remain review items until certified.
+- `functional_state`: ZERO, NONZERO, UNKNOWN from task `last_result`.
+  A nonzero tick result is not evidence of a foreground flash.
+- `reason_codes` and summary counts preserve the actual gaps.
+
+**Certification gate:** `SILENT_CERTIFIED` is emitted only when the task is
+launcher-compliant, a matched due-time sample has positive sample count, zero
+console hits and preserved foreground, plus a supplied explicit
+`child_processes=CERTIFIED`, `focus=CERTIFIED`,
+`focus_mode=fullscreen` and nonempty `proof_ref`.
+The audit verifies *the shape and logical sufficiency of reported evidence*,
+not the source receipt's authenticity or actual Windows behavior.
+`proof_ceiling=SUPPLIED_EVIDENCE_CLASSIFICATION_NOT_LIVE_PROVIDER_VALIDATION`
+is always included. A Chrome-foreground sample does not certify a fullscreen
+game, and launcher Hidden alone never certifies the child-process chain.
+
+The implementation is a dependency-light `core/silence_audit.py` module.
+The isolated consumer canary copies that file alone into a temporary directory
+and imports it without Automation or any donor checkout. Consumers can either
+pin and call the stable CLI or copy the capability through an approved versioned
+distribution; avoid independently editing shared classification rules.
+
+Test without workstation mutation:
+
+```powershell
+python -m unittest discover -s capabilities/windows-silent-scheduled-task/tests -p 'test_*.py' -v
+```
+
+No scheduler installation, task repair, full-screen test or live provider
+certification occurs as part of the audit or its synthetic tests.
