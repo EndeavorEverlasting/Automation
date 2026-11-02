@@ -113,5 +113,37 @@ class SilenceEvidenceTests(unittest.TestCase):
             self.assertEqual(proc.stdout.strip(), INPUT_SCHEMA)
 
 
+    def test_cli_audits_synthetic_fixture_without_live_task_access(self):
+        fixture = CAP / "fixtures" / "silence-evidence.synthetic.v1.json"
+        cli = CAP / "silent_cron.py"
+        proc = subprocess.run(
+            [sys.executable, str(cli), "audit-evidence", "--input", str(fixture)],
+            cwd=str(CAP), capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        import json
+        result = json.loads(proc.stdout)
+        self.assertEqual(result["summary"]["task_count"], 3)
+        self.assertEqual(result["summary"]["silence_review_count"], 2)
+        self.assertEqual(result["summary"]["silent_certified_count"], 0)
+        self.assertEqual(result["summary"]["functional_nonzero_count"], 1)
+        self.assertEqual(result["mutation"], "NONE")
+        self.assertEqual(result["proof_ceiling"], "SUPPLIED_EVIDENCE_CLASSIFICATION_NOT_LIVE_PROVIDER_VALIDATION")
+
+    def test_cli_invalid_schema_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temp:
+            snapshot = Path(temp) / "bad.json"
+            snapshot.write_text('{"schema":"wrong","tasks":[]}', encoding="utf-8")
+            proc = subprocess.run(
+                [sys.executable, str(CAP / "silent_cron.py"), "audit-evidence", "--input", str(snapshot)],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(proc.returncode, 2)
+            import json
+            result = json.loads(proc.stdout)
+            self.assertFalse(result["ok"])
+            self.assertEqual(result["mutation"], "NONE")
+
+
 if __name__ == "__main__":
     unittest.main()
