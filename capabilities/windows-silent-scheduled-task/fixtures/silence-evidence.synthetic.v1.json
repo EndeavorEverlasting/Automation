@@ -1,0 +1,33 @@
+{
+  "schema": "automation.windows-silent-scheduled-task.silence-evidence/v1",
+  "tasks": [
+    {
+      "id": "synthetic-pythonw",
+      "task_name": "Synthetic-SilentPythonw",
+      "task_to_run": "\"C:\\Python\\pythonw.exe\" synthetic_tick.py",
+      "hidden": true,
+      "last_result": "2",
+      "due_time": {
+        "due_time_matched": true,
+        "samples": 67,
+        "console_title_hits": 0,
+        "sync_process_samples": 21,
+        "foreground_preserved": true
+      }
+    },
+    {
+      "id": "synthetic-hidden-ps",
+      "task_name": "Synthetic-HiddenPS",
+      "task_to_run": "pwsh.exe -NoProfile -WindowStyle Hidden -File synthetic_tick.ps1",
+      "hidden": true,
+      "last_result": "0"
+    },
+    {
+      "id": "synthetic-console",
+      "task_name": "Synthetic-ConsoleRisk",
+      "task_to_run": "cmd.exe /c synthetic_tick.cmd",
+      "hidden": true,
+      "last_result": "0"
+    }
+  ]
+}
