@@ -162,6 +162,11 @@ class SilentBackground:
             _persist(target, packet)
             packet["receipt_path"] = str(target)
             return packet
+        # No unattended execution may begin without a writable private receipt.
+        # Intentional interactive launches preserve their existing UI/IO and
+        # are not made dependent on Automation's unattended receipt store.
+        if execution_class == "SILENT_BACKGROUND":
+            _persist(target, packet)
         opts = dict(kwargs)
         opts["shell"] = False
         if execution_class == "SILENT_BACKGROUND":
@@ -188,6 +193,7 @@ class SilentBackground:
         except OSError as exc:
             packet.update(status="LAUNCH_FAILED", reason_code=type(exc).__name__)
         finally:
-            _persist(target, packet)
-        packet["receipt_path"] = str(target)
+            if execution_class == "SILENT_BACKGROUND":
+                _persist(target, packet)
+        packet["receipt_path"] = str(target) if execution_class == "SILENT_BACKGROUND" else None
         return packet
