@@ -10,25 +10,31 @@
     "registry schema validation",
     "PowerShell register render (Hidden + pythonw)",
     "win_subprocess CREATE_NO_WINDOW helpers",
-    "read-only due-time/child/focus evidence audit with independent functional-state classification"
+    "read-only due-time/child/focus evidence audit with independent functional-state classification",
+    "opt-in SILENT_BACKGROUND Python descendant guard, interaction deferral and AppData receipts"
   ],
   "adapters_own": [
     "consumer job registries and script paths",
     "product-specific interval/run_level policy",
-    "live Task Scheduler apply authorization on operator workstations"
+    "live Task Scheduler apply authorization on operator workstations",
+    "Node subprocess adapter using windowsHide with unchanged interactive launch path"
   ],
   "core_owner": "capabilities/windows-silent-scheduled-task/core/",
   "entrypoint": "capabilities/windows-silent-scheduled-task/silent_cron.py",
   "entrypoints": {
     "cli": "capabilities/windows-silent-scheduled-task/silent_cron.py",
     "powershell": "capabilities/windows-silent-scheduled-task/Register-SilentCron.ps1",
-    "audit": "capabilities/windows-silent-scheduled-task/silent_cron.py audit-evidence --input <snapshot.json>"
+    "audit": "capabilities/windows-silent-scheduled-task/silent_cron.py audit-evidence --input <snapshot.json>",
+    "preflight": "capabilities/windows-silent-scheduled-task/silent_cron.py preflight --registry <registry.json> --repo-root <consumer-root>",
+    "python_execution_class": "capabilities/windows-silent-scheduled-task/core/silent_background.py",
+    "node_execution_class": "capabilities/windows-silent-scheduled-task/adapters/node/silent_background.cjs"
   },
   "artifacts": {
     "registry_schema": "capabilities/windows-silent-scheduled-task/schemas/silent-cron-registry.v1.json",
     "synthetic_registry": "capabilities/windows-silent-scheduled-task/fixtures/registry.synthetic.v1.json",
     "silence_evidence_schema": "capabilities/windows-silent-scheduled-task/schemas/silence-evidence.v1.json",
-    "synthetic_evidence": "capabilities/windows-silent-scheduled-task/fixtures/silence-evidence.synthetic.v1.json"
+    "synthetic_evidence": "capabilities/windows-silent-scheduled-task/fixtures/silence-evidence.synthetic.v1.json",
+    "silent_background_receipt_schema": "capabilities/windows-silent-scheduled-task/schemas/silent-background-receipt.v1.json"
   },
   "runtime_boundary": {
     "default_mutation": "NONE_UNTIL_ENSURE_APPLY",
@@ -36,7 +42,8 @@
     "supported_execution": [
       "WINDOWS_OPERATOR_WORKSTATION_APPLY",
       "CI_SYNTHETIC_CLASSIFY_AND_RENDER",
-      "OFFLINE_MULTI_REPOSITORY_EVIDENCE_AUDIT"
+      "OFFLINE_MULTI_REPOSITORY_EVIDENCE_AUDIT",
+      "OFFLINE_SILENT_BACKGROUND_CHILD_POLICY_AND_INSTALL_PREFLIGHT"
     ]
   },
   "non_goals": [
@@ -44,10 +51,12 @@
     "replacing consumer Work Graph / wake selection logic",
     "hiding UAC or interactive installers",
     "non-Windows schedulers in this revision",
-    "claiming live Task Scheduler registration from CI"
+    "claiming live Task Scheduler registration from CI",
+    "switching consumers from Task Scheduler to app-owned timers or changing cadence",
+    "claiming arbitrary GUI grandchildren or fullscreen focus are silent from a launcher receipt"
   ],
   "production_use_path": "UNDECLARED",
-  "proof_ceiling": "Synthetic fixtures prove pythonw detection, registry validation, and PowerShell render shape. Live Register-ScheduledTask requires an interactive Windows operator session with --apply. Supplied evidence classification can report due-time observations and explicit child/fullscreen certification gates; it cannot authenticate receipts or exercise the Windows focus session.",
+  "proof_ceiling": "Synthetic fixtures prove pythonw detection, registry validation, and PowerShell render shape. Live Register-ScheduledTask requires an interactive Windows operator session with --apply. Supplied evidence classification can report due-time observations and explicit child/fullscreen certification gates; it cannot authenticate receipts or exercise the Windows focus session. Python/Node execution classes and reinstall preflight are opt-in consumer contracts; no consumer install or live descendant/focus certification is implied.",
   "prior_art": [
     "qbit-config win_subprocess.py + cubit_cron ensure + Register-SilentCronTasks.ps1",
     "TokenCorridor tooling/runtime/win_discreet_subprocess.py + Install-TokenCorridorWake.ps1 -RepairSilent"
