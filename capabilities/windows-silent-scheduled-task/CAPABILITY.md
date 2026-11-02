@@ -137,3 +137,88 @@ python -m unittest discover -s capabilities/windows-silent-scheduled-task/tests 
 
 No scheduler installation, task repair, full-screen test or live provider
 certification occurs as part of the audit or its synthetic tests.
+
+
+## SILENT_BACKGROUND execution class — chain policy and reinstall guard
+
+Contract: `automation.silent-background/v1` (execution) and
+`automation.silent-background.receipt/v1` (private receipt schema).
+This is an **extension of the same Windows silent scheduled-task capability**,
+not a second cron service. The existing Task Scheduler/AFK/logon triggers,
+app-owned timers, product functions, and product-specific receipt writers stay
+where they are. Intentional application launches remain `INTERACTIVE`.
+
+**Consumer usage (Python child process):**
+
+```python
+from core.silent_background import SilentBackground
+
+policy = SilentBackground(job_id="my-product-tick")
+outcome = policy.execute(["git", "status", "--porcelain"], execution_class="SILENT_BACKGROUND")
+# outcome: SUCCEEDED / NONZERO / DEFERRED_INTERACTION / TIMEOUT / LAUNCH_FAILED
+# private receipt: %LOCALAPPDATA%\Automation\SilentBackground\receipts\
+```
+
+On Windows the policy sets `CREATE_NO_WINDOW` and a hidden `STARTUPINFO`,
+closes stdin, captures bounded result metadata rather than displaying a popup,
+and rejects `shell=True`, `cmd`, GUI/browser/installer launchers, unknown
+executables, and interactive PowerShell calls by default. A consumer may declare
+additional **approved console tools**; that is a provenance/approval decision,
+not a runtime certification. If user input, elevation, authentication or a
+visual installer is necessary, retain the job and emit
+`DEFERRED_INTERACTION` with a private receipt instead of prompting.
+
+**Consumer usage (Node child process):**
+
+```js
+const { spawnBackground } = require("./silent_background.cjs");
+const { status, child, receiptPath } = spawnBackground(
+  "node.exe", ["worker.js"], { jobId: "my-product-tick" }
+);
+```
+
+The distributable Node adapter is
+`adapters/node/silent_background.cjs`; it enforces `windowsHide:true`,
+`shell:false` and ignored stdio for scheduled descendants, and records a
+private lifecycle receipt. It does **not** replace an app's existing
+application-specific log/outbox. An explicit `INTERACTIVE` invocation
+preserves inherited IO and visible application behavior.
+
+**Installer / update hook:** Registries still use
+`automation.windows-silent-scheduled-task.registry/v1`; missing
+`execution_class` defaults to `SILENT_BACKGROUND` for legacy consumers,
+and explicitly declaring `INTERACTIVE` is rejected by this silent
+registration capability. Run a read-only gate before `ensure --apply`:
+
+```powershell
+python capabilities/windows-silent-scheduled-task/silent_cron.py preflight `
+  --registry capabilities/windows-silent-scheduled-task/fixtures/registry.synthetic.v1.json `
+  --repo-root capabilities/windows-silent-scheduled-task
+```
+
+`preflight` validates all job identities and ownership-relative Python scripts,
+rejects duplicate Task Scheduler names, and reports the expected `pythonw`
+and Hidden registration without touching the scheduler. Existing non-Python
+launchers remain consumer-owned until their adapters are independently
+certified; **do not replace/disable them by forcing this Python registration**.
+
+**Proof ladder:** install preflight → launch policy receipt → due-time sample
+→ explicit child-chain and fullscreen focus certification. None may be
+substituted for a later stage. The shared wrapper cannot control arbitrary
+grandchildren that ignore it, or GUI APIs called inside a child; adopt it
+at every subprocess boundary and certify the actual observed chain.
+
+**CI tests:**
+
+```sh
+python -m unittest discover -s capabilities/windows-silent-scheduled-task/tests -p "test_*.py" -v
+node --test capabilities/windows-silent-scheduled-task/tests/test_silent_background_node.cjs
+```
+
+**Consumer adoption:** pin a specific Automation revision; copy its published
+module/adapters unchanged or use a pinned integration. Wire every scheduled
+child launcher and installer preflight, preserve existing clock/cadence and
+receipt writers, run isolated consumer tests, then delete proven duplicates
+with a regression that prevents their return. Do not install a new scheduler,
+change live task configuration, or migrate to app-owned timers without an
+explicitly scoped change and live follow-up validation.
