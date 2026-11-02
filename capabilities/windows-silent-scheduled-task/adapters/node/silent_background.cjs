@@ -14,7 +14,7 @@ const ALLOWED = new Set(["node.exe", "node", "pythonw.exe", "python.exe", "pytho
 const BLOCKED = new Set(["explorer.exe", "explorer", "msiexec.exe", "msiexec", "winget.exe", "winget", "chrome.exe", "chrome", "msedge.exe", "firefox.exe", "cmd.exe", "cmd", "runas.exe", "runas", "rundll32.exe"]);
 const exeName = (exe) => path.win32.basename(exe).toLowerCase();
 const digest = (exe, args) => crypto.createHash("sha256").update(JSON.stringify([exe, ...args])).digest("hex").slice(0, 16);
-const safeId = (value) => /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(value);
+const safeId = (value) => typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(value);
 
 function receiptPath(jobId, dir) {
   const base = dir || path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), ".local", "state"), "Automation", "SilentBackground", "receipts");
