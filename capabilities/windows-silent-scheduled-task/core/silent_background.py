@@ -88,7 +88,7 @@ def _decision(argv: Sequence[str], *, approved_tools: frozenset[str]) -> str | N
         # Syntax is intentionally conservative: defer scripts that explicitly
         # request a UI, privilege elevation, or in-process child launch.
         tokens = re.findall(r"[a-z][a-z0-9-]*", " ".join(argv[1:]).casefold())
-        if any(token in INTERACTIVE_POWERSHELL for token in tokens):
+        if any(token in {"read-host", "get-credential", "start-process", "runas", "verb"} for token in tokens):
             return "POWERSHELL_INTERACTIVE_ACTION"
     return None
 
@@ -96,7 +96,10 @@ def _decision(argv: Sequence[str], *, approved_tools: frozenset[str]) -> str | N
 def _windows_options(kwargs: dict[str, Any]) -> dict[str, Any]:
     opts = dict(kwargs)
     if sys.platform == "win32":
-        opts["creationflags"] = int(opts.get("creationflags") or 0) | getattr(
+        current = int(opts.get("creationflags") or 0)
+        if current & (0x00000010 | 0x00000008):
+            raise ValueError("CREATE_NEW_CONSOLE/DETACHED_PROCESS conflict with SILENT_BACKGROUND")
+        opts["creationflags"] = current | getattr(
             subprocess, "CREATE_NO_WINDOW", 0x08000000
         )
         # STARTF_USESHOWWINDOW / SW_HIDE is an additional launcher safeguard,
@@ -134,8 +137,12 @@ class SilentBackground:
             raise ValueError("shell=True is forbidden by this API")
         if "stdin" in kwargs or "stdout" in kwargs or "stderr" in kwargs:
             raise ValueError("std streams are managed by the silence boundary")
-        if not isinstance(argv, (list, tuple)) or any(not isinstance(x, str) for x in argv):
-            raise ValueError("argv must be an argument list")
+        if not isinstance(argv, (list, tuple)) or not argv or any(not isinstance(x, str) or not x.strip() for x in argv):
+            raise ValueError("argv must be a nonempty argument list")
+        if "capture_output" in kwargs or "check" in kwargs or "timeout" in kwargs:
+            raise ValueError("capture_output, check and timeout are controlled by this API")
+        if wait and (type(timeout) not in (int, float) or timeout <= 0):
+            raise ValueError("timeout must be positive")
         reason = (_decision(argv, approved_tools=self.approved_tools)
                   if execution_class == "SILENT_BACKGROUND" else None)
         command_id = hashlib.sha256("\0".join(argv).encode("utf-8")).hexdigest()[:16]
@@ -156,22 +163,25 @@ class SilentBackground:
             packet["receipt_path"] = str(target)
             return packet
         opts = dict(kwargs)
-        opts.update(shell=False, stdin=subprocess.DEVNULL)
+        opts["shell"] = False
         if execution_class == "SILENT_BACKGROUND":
+            opts["stdin"] = subprocess.DEVNULL
             opts = _windows_options(opts)
         try:
             if wait:
-                if type(timeout) not in (int, float) or timeout <= 0:
-                    raise ValueError("timeout must be positive")
-                proc = subprocess.run(list(argv), capture_output=True, timeout=timeout,
-                                      check=False, **opts)
+                if execution_class == "SILENT_BACKGROUND":
+                    proc = subprocess.run(list(argv), capture_output=True, timeout=timeout,
+                                          check=False, **opts)
+                    packet.update(stdout_bytes=len(proc.stdout or b""),
+                                  stderr_bytes=len(proc.stderr or b""))
+                else:
+                    proc = subprocess.run(list(argv), timeout=timeout, check=False, **opts)
                 packet.update(status="SUCCEEDED" if proc.returncode == 0 else "NONZERO",
-                              returncode=proc.returncode,
-                              stdout_bytes=len(proc.stdout or b""),
-                              stderr_bytes=len(proc.stderr or b""))
+                              returncode=proc.returncode)
             else:
-                proc = subprocess.Popen(list(argv), stdout=subprocess.DEVNULL,
-                                        stderr=subprocess.DEVNULL, **opts)
+                if execution_class == "SILENT_BACKGROUND":
+                    opts.update(stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                proc = subprocess.Popen(list(argv), **opts)
                 packet.update(status="SPAWNED_NOT_CERTIFIED", pid=proc.pid)
         except subprocess.TimeoutExpired:
             packet.update(status="TIMEOUT", reason_code="CHILD_TIMEOUT")
