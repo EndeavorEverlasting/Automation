@@ -163,3 +163,21 @@ This repository began as a small automation sandbox. Early experiments may preda
 ### Portable slide-flow compiler
 
 `capabilities/slide-flow-compiler/` turns explicit semantic workflows and style-token profiles into deterministic editable slide geometry and a **side-effect-free Google Slides request plan**. It does not connect to, overwrite or visually certify a live presentation. Start with [the capability contract](capabilities/slide-flow-compiler/CAPABILITY.md), then run `node --test capabilities/slide-flow-compiler/tests/test_compile.mjs`. Operational sources, private links and preferred-style registries stay consumer-owned.
+
+
+### Cross-repository scheduled-task silence evidence
+
+The existing [Windows silent scheduled task capability](capabilities/windows-silent-scheduled-task/CAPABILITY.md)
+also provides a read-only, versioned `audit-evidence` command covering
+launcher class, Hidden metadata, due-time console/focus observation,
+child/fullscreen certification and separate functional result state.
+
+```powershell
+python capabilities/windows-silent-scheduled-task/silent_cron.py audit-evidence `
+  --input capabilities/windows-silent-scheduled-task/fixtures/silence-evidence.synthetic.v1.json
+```
+
+Consumers provide evidence snapshots; they do **not** install an additional
+cron daemon or duplicate the classification implementation. The audit does
+not query or change Task Scheduler, and a reported `SILENT_CERTIFIED` state
+does not authenticate the source proof receipt.
