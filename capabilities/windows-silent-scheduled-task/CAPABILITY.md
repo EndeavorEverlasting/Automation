@@ -222,3 +222,21 @@ receipt writers, run isolated consumer tests, then delete proven duplicates
 with a regression that prevents their return. Do not install a new scheduler,
 change live task configuration, or migrate to app-owned timers without an
 explicitly scoped change and live follow-up validation.
+
+### Non-bypassable registry admission (direct render and live ensure)
+
+Both `preflight` and direct `render` / `ensure --apply` validate the **entire**
+consumer registry using `core.registry.validate_registration_inputs`. An
+otherwise-valid target is refused when a sibling has an unsafe or missing
+script, including resolved symlink escapes. Duplicate task names and
+`INTERACTIVE` entries remain rejected by the existing registry parser.
+Validation completes before resolving a Windows interpreter or contacting
+Task Scheduler; a single validated registry snapshot is used for the action.
+A rejected registry leaves installed tasks and clocks untouched.
+
+**Clock exception:** this CLI's installer models repeating-minute triggers.
+Existing H&H weekly schedules must retain their distinct weekday/time
+triggers through their owners, rather than being migrated into this installer.
+They should still use the shared child-process admission and evidence audit.
+Offline regression: `python -m unittest discover -s capabilities/windows-silent-scheduled-task/tests -p 'test_*.py' -v`.
+No synthetic validation is a due-time/fullscreen certification.
