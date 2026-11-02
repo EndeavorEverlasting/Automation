@@ -25,7 +25,7 @@ from core.ensure import (  # noqa: E402
     query_schtasks,
 )
 from core.pythonw import resolve_pythonw  # noqa: E402
-from core.registry import list_jobs, load_registry  # noqa: E402
+from core.registry import list_jobs, load_registry, validate_registration_inputs  # noqa: E402
 from core.silence_audit import audit_evidence  # noqa: E402
 
 
@@ -92,19 +92,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "preflight":
         try:
-            jobs = list_jobs(args.registry)
-            root = args.repo_root.resolve()
-            checked = []
-            for job in jobs:
-                script = (root / job["script"]).resolve()
-                if root not in script.parents or not script.is_file() or script.suffix.lower() != ".py":
-                    raise ValueError(f"job {job['id']}: script must be an existing Python file inside repo-root")
-                checked.append({
-                    "id": job["id"], "task_name": job["task_name"],
-                    "execution_class": job["execution_class"],
-                    "registration_launcher": "pythonw.exe", "hidden": True,
-                    "interval_min": job["interval_min"],
-                })
+            jobs = validate_registration_inputs(args.registry, args.repo_root)
+            checked = [{
+                "id": job["id"], "task_name": job["task_name"],
+                "execution_class": job["execution_class"],
+                "registration_launcher": "pythonw.exe", "hidden": True,
+                "interval_min": job["interval_min"],
+            } for job in jobs]
             _print({
                 "ok": True, "status": "REGISTRATION_POLICY_CONFORMANT",
                 "contract": "automation.silent-background/v1",
