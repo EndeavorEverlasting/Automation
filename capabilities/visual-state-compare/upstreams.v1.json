@@ -1,0 +1,103 @@
+{
+  "contract_id": "automation.visual-upstream-catalog/v1",
+  "snapshot_date": "2026-11-03",
+  "execution_policy": {
+    "source_checkout": "local-external-cache-only",
+    "clone_executes_installer": false,
+    "weights_auto_download": false,
+    "model_auto_execute": false,
+    "licensed_binary_distribution": false,
+    "mutation_authority": "NONE",
+    "note": "Git commits are observed source snapshots, not package/model versions or license approvals. Check the license of each codebase, model weights, and transitive dependencies before deployment."
+  },
+  "upstreams": [
+    {
+      "id": "kornia",
+      "url": "https://github.com/kornia/kornia.git",
+      "commit": "40d8ef1e04649d80fc8c70d7b91e647ba63d3a2b",
+      "ref": "v0.9.0",
+      "profiles": [
+        "foundation"
+      ],
+      "role": "GPU/batched vision, geometry and feature matching; optional engine",
+      "license_gate": "Apache-2.0 source; dependencies to audit"
+    },
+    {
+      "id": "paddleocr",
+      "url": "https://github.com/PaddlePaddle/PaddleOCR.git",
+      "commit": "dab3fe35379033fdcb2d0e9572fac0b36c9a9ebf",
+      "ref": "main snapshot",
+      "profiles": [
+        "foundation"
+      ],
+      "role": "Local OCR/text detection; isolated OCR environment and model weights required",
+      "license_gate": "Source, selected PP-OCRv6 weights and dependencies to audit"
+    },
+    {
+      "id": "tesseract",
+      "url": "https://github.com/tesseract-ocr/tesseract.git",
+      "commit": "c21194d06998e244754d65329d6c9f1e14fe392e",
+      "ref": "main snapshot",
+      "profiles": [
+        "foundation"
+      ],
+      "role": "Independent offline OCR baseline; clone does not install the binary",
+      "license_gate": "Apache-2.0 source; language packs/compiled dependencies to audit"
+    },
+    {
+      "id": "omniparser",
+      "url": "https://github.com/microsoft/OmniParser.git",
+      "commit": "354021201345a96178360b28733573e27269f2de",
+      "ref": "master snapshot",
+      "profiles": [
+        "ui"
+      ],
+      "role": "GUI icon/element grounding; never grant click authority",
+      "license_gate": "Repository CC-BY-4.0; model weights differ; prefer reviewed YOLOv9-E and check original detector licenses"
+    },
+    {
+      "id": "opencv",
+      "url": "https://github.com/opencv/opencv.git",
+      "commit": "343825b248144e41ea888ef897e259ba3a4ca4ff",
+      "ref": "5.x snapshot",
+      "profiles": [
+        "advanced"
+      ],
+      "role": "Conventional image processing CPU baseline; prefer wheel over source build",
+      "license_gate": "Apache-2.0 source, modules/build deps to audit"
+    },
+    {
+      "id": "groundingdino",
+      "url": "https://github.com/IDEA-Research/GroundingDINO.git",
+      "commit": "856dde20aee659246248e20734ef9ba5214f5e44",
+      "ref": "main snapshot",
+      "profiles": [
+        "advanced"
+      ],
+      "role": "Open-vocabulary object localization for non-UI scenes",
+      "license_gate": "Source/weights and third-party components require review"
+    },
+    {
+      "id": "sam2",
+      "url": "https://github.com/facebookresearch/sam2.git",
+      "commit": "2b90b9f5ceec907a1c18123530e92e794ad901a4",
+      "ref": "main snapshot",
+      "profiles": [
+        "advanced"
+      ],
+      "role": "Segmentation for complex regions and images",
+      "license_gate": "Source/model weights and dependencies require review"
+    },
+    {
+      "id": "qwen3vl",
+      "url": "https://github.com/QwenLM/Qwen3-VL.git",
+      "commit": "96588727e44c78b25ba03ea03b8e12f7e64fd0da",
+      "ref": "main snapshot",
+      "profiles": [
+        "advanced"
+      ],
+      "role": "Candidate local visual reasoning; separate model selection and VRAM gate",
+      "license_gate": "Review selected code release and exact model card/weights separately"
+    }
+  ]
+}
