@@ -27,7 +27,7 @@ jobs:
       - name: Black-box synthetic acceptance
         run: python -m unittest discover -s capabilities/visual-state-compare/tests -v
   browser-adapter:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
