@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:automation:visual-observation:v1",
+  "title": "Visual Observation Receipt v1",
+  "type": "object",
+  "required": [
+    "contract",
+    "status",
+    "engine",
+    "engine_id",
+    "input_sha256",
+    "width",
+    "height",
+    "coordinate_space",
+    "dpi_scale",
+    "privacy_classification",
+    "regions",
+    "errors",
+    "semantic_verdict",
+    "action_authority",
+    "proof_ceiling"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "contract": {
+      "const": "automation.visual-observation/v1"
+    },
+    "status": {
+      "enum": [
+        "OK",
+        "NO_TEXT",
+        "OCR_FAILED",
+        "ENGINE_UNAVAILABLE",
+        "INVALID_INPUT",
+        "TIMEOUT",
+        "OUTPUT_DENIED"
+      ]
+    },
+    "engine": {
+      "enum": [
+        "tesseract",
+        "paddle",
+        "auto"
+      ]
+    },
+    "engine_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "engine_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "engine_commit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^([0-9a-f]{40})?$"
+    },
+    "model_hash": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^([0-9a-f]{64})?$"
+    },
+    "device": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "width": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "coordinate_space": {
+      "const": "screenshot_pixels"
+    },
+    "dpi_scale": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "privacy_classification": {
+      "enum": [
+        "SYNTHETIC_PUBLIC",
+        "PRIVATE_LOCAL",
+        "UNCLASSIFIED"
+      ]
+    },
+    "regions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "text",
+          "confidence",
+          "bbox",
+          "provenance"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "bbox": {
+            "type": "object",
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "x": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "y": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "width": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          "provenance": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        }
+      }
+    },
+    "full_text": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "latency_ms": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "semantic_verdict": {
+      "const": "NOT_EVALUATED"
+    },
+    "action_authority": {
+      "const": "NONE"
+    },
+    "proof_ceiling": {
+      "enum": [
+        "OCR_INFERENCE_SMOKE",
+        "OCR_ENGINE_UNAVAILABLE",
+        "OCR_NO_PROOF"
+      ]
+    }
+  }
+}

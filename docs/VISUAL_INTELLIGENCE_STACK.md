@@ -1,7 +1,7 @@
 # Visual Intelligence Stack — Local Integration and Execution Contract
 
-**Owner:** EndeavorEverlasting/Automation, capabilities/visual-state-compare/  
-**Status (2026-11-03):** pinned upstream catalog and local source checkout provisioner implemented on a feature branch. OCR integration, GUI element grounding, VLM runtime and live-host acceptance remain open.  
+**Owner:** EndeavorEverlasting/Automation, capabilities/visual-state-compare/
+**Status (2026-11-03):** pinned upstream catalog, local source provisioner, and VSC-2 normalized OCR CLI (Tesseract + optional isolated PaddleOCR) implemented on the feature branch. OmniParser GUI grounding, VLM runtime and live-host acceptance remain open.
 **Parent objective:** deliver a cutting-edge, local-first visual perception system from best-in-class upstream projects behind one stable Automation API, then supply evidence for independently authorized observe–act–verify workflows on Windows, browser and Android.
 
 ## 1. Architecture: engines are interchangeable, Automation owns the seam
@@ -67,16 +67,11 @@ SOURCE_PINNED / CHECKOUT_READY / ENV_READY / WEIGHTS_READY / INFERENCE_SMOKE_PAS
 
 ## 4. Phase 2: VSC-2 — usable OCR through one normalized interface
 
-This is the FIRST functionality milestone, not a side quest.
+**Implemented (repo):** `schemas/visual-observation.v1.schema.json`, `adapters/ocr-tesseract/`, `adapters/ocr-paddle/` (optional `--paddle-python` / `AUTOMATION_PADDLE_PYTHON`), `vision_cli.py`, synthetic holdout under `tests/fixtures/ocr/`, and `benchmark_ocr.py` (CER + exact-token / UNCERTAIN reporting).
 
-Additive targets (inspect the current tree for overlaps before creating):
-1. schemas/visual-observation.v1.json: a receipt with contract ID, source image hash and dimensions, screenshot coordinate space and DPI, engine/version/commit/model hash, text regions and bounding boxes, confidence, provenance, privacy classification, errors, and semantic_verdict=NOT_EVALUATED plus action_authority=NONE.
-2. adapters/ocr-tesseract/: subprocess or library adapter using TSV bounding boxes; exact text kept only in private outputs; distinct ENGINE_UNAVAILABLE, OCR_FAILED and NO_TEXT.
-3. adapters/ocr-paddle/: isolated PaddleOCR/PP-OCRv6 runtime and pinned checkpoint; normalize exactly the same structure, record device/model/weight pin; disable network requests in regular inference.
-4. vision_cli.py: single stable analyze invocation with --engine auto|tesseract|paddle, --input and --output, explicit timeout and failure classes. Consumers must not import either OCR engine directly.
-5. tests/fixtures: public synthetic images and private held-out real examples: tiny type, high DPI, 4K, dark mode, dialogs, serial/host IDs, ambiguous 0/O and 1/I, tables, clipped UI, overlays, and PII-redacted frames.
+Still host-local / open: full PP-OCR weight pin + hash in receipts, RAM/VRAM class matrix, private held-out screenshots, and live-host acceptance. First PaddleOCR invoke may download donor checkpoints into the isolated env—treat that as a separate `WEIGHTS_READY` gate, not Automation Git content.
 
-Gate VSC-2: evaluate the same labeled holdout through both engines. Record exact-field recognition, character error rate, region precision/recall, p50/p95 latency, RAM/VRAM, install size, conflicts and error states by hardware class. Serial numbers, host names, irreversible-action labels and other safety-critical tokens require exact match or UNCERTAIN, never fabricated completion. Require negative fixtures for missing executable, bad model, timeout, no text and denied private-output destination. A passing synthetic benchmark is not a passing live host.
+Gate VSC-2 (synthetic portion): same labeled holdout through both engines; CER, exact-token hits, latency, typed ENGINE_UNAVAILABLE / NO_TEXT / OUTPUT_DENIED. Safety-critical tokens require exact match or UNCERTAIN. A passing synthetic benchmark is not a passing live host.
 
 ## 5. Phase 3: UI parsing and target grounding
 
