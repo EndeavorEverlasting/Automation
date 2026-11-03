@@ -61,10 +61,37 @@ A public hosted CI job may install Pillow and synthesize its own 8x8 PNGs. Accep
 
 ## Successor milestones
 
-VSC-1: explicit capture adapter and typed provenance.
-VSC-2: OCR/accessibility information plus source-backed interpretation.
-VSC-3: optional local VLM with hardware/licensing/latency/eval receipts.
-VSC-4: independent element grounding and authorized observe-act-verify loop.
+VSC-1: explicit capture adapter and typed provenance (implemented).
+VSC-2: OCR through one normalized CLI (implemented below; live host/Paddle weights remain host-local).
+VSC-3: OmniParser / accessibility grounding (next).
+VSC-4: optional local VLM with hardware/licensing/latency/eval receipts.
+VSC-5: independent consumer observe-act-verify (consumer-owned action authority).
+
+## VSC-2 — normalized OCR observation
+
+Source: `vision_cli.py`, `schemas/visual-observation.v1.schema.json`, adapters under `adapters/ocr-tesseract/` and `adapters/ocr-paddle/`.
+
+```bash
+python capabilities/visual-state-compare/vision_cli.py analyze \
+  --input synthetic.png --output observation.json \
+  --engine auto|tesseract|paddle \
+  --privacy SYNTHETIC_PUBLIC \
+  --tesseract-bin "C:/Program Files/Tesseract-OCR/tesseract.exe" \
+  --paddle-python "%LOCALAPPDATA%/Automation/VisionEnvs/paddleocr/Scripts/python.exe"
+```
+
+Consumers call only this CLI/schema. They do not import PaddleOCR, Tesseract bindings, or donor checkout paths. Receipts always carry `semantic_verdict=NOT_EVALUATED` and `action_authority=NONE`. Exact recognized text stays in the local output file you request; public CI uses synthetic fixtures only.
+
+Comparative holdout (synthetic):
+
+```bash
+python capabilities/visual-state-compare/benchmark_ocr.py \
+  --engines tesseract,paddle \
+  --paddle-python "%LOCALAPPDATA%/Automation/VisionEnvs/paddleocr/Scripts/python.exe" \
+  --output %TEMP%/ocr-benchmark.json
+```
+
+Proof ceiling for synthetic benchmarks is `SYNTHETIC_BENCHMARK_NOT_LIVE_HOST`. Paddle package/env install and first-run model weights are host-local and are **not** committed. Source checkouts remain `upstreams.py` (`SOURCE_PINNED` / `CHECKOUT_READY` ≠ `ENV_READY` / `WEIGHTS_READY`).
 
 ## VSC-1 — optional read-only Playwright adapter
 

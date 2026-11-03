@@ -85,13 +85,17 @@ python capabilities/entire-local-continuous/continuous_local.py admit-afk `
 python -m unittest discover -s capabilities/entire-local-continuous/tests -p 'test_*.py' -v
 ```
 
+## Local visual intelligence (upstream orchestration)
+
+The executable source catalog, safe local checkout CLI and current multi-engine integration runbook are in [Visual Intelligence Stack](docs/VISUAL_INTELLIGENCE_STACK.md). Start with `python capabilities/visual-state-compare/upstreams.py plan --profile all`, then the foundation/UI sync and doctor steps from that runbook. After sources are ready, OCR goes through one normalized CLI: `python capabilities/visual-state-compare/vision_cli.py analyze --input … --output … --engine auto|tesseract|paddle`. Pinned SOURCE checkouts are not model weights; PaddleOCR belongs in an isolated host venv (`--paddle-python`). OmniParser GUI grounding and live-host acceptance remain open.
+
 ## Capabilities
 
 Admitted capabilities:
 
 - [`media-transcript-acquisition`](capabilities/media-transcript-acquisition/CAPABILITY.md) — local-first SRT/VTT evidence normalization with optional YouTube caption adapters and explicit runtime-blocked receipts; live-source proof pending.
 - [`social-media-insights`](capabilities/media-transcript-acquisition/SOCIAL_MEDIA_INSIGHTS.md) — Instagram/YouTube/TikTok/etc. URL adapter, optional local media+ASR+vision, source-grounded technical insight receipts; offline tests only, no live provider certification.
-- [`visual-state-compare`](capabilities/visual-state-compare/CAPABILITY.md) — **VSC-0 synthetic CI validated (PR head)**: local-only deterministic PNG comparisons with synthetic tests, receipt and no semantic/click authority.
+- [`visual-state-compare`](capabilities/visual-state-compare/CAPABILITY.md) — **VSC-0/VSC-1 synthetic CI + VSC-2 OCR CLI**: deterministic PNG compare, isolated Playwright capture, and normalized Tesseract/Paddle observation receipts (`action_authority=NONE`). Live host and OmniParser remain separate gates.
 - [`playlist-link-extraction`](capabilities/playlist-link-extraction/CAPABILITY.md) — status `CORE_IMPLEMENTED_ADAPTERS_PENDING`
 - [`agent-hook-runtime`](capabilities/agent-hook-runtime/CAPABILITY.md) — status `CORE_IMPLEMENTED_CURSOR_ADAPTER_DIAGNOSTIC_ONLY`; separates JSON-stdio host transport/schema proof from consumer policy and emits privacy-safe runtime receipts.
 - [`social-publication`](capabilities/social-publication/CAPABILITY.md) — status `PROGRAM_DESIGN_PROTOTYPE_PROVEN`; approval-bound, provider-neutral text publication with a LinkedIn adapter prototype. Live OAuth/network publication remains unproven.

@@ -1,0 +1,27 @@
+{
+  "contract_id": "automation.visual-ocr-holdout/v1",
+  "privacy_classification": "SYNTHETIC_PUBLIC",
+  "cases": [
+    {
+      "id": "plain_serial",
+      "image": "plain_serial.png",
+      "reference_text": "SERIAL AB12-0O1I",
+      "exact_tokens": ["SERIAL", "AB12-0O1I"],
+      "notes": "Ambiguous 0/O and 1/I; safety-critical token must exact-match or UNCERTAIN"
+    },
+    {
+      "id": "dark_dialog",
+      "image": "dark_dialog.png",
+      "reference_text": "Confirm delete HOST-77",
+      "exact_tokens": ["Confirm", "delete", "HOST-77"],
+      "notes": "Dark-mode dialog with irreversible-action label"
+    },
+    {
+      "id": "blank",
+      "image": "blank.png",
+      "reference_text": "",
+      "exact_tokens": [],
+      "notes": "No-text negative control"
+    }
+  ]
+}
