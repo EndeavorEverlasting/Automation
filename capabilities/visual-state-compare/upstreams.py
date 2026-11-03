@@ -77,7 +77,9 @@ def git(args: list[str], *, cwd: Path | None = None, timeout: int = 240) -> str:
     try:
         result = subprocess.run(
             ["git", *args], cwd=cwd, check=False, text=True,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout,
+            env={**os.environ, "GIT_LFS_SKIP_SMUDGE": "1", "GIT_CONFIG_NOSYSTEM": "1",
+                 "GIT_CONFIG_GLOBAL": os.devnull, "GIT_TERMINAL_PROMPT": "0"}
         )
     except FileNotFoundError as error:
         raise VisionStackError("GIT_UNAVAILABLE") from error
@@ -99,6 +101,8 @@ def checkout_state(item: dict, root: Path) -> str:
         head = git(["rev-parse", "HEAD"], cwd=target, timeout=15)
         if head != item["commit"]:
             return "PIN_MISMATCH"
+        if git(["remote", "get-url", "origin"], cwd=target, timeout=15) != item["url"]:
+            return "ORIGIN_MISMATCH"
         if git(["status", "--porcelain"], cwd=target, timeout=15):
             return "DIRTY_CHECKOUT"
     except VisionStackError:
