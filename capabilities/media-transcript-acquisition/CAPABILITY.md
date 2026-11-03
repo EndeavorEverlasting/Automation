@@ -40,3 +40,10 @@ Observed current chat environment may expose GitHub and public search but lack Y
 Hypothesis: the standalone CLI parses timestamped SRT/VTT from a known local fixture and routes upstream failures without needing the caller's ChatGPT toolset. Falsifier: failure to run with Python-only environment, failure to preserve caption timestamps, accidental leakage of paths/exception text, or false `CAPTIONS_UNAVAILABLE` when access was blocked.
 Run `python -m unittest discover -s capabilities/media-transcript-acquisition/tests -v`. A successful synthetic test is not proof of real YouTube access.
 **Current production/use path:** `UNDECLARED`. **First real-provider gate:** authorized host/source, observed successful direct caption call, provenance + version recorded, and replay test. **Next optional gate:** local audio-to-text ASR, separately measured.
+
+
+## Cross-platform social-media extension (incubating)
+
+The existing `acquire.py` YouTube-only contract and its receipts remain unchanged. The additive `social_insights.py` entrypoint introduces `automation.social-media-insights/v1`: HTTPS provider classification, optional `yt-dlp` retrieval, existing SRT/VTT normalization, local FFmpeg frame evidence, opt-in offline `faster-whisper` ASR and local Ollama multimodal technical-claim extraction. Every emitted model claim must reference real cue/frame IDs and remains externally unverified. The local output and media sidecars stay private.
+
+See [SOCIAL_MEDIA_INSIGHTS.md](SOCIAL_MEDIA_INSIGHTS.md) for CLI usage, dependencies, cross-provider caveats, receipt statuses, seam review and the live-provider acceptance gate. Validation: `python -m unittest discover -s capabilities/media-transcript-acquisition/tests -v`. This addition has **no independently certified live Instagram extraction** and does not imply universal social-platform access.
