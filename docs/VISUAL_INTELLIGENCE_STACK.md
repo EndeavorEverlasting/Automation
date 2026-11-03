@@ -46,6 +46,7 @@ Run on an authorized development/admin host; never run installation on a field k
 
     git status --short
     git rev-parse --show-toplevel
+    python scripts/path_receipt.py --repo-root .
     python --version
     git --version
     python -m unittest discover -s capabilities/visual-state-compare/tests -p 'test_upstreams.py' -v
