@@ -85,6 +85,10 @@ python capabilities/entire-local-continuous/continuous_local.py admit-afk `
 python -m unittest discover -s capabilities/entire-local-continuous/tests -p 'test_*.py' -v
 ```
 
+## Local visual intelligence (upstream orchestration)
+
+The executable source catalog, safe local checkout CLI and current multi-engine integration runbook are in [Visual Intelligence Stack](docs/VISUAL_INTELLIGENCE_STACK.md). Start with `python capabilities/visual-state-compare/upstreams.py plan --profile all`, then the foundation/UI sync and doctor steps from that runbook. Pinned SOURCE checkouts are not installed OCR, models or live UI capabilities. The reusable Visual State Compare core and isolated browser capture remain independently supported.
+
 ## Capabilities
 
 Admitted capabilities:
