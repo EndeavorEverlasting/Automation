@@ -123,6 +123,10 @@ class RepositoryHandoffTest(unittest.TestCase):
             ("private document", lambda p: p["accomplished"].append("docs.google.com/document/d/private")),
             ("secret field value", lambda p: p["blockers"].append("access_token=raw")),
             ("false status proof", lambda p: p.update(status="MERGED")),
+            ("wrong status type", lambda p: p.update(status={"state": "MERGED"})),
+            ("blocked without blocker", lambda p: p.update(status="WRITE_BLOCKED", blockers=[])),
+            ("wrong check-result type", lambda p: p["checks"].append(
+                {"name": "unexpected", "result": ["PASS"], "evidence": "not allowed"})),
             ("missing passing evidence", lambda p: p["checks"].append(
                 {"name": "security", "result": "PASS", "evidence": ""})),
             ("untyped check", lambda p: p["checks"].append("passed")),
