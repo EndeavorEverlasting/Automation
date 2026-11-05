@@ -1,7 +1,7 @@
 # Repository-owned canonical handoff — incubation
 
-**Contract:** `automation-repository-handoff/v1`  
-**Owner:** Automation `capabilities/repository-handoff/`  
+**Contract:** `automation-repository-handoff/v1`
+**Owner:** Automation `capabilities/repository-handoff/`
 **Status:** INCUBATING — standard-library validator, renderer, safe existing-worktree writer and local verifier. Provider commit/PR/live certification is **not** part of this capability.
 
 ## Parent purpose
