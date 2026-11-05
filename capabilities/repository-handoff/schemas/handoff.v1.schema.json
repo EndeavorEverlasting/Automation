@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "automation-repository-handoff/v1",
+  "title": "Repository-owned agent successor handoff",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "work_id",
+    "repository_id",
+    "branch",
+    "baseline_sha",
+    "canonical_path",
+    "mission",
+    "status",
+    "owned_scope",
+    "forbidden_scope",
+    "accomplished",
+    "checks",
+    "blockers",
+    "evidence_refs",
+    "next_action",
+    "proof_ceiling"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "automation-repository-handoff/v1"
+    },
+    "work_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "repository_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "baseline_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "canonical_path": {
+      "type": "string",
+      "pattern": "^[^/]+(?:/[^/]+)+\\.md$"
+    },
+    "mission": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "status": {
+      "enum": [
+        "CANDIDATE",
+        "COMMITTED",
+        "PUSHED",
+        "PR_OPEN",
+        "MERGED",
+        "DEPLOYED",
+        "LIVE_OBSERVED",
+        "WRITE_BLOCKED",
+        "VALIDATION_BLOCKED"
+      ]
+    },
+    "owned_scope": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    },
+    "forbidden_scope": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    },
+    "accomplished": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    },
+    "checks": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "result",
+          "evidence"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "result": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "BLOCKED",
+              "NOT_RUN"
+            ]
+          },
+          "evidence": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    },
+    "next_action": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "proof_ceiling": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    }
+  }
+}
