@@ -70,13 +70,13 @@ class RepositoryHandoffTest(unittest.TestCase):
             receipt = handoff.write(root, packet)
             self.assertEqual(receipt["result"], "WRITTEN_WORKTREE_NOT_COMMITTED")
             self.assertEqual(receipt["git_head_sha"], packet["baseline_sha"])
-            self.assertEqual((root / packet["canonical_path"]).read_text(),
+            self.assertEqual((root / packet["canonical_path"]).read_text(encoding="utf-8"),
                              handoff.render(packet))
             target, head = handoff.owned_destination(root, packet)
             self.assertEqual(head, packet["baseline_sha"])
             self.assertEqual(target.read_bytes(), handoff.render(packet).encode())
-            self.assertNotIn("ParallaxPort", target.read_text())
-            self.assertNotIn("TokenCorridor", target.read_text())
+            self.assertNotIn("ParallaxPort", target.read_text(encoding="utf-8"))
+            self.assertNotIn("TokenCorridor", target.read_text(encoding="utf-8"))
         self.assertFalse((self.repo / "docs/agents/CONTINUATION.md").exists())
 
     def test_existing_handoff_requires_exact_old_sha256(self):
@@ -89,7 +89,7 @@ class RepositoryHandoffTest(unittest.TestCase):
         revised["accomplished"].append("Another bounded change")
         second = handoff.write(self.repo, revised, expected_sha256=first["sha256"])
         self.assertNotEqual(first["sha256"], second["sha256"])
-        self.assertEqual((self.repo / revised["canonical_path"]).read_text(),
+        self.assertEqual((self.repo / revised["canonical_path"]).read_text(encoding="utf-8"),
                          handoff.render(revised))
 
     def test_stale_head_and_branch_fail_closed(self):
