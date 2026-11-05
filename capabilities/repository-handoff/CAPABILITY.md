@@ -34,7 +34,7 @@ python capabilities/repository-handoff/handoff.py verify --repo-root /existing/c
 
 An existing handoff can only be replaced with `--expected-sha256 <64-character actual old file hash>`; changed preimages, unexpected branch/head, symlinks, default branches, missing repo roots and path traversal fail closed. This writer creates or updates **one file inside the existing checkout**, never a second clone or an export. It does not `git add`, commit, push, open a PR, or deploy. The result `WRITTEN_WORKTREE_NOT_COMMITTED` is **not remote proof**. A provider-connected agent can instead render the validated Markdown and write it directly to the canonical target through authenticated provider file/commit APIs, then independently read back its remote SHA.
 
-A consumer must configure its own `canonical_path` to an **existing authoritative handoff** or designated tracked destination. The `harness/handoffs/CURRENT.md` shown in the synthetic fixture is an example, not an instruction to create that path in every repo. Preserve the incumbent handoff and require the actual old-file digest for authorized replacement. No silent alternate files.
+A consumer must configure its own `canonical_path` to an **existing authoritative handoff** or designated tracked destination. The `harness/handoffs/CURRENT.md` shown in the synthetic fixture is an example, not an instruction to create that path in every repo. Preserve the incumbent handoff and require the exact old-file digest for authorized replacement. No silent alternate files.
 
 ## Invariants
 
