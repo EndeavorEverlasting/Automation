@@ -17,6 +17,7 @@ The ParallaxPort P124 handoff ([PR #36](https://github.com/EndeavorEverlasting/P
 - `fixtures/synthetic-handoff.v1.json` — safe, portable sample; **do not write it to a live repo unchanged**.
 - `handoff.py` — `validate`, `render`, `write`, `verify`.
 - `tests/test_handoff.py` — isolate/concurrency/preimage/privacy and two-consumer canaries.
+- [`HANDOFF.md`](HANDOFF.md) — canonical in-repository next-agent continuation, current PR/proof ceiling and executable successor gates.
 
 Example read-only operations:
 
