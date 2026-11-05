@@ -1,7 +1,7 @@
 # Canonical next-agent handoff — repository-handoff incubation
 
-**Owner:** `EndeavorEverlasting/Automation`, `automation-repository-handoff/v1`  
-**Status:** IMPLEMENTED / CI VALIDATED / DRAFT PR — not merged or production adopted  
+**Owner:** `EndeavorEverlasting/Automation`, `automation-repository-handoff/v1`
+**Status:** IMPLEMENTED / CI VALIDATED / DRAFT PR — not merged or production adopted
 **Parent objective:** Incubate repo-owned next-agent handoffs as a reusable Automation capability, replacing assistant recommendations to download ZIPs, duplicate host files, or manually copy code when authenticated repository writes should occur.
 
 ## Verified source and integration
