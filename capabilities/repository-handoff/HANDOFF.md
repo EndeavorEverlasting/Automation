@@ -8,9 +8,9 @@
 
 - **Owned branch:** `feat/repository-native-handoff-incubation-20261105`
 - **Review:** [Automation PR #45](https://github.com/EndeavorEverlasting/Automation/pull/45), draft, against `main`; no merge or deploy authorized by this task.
-- **Last exact-head green suite baseline:** `99e7f7cbf4a8917092f688c251fe5d9fd1ec63ea` (this handoff file may advance branch HEAD; resolve exact current ref before execution).
-- **Windows and Ubuntu acceptance:** [Actions run 42119416638](https://github.com/EndeavorEverlasting/Automation/actions/runs/42119416638), both jobs SUCCESS.
-- **Automation regression suite:** [Actions run 42119416625](https://github.com/EndeavorEverlasting/Automation/actions/runs/42119416625), main validation and Windows silent-cron parser SUCCESS.
+- **Last exact-head green suite baseline:** `e2ca3fffd084d26832ae329771e1c12c3b2ce099` (this handoff file may advance branch HEAD; resolve exact current ref before execution).
+- **Windows and Ubuntu acceptance:** [Actions run 42120059139](https://github.com/EndeavorEverlasting/Automation/actions/runs/42120059139), both jobs SUCCESS.
+- **Automation regression suite:** [Actions run 42120059164](https://github.com/EndeavorEverlasting/Automation/actions/runs/42120059164), main validation and Windows silent-cron parser SUCCESS.
 - **ParallaxPort reference only:** [ParallaxPort PR #36](https://github.com/EndeavorEverlasting/ParallaxPort/pull/36), `harness/workflows/REPOSITORY_FIRST_HANDOFF.md`, unmerged stacked security PR. Do not copy its security implementation or override its active writer.
 - **Upstream semantics:** [TokenCorridor P01 PR #309](https://github.com/EndeavorEverlasting/TokenCorridor/pull/309), draft. TokenCorridor still owns P-number bodies and their invocation catalog. Automation does not update/mirror prompt sources.
 
