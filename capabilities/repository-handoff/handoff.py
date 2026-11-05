@@ -93,7 +93,8 @@ def validate(payload):
     repo_relative(payload["canonical_path"], "canonical_path", markdown=True)
     for name in ("mission", "next_action", "proof_ceiling"):
         text_field(payload[name], name)
-    require(payload["status"] in STATES, "unknown handoff status")
+    require(isinstance(payload["status"], str) and payload["status"] in STATES,
+            "unknown handoff status")
     for name in ("owned_scope", "forbidden_scope"):
         array_field(payload[name], name, nonempty=True)
     for name in ("accomplished", "blockers", "evidence_refs"):
@@ -104,13 +105,16 @@ def validate(payload):
         require(isinstance(check, dict) and set(check) == {"name", "result", "evidence"},
                 f"checks[{i}] must have exact name/result/evidence")
         text_field(check["name"], f"checks[{i}].name")
-        require(check["result"] in RESULTS, f"checks[{i}] invalid result")
+        require(isinstance(check["result"], str) and check["result"] in RESULTS,
+                f"checks[{i}] invalid result")
         if check["result"] in ("PASS", "FAIL"):
             text_field(check["evidence"], f"checks[{i}].evidence")
         else:
             require(isinstance(check["evidence"], str), "evidence must be a string")
             if check["evidence"]:
                 text_field(check["evidence"], f"checks[{i}].evidence")
+    if payload["status"] in ("WRITE_BLOCKED", "VALIDATION_BLOCKED"):
+        require(bool(payload["blockers"]), "blocked state requires a concrete blocker")
     if payload["status"] in ("COMMITTED", "PUSHED", "PR_OPEN", "MERGED",
                              "DEPLOYED", "LIVE_OBSERVED"):
         require(bool(payload["evidence_refs"]), "proof-bearing status needs evidence_refs")
