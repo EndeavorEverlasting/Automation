@@ -23,6 +23,15 @@ Next: A verified FirstMate live-crew adapter must consume a checked, host-attest
 See `docs/PARALLEL_DISPATCH.md` for the plan and semantic boundaries.
 
 
+## PS-0131 authenticated receipt/claim preflight — nonproduction candidate
+
+The provider-neutral `receipt_gate.py` implements a fail-closed preflight requiring
+a current claim, immutable repository head, and independently retrieved receipt.
+Read [RECEIPT_GATE.md](RECEIPT_GATE.md) before use: the adapter's provenance must
+be authenticated outside this module, and external side effects still require
+executor-side fencing. Synthetic test success **does not** establish a production
+writer or a trusted provider claim.
+
 ## AUTO-PD1 persistent admission slice (source candidate)
 
 The reusable lease_ledger.py adds **single-host SQLite persistence** on top of
@@ -46,6 +55,17 @@ reject late ledger reports from expired workers; they DO NOT kill external
 workers or fence external side effects. Native adapters must enforce their own
 idempotency/fencing. Expiry allows two claim attempts per item by default.
 Worker failures block dependents; worker success reports never unblock them.
+
+
+**PS-0131 local SQLite fence canary:** `LeaseLedger.apply_fenced_sqlite_effect(...)`
+atomically validates the current lease, runs a trusted same-connection SQLite
+callback, and records a stable effect ID/payload digest under one transaction.
+Stale workers, conflicting replays and expiry during SQL work roll back; duplicate
+identical effects are no-ops. See [RECEIPT_GATE.md](RECEIPT_GATE.md) and the
+six focused lease-ledger regression methods. This is **single-host same-database
+fencing only**, not a production authenticated provider adapter, cross-host
+lease, filesystem/API side-effect fence, or permission to launch agents.
+
 
 **Strict proof ceiling:** SQLite transactions and a 100-item synthetic fixture
 do NOT demonstrate real model agent sessions, provider authentication, safe
