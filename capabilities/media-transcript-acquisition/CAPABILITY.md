@@ -53,3 +53,7 @@ See [SOCIAL_MEDIA_INSIGHTS.md](SOCIAL_MEDIA_INSIGHTS.md) for CLI usage, dependen
 `deliver_artifact.py` supplies `automation.media-artifact-delivery/v1` for user-authorized accessible social media sources. It writes video, MP3 audio, or hybrid video+audio to a host-private output directory outside Git, with a hash-verifiable JSON manifest and typed blocked receipts. This is separate from `acquire.py` captions and `social_insights.py` evidence/analysis; neither existing contract is replaced.
 
 Read [ARTIFACT_DELIVERY.md](ARTIFACT_DELIVERY.md) for command, modes, dependencies, risk limits, P97/P141 dispositions, P82 offline canaries, P08 host certification, and the P04 machine-readable handoff. Offline CI is not provider/host certification. Do not automatically schedule or upload media.
+
+## Cross-platform media host entrypoints
+
+The additive `automation.media-host/v1` interface provides `host_app.py` doctor/capture/verify/interactive, with thin Windows `Run-Media-Delivery.cmd` and Linux Mint `run-media-delivery.sh` wrappers. FFmpeg is a required host dependency even for video because stream merging may be necessary. Read `HOST_SETUP.md` and `docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.md`. CI cannot certify real host provider access or local desktop behavior.
