@@ -2,8 +2,41 @@
   "schema_version": "automation-runtime-execution-handoff/v1",
   "packet_schema_version": "automation-runtime-handoff-packet/v1",
   "semantic_dependency": "planning.runtime_partition",
+  "corporate_boundary_dependency": "tokencorridor-chatgpt-corporate-access-admission/v1",
   "role": "consumer_validation_only",
   "description": "Execution-facing handoff validation for deterministic runtime placement. This contract consumes an upstream placement decision; it does not plan work, broker execution, or choose ownership.",
+  "corporate_boundary": {
+    "chatgpt_corporate_provider_access": "DENY",
+    "personal_workstation_corporate_access": "PERMIT_WHEN_COMPANY_APPROVED",
+    "local_agent_corporate_access": "PERMIT_WHEN_AUTHORIZED_AND_ISOLATED",
+    "unknown_corporate_access": "DENY",
+    "chatgpt_environments": [
+      "CURRENT_CHAT_RUNTIME",
+      "CONNECTED_PROVIDER"
+    ],
+    "corporate_provider_families": [
+      "microsoft_365",
+      "m365",
+      "outlook",
+      "teams",
+      "sharepoint",
+      "onedrive",
+      "azure_ad",
+      "entra_id",
+      "servicenow",
+      "corporate_identity",
+      "corporate_email",
+      "corporate_calendar",
+      "corporate_directory",
+      "corporate_hr",
+      "badge_portal",
+      "nyc_hh",
+      "nychealthhospitals",
+      "hh_fieldops",
+      "company_portal"
+    ],
+    "rule": "READY packets that place ChatGPT/CURRENT_CHAT_RUNTIME or CONNECTED_PROVIDER against corporate provider families are rejected. OPERATOR_OR_PHYSICAL_RUNTIME corporate access remains admissible. LOCAL_AGENT_RUNTIME corporate access requires operator_authorized=true, company_policy_permits=true, and credentials_exported_to_chatgpt=false. Missing provider_access remains valid for non-corporate packets."
+  },
   "execution_environments": [
     "CURRENT_CHAT_RUNTIME",
     "CONNECTED_PROVIDER",
