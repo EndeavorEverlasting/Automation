@@ -231,3 +231,7 @@ python capabilities/media-transcript-acquisition/deliver_artifact.py --url "http
 ```
 
 The [P04 local certification packet](docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.json) separates offline repository validation from real host/provider proof. No user media, credentials or local runtime receipts belong in this public repository.
+
+### Windows and Linux Mint user launchers
+
+A supported [local Media Delivery host experience](capabilities/media-transcript-acquisition/HOST_SETUP.md) now provides a guided launcher, read-only dependency doctor, explicit video/audio/hybrid capture, and SHA-256 receipt verification through one portable Python core. Windows uses `Run-Media-Delivery.cmd`; Linux Mint uses `bash run-media-delivery.sh`. Source access and desktop behavior require independent real-host proof; no installer, browser login, background scheduler or cloud upload is installed. The [P04 Windows + Mint certification handoff](docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.md) is the canonical continuation.
