@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Automation local media artifact delivery receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "status",
+    "delivery_id",
+    "source",
+    "mode",
+    "artifacts",
+    "failure",
+    "proof_ceiling"
+  ],
+  "properties": {
+    "contract": {
+      "const": "automation.media-artifact-delivery/v1"
+    },
+    "status": {
+      "enum": [
+        "BLOCKED",
+        "DELIVERED"
+      ]
+    },
+    "delivery_id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{32}$"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "url",
+        "id_sha256_prefix"
+      ],
+      "properties": {
+        "provider": {
+          "enum": [
+            "youtube",
+            "instagram",
+            "tiktok",
+            "facebook",
+            "x",
+            "reddit",
+            "vimeo",
+            "linkedin"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://"
+        },
+        "id_sha256_prefix": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{16}$"
+        }
+      }
+    },
+    "mode": {
+      "enum": [
+        "video",
+        "audio",
+        "hybrid"
+      ]
+    },
+    "artifacts": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "file",
+          "bytes",
+          "sha256"
+        ],
+        "properties": {
+          "role": {
+            "enum": [
+              "video",
+              "audio"
+            ]
+          },
+          "file": {
+            "type": "string",
+            "pattern": "^(video|audio)\\.[a-z0-9]+$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "failure": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "proof_ceiling": {
+      "enum": [
+        "LOCAL_FILES_HASHED_NOT_PROVIDER_CERTIFIED",
+        "NO_ARTIFACT_DELIVERED"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "DELIVERED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "artifacts": {
+            "minItems": 1
+          },
+          "failure": {
+            "type": "null"
+          },
+          "proof_ceiling": {
+            "const": "LOCAL_FILES_HASHED_NOT_PROVIDER_CERTIFIED"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "BLOCKED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "artifacts": {
+            "maxItems": 0
+          },
+          "failure": {
+            "type": "string"
+          },
+          "proof_ceiling": {
+            "const": "NO_ARTIFACT_DELIVERED"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "hybrid"
+          },
+          "status": {
+            "const": "DELIVERED"
+          }
+        },
+        "required": [
+          "mode",
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "artifacts": {
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      }
+    }
+  ]
+}
