@@ -119,7 +119,8 @@ def capture(url: str, mode: str, output_dir: Path, max_mb: int = 500,
     delivery_id = uuid.uuid4().hex
     source_id = hashlib.sha256(canonical_url.encode("utf-8")).hexdigest()[:16]
     tool = shutil.which("yt-dlp")
-    ffmpeg = shutil.which("ffmpeg") if mode in {"audio", "hybrid"} else None
+    # Even video-only output can need FFmpeg to merge separately streamed audio/video.
+    ffmpeg = shutil.which("ffmpeg")
     private_directory(root)
     packet = {"contract": CONTRACT,
               "status": "BLOCKED",
@@ -132,7 +133,7 @@ def capture(url: str, mode: str, output_dir: Path, max_mb: int = 500,
         packet["failure"] = "YTDLP_UNAVAILABLE"
         write_receipt(failpath, packet)
         return packet, failpath
-    if mode in {"audio", "hybrid"} and not ffmpeg:
+    if not ffmpeg:
         packet["failure"] = "FFMPEG_UNAVAILABLE"
         write_receipt(failpath, packet)
         return packet, failpath
