@@ -28,13 +28,15 @@ class ArtifactDeliveryTests(unittest.TestCase):
         self.assertIs(kwargs["stdin"], subprocess.DEVNULL)
         self.assertIs(kwargs["stdout"], subprocess.DEVNULL)
         self.assertIs(kwargs["stderr"], subprocess.DEVNULL)
-        self.assertIn("--ignore-config", argv)
-        self.assertIn("--no-playlist", argv)
-        self.assertIn("--no-remote-components", argv)
         self.assertNotIn("utm_source", " ".join(argv))
         if argv[0] == "/test/ffmpeg":
+            self.assertIn("-nostdin", argv)
+            self.assertIn("-vn", argv)
             Path(argv[-1]).write_bytes(b"synthetic audio")
         else:
+            self.assertIn("--ignore-config", argv)
+            self.assertIn("--no-playlist", argv)
+            self.assertIn("--no-remote-components", argv)
             path = Path(argv[argv.index("-o") + 1])
             suffix = "mp3" if "-x" in argv else "mp4"
             Path(str(path).replace("%(ext)s", suffix)).write_bytes(b"synthetic video-or-audio")
@@ -121,6 +123,17 @@ class ArtifactDeliveryTests(unittest.TestCase):
             self.assertEqual(packet["failure"], expected)
             self.assertTrue(receipt.is_file())
             self.assertEqual(list(self.out.glob("media-*")), [])
+
+    def test_versioned_receipt_schema_rejects_false_success(self):
+        from jsonschema import Draft202012Validator
+        schema = json.loads((ROOT / "schemas/media-artifact-delivery.v1.schema.json").read_text())
+        Draft202012Validator.check_schema(schema)
+        with patch.object(d.shutil, "which", side_effect=self.which), \
+             patch.object(d.subprocess, "run", side_effect=self.runner):
+            packet, _ = d.capture(self.url, "video", self.out)
+        Draft202012Validator(schema).validate(packet)
+        invalid = dict(packet, artifacts=[], failure="FALSE_SUCCESS")
+        self.assertFalse(Draft202012Validator(schema).is_valid(invalid))
 
     @unittest.skipIf(os.name == "nt", "POSIX standalone consumer canary")
     def test_isolated_cli_consumer_using_fake_host_tool(self):
