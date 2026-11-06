@@ -9,6 +9,15 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONTRACT = ROOT / "harness/contracts/runtime-execution-handoff.v1.json"
+# Boolean admission metadata may include otherwise-forbidden key fragments such as
+# "credential" without carrying secret material.
+CORPORATE_BOUNDARY_BOOLEAN_KEYS = frozenset({
+    "credentials_exported_to_chatgpt",
+    "operator_authorized",
+    "company_policy_permits",
+    "via_chatgpt_connector",
+    "connector_targets_corporate",
+})
 
 
 def _walk(value: Any, path: str = "$"):
@@ -37,6 +46,83 @@ def _has_meaningful_content(value: Any) -> bool:
     if isinstance(value, list):
         return bool(value) and all(_has_meaningful_content(child) for child in value)
     return value is not None
+
+
+def _normalize_provider_family(value: str) -> str:
+    return value.strip().lower().replace("-", "_").replace(" ", "_")
+
+
+def _validate_corporate_boundary(
+    packet: dict[str, Any],
+    environment: Any,
+    boundary: dict[str, Any],
+) -> list[str]:
+    """Mirror TokenCorridor actor-versus-corporate-provider admission for packets."""
+    errors: list[str] = []
+    families = {
+        _normalize_provider_family(str(item))
+        for item in boundary.get("corporate_provider_families", [])
+        if isinstance(item, str) and item.strip()
+    }
+    chatgpt_environments = set(boundary.get("chatgpt_environments", []))
+    provider_access = packet.get("provider_access")
+    corporate_touch = False
+    if isinstance(provider_access, list):
+        for index, record in enumerate(provider_access):
+            if not isinstance(record, dict):
+                errors.append(f"provider_access[{index}] must be an object")
+                continue
+            family = record.get("provider_family")
+            if isinstance(family, str) and _normalize_provider_family(family) in families:
+                corporate_touch = True
+    if packet.get("connector_targets_corporate") is True:
+        corporate_touch = True
+
+    chatgpt_route = (
+        environment in chatgpt_environments
+        or packet.get("via_chatgpt_connector") is True
+        or (
+            isinstance(packet.get("actor"), str)
+            and packet.get("actor", "").strip().upper() in {"CHATGPT", "CHATGPT_CONNECTOR"}
+        )
+    )
+
+    if not corporate_touch:
+        if chatgpt_route and packet.get("connector_targets_corporate") is True:
+            errors.append(
+                "corporate boundary violation: ChatGPT cannot suggest corporate connectors"
+            )
+        return errors
+
+    if chatgpt_route:
+        errors.append(
+            "corporate boundary violation: ChatGPT/connectors cannot access corporate providers"
+        )
+        return errors
+
+    if environment == "OPERATOR_OR_PHYSICAL_RUNTIME":
+        return errors
+
+    if environment == "LOCAL_AGENT_RUNTIME":
+        if packet.get("operator_authorized") is not True:
+            errors.append(
+                "corporate boundary violation: local agent lacks operator_authorized=true"
+            )
+        if packet.get("company_policy_permits") is not True:
+            errors.append(
+                "corporate boundary violation: local agent lacks company_policy_permits=true"
+            )
+        if packet.get("credentials_exported_to_chatgpt") is not False:
+            errors.append(
+                "corporate boundary violation: credentials_exported_to_chatgpt must be false"
+            )
+        return errors
+
+    errors.append(
+        "corporate boundary violation: corporate provider access fails closed for "
+        f"execution_environment {environment!r}"
+    )
+    return errors
 
 
 def validate_packet(
@@ -129,6 +215,12 @@ def validate_packet(
     ):
         errors.append("READY packet cannot use UNKNOWN_RUNTIME")
 
+    boundary = contract.get("corporate_boundary")
+    if isinstance(boundary, dict):
+        errors.extend(
+            _validate_corporate_boundary(packet, environment, boundary)
+        )
+
     privacy = contract["privacy"]
     forbidden_keys = tuple(
         fragment.lower() for fragment in privacy["forbidden_key_fragments"]
@@ -142,7 +234,10 @@ def validate_packet(
 
     for path, key, value in _walk(packet):
         if key is not None:
-            lower_key = str(key).lower()
+            key_text = str(key)
+            if key_text in CORPORATE_BOUNDARY_BOOLEAN_KEYS and isinstance(value, bool):
+                continue
+            lower_key = key_text.lower()
             for fragment in forbidden_keys:
                 if fragment in lower_key:
                     errors.append(

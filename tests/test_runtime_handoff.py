@@ -40,6 +40,10 @@ class RuntimeHandoffContractTests(unittest.TestCase):
             "planning.runtime_partition",
         )
         self.assertEqual(
+            self.contract["corporate_boundary_dependency"],
+            "tokencorridor-chatgpt-corporate-access-admission/v1",
+        )
+        self.assertEqual(
             self.contract["role"],
             "consumer_validation_only",
         )
@@ -51,6 +55,57 @@ class RuntimeHandoffContractTests(unittest.TestCase):
             "UNKNOWN_RUNTIME",
             self.contract["execution_environments"],
         )
+        self.assertEqual(
+            self.contract["corporate_boundary"]["chatgpt_corporate_provider_access"],
+            "DENY",
+        )
+
+    def test_chatgpt_packet_cannot_target_corporate_providers(self) -> None:
+        packet = copy.deepcopy(self.example)
+        packet["execution_environment"] = "CURRENT_CHAT_RUNTIME"
+        packet["provider_access"] = [
+            {
+                "provider_family": "microsoft_365",
+                "operation": "read mailbox",
+                "authority_state": "AVAILABLE_UNVERIFIED",
+                "mutation_authority": False,
+            }
+        ]
+        errors = self.validator.validate_packet(packet, self.contract, require_ready=True)
+        self.assertTrue(any("ChatGPT/connectors cannot access corporate providers" in e for e in errors))
+
+    def test_personal_computer_corporate_login_packet_is_admitted(self) -> None:
+        packet = copy.deepcopy(self.example)
+        packet["execution_environment"] = "OPERATOR_OR_PHYSICAL_RUNTIME"
+        packet["provider_access"] = [
+            {
+                "provider_family": "nyc_hh",
+                "operation": "manual browser login",
+                "authority_state": "AVAILABLE_UNVERIFIED",
+                "mutation_authority": False,
+            }
+        ]
+        errors = self.validator.validate_packet(packet, self.contract, require_ready=True)
+        self.assertEqual(errors, [])
+
+    def test_local_agent_corporate_packet_requires_authorization_isolation(self) -> None:
+        packet = copy.deepcopy(self.example)
+        packet["provider_access"] = [
+            {
+                "provider_family": "servicenow",
+                "operation": "read incidents",
+                "authority_state": "VERIFIED",
+                "mutation_authority": False,
+            }
+        ]
+        errors = self.validator.validate_packet(packet, self.contract, require_ready=True)
+        self.assertTrue(any("operator_authorized" in e for e in errors))
+
+        packet["operator_authorized"] = True
+        packet["company_policy_permits"] = True
+        packet["credentials_exported_to_chatgpt"] = False
+        errors = self.validator.validate_packet(packet, self.contract, require_ready=True)
+        self.assertEqual(errors, [])
 
     def test_sanitized_ready_example_passes(self) -> None:
         errors = self.validator.validate_packet(
