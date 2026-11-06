@@ -52,3 +52,28 @@ Official sources:
 - https://ffmpeg.org/download.html
 
 See ARTIFACT_DELIVERY.md for the shared delivery contract and docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.json for the executable host acceptance packet.
+
+## Optional manual installation examples (never run by the launcher)
+
+Review these commands and package descriptions before choosing to run them on your own machine. They are not part of the app or background tasks.
+
+Windows PowerShell with WinGet, after inspecting the package sources:
+
+    winget install --source winget --id Python.Python.3.12
+    winget install --source winget --id yt-dlp.yt-dlp
+    winget install --source winget --id Gyan.FFmpeg.Essentials
+
+Linux Mint 22, whose supported Python is generally present through the distro:
+
+    sudo apt update
+    sudo apt install python3 ffmpeg pipx
+    pipx ensurepath
+    pipx install 'yt-dlp[default]'
+
+Reopen the terminal after installs so PATH includes the new binaries. Confirm Python >=3.11, yt-dlp and FFmpeg individually; real YouTube support may also need a supported JS runtime and yt-dlp-ejs per the upstream yt-dlp README.
+
+On older Linux Mint with a supported side-by-side interpreter, the bash launcher will search python3 and versioned python3.11+ binaries without replacing distro Python. Optionally choose a trusted interpreter explicitly:
+
+    AUTOMATION_PYTHON=/path/to/python3.12 bash capabilities/media-transcript-acquisition/run-media-delivery.sh doctor
+
+Do not run the example until that exact interpreter exists. An unsupported version is reported rather than executing with a guessed environment.
