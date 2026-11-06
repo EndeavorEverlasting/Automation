@@ -1,0 +1,39 @@
+name: Repository-owned handoff capability acceptance
+on:
+  pull_request:
+    paths:
+      - 'capabilities/repository-handoff/**'
+      - 'docs/REPOSITORY_HANDOFF_SEAM_REVIEW.md'
+      - 'tests/test_repository_handoff.py'
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - '.github/workflows/repository-handoff.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  portable-handoff:
+    name: repository-handoff (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile the portable handoff CLI
+        run: python -m py_compile capabilities/repository-handoff/handoff.py
+      - name: Exercise synthetic validation and read-only rendering
+        run: |
+          python capabilities/repository-handoff/handoff.py validate --packet capabilities/repository-handoff/fixtures/synthetic-handoff.v1.json
+          python capabilities/repository-handoff/handoff.py render --packet capabilities/repository-handoff/fixtures/synthetic-handoff.v1.json
+      - name: Unit, refusal and isolated-consumer canaries
+        run: python -m unittest discover -s capabilities/repository-handoff/tests -p 'test_*.py' -v
+      - name: Root admission and wayfinding
+        run: python -m unittest discover -s tests -p 'test_repository_handoff.py' -v
