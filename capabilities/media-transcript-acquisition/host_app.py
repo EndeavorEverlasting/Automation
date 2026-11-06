@@ -200,6 +200,10 @@ def main(argv: list[str] | None = None) -> int:
     prove.add_argument("--receipt", type=Path, required=True)
     commands.add_parser("interactive", help="Guided local capture session")
     a = parser.parse_args(argv)
+    if sys.version_info < (3, 11):
+        print(json.dumps({"contract": HOST_CONTRACT, "status": "BLOCKED",
+                          "failure": "UNSUPPORTED_PYTHON_VERSION"}))
+        return 2
     if a.command == "doctor":
         info = doctor()
         if a.json:
