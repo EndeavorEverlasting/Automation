@@ -7,7 +7,7 @@ if %errorlevel%==0 (
   py -3 "%~dp0host_app.py" %*
 ) else (
   where python >nul 2>nul
-  if not %errorlevel%==0 (
+  if errorlevel 1 (
     echo Python 3.11+ was not found. Open HOST_SETUP.md for installation steps.
     popd
     exit /b 2
