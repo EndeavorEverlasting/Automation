@@ -34,8 +34,9 @@ export function toGoogleSlidesRequests(ir,slideId){
    const s=ob.step;shape(ob.id+"_panel","ROUND_RECTANGLE",b,ob.panel,ob.accent,.94);
    shape(ob.id+"_rail","RECTANGLE",{x:b.x+2,y:b.y+11,w:4,h:b.h-22},ob.accent);
    text(ob.id+"_head",s.title,{x:b.x+11,y:b.y+12,w:b.w-21,h:27},15.1,ob.ink,true);
-   text(ob.id+"_description",s.summary,{x:b.x+11,y:b.y+44,w:b.w-21,h:33},9.5,ob.muted);
-   if(s.action)text(ob.id+"_action",s.action.label+" ↗",{x:b.x+11,y:b.y+b.h-19,w:b.w-20,h:16},9.3,ob.accent,true,s.action.url);
+   const shortCard=b.h<98;
+   text(ob.id+"_description",s.summary,{x:b.x+11,y:b.y+44,w:b.w-21,h:shortCard?20:30},9.5,ob.muted);
+   if(s.action)text(ob.id+"_action",s.action.label,{x:b.x+11,y:b.y+b.h-24,w:b.w-20,h:14},9.3,ob.accent,true,s.action.url);
   }else if(ob.type==="arrow"){
    shape(ob.id,"RIGHT_ARROW",b,ob.accent);
   }else if(ob.type==="footer"){
