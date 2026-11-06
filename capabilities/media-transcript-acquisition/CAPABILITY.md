@@ -47,3 +47,9 @@ Run `python -m unittest discover -s capabilities/media-transcript-acquisition/te
 The existing `acquire.py` YouTube-only contract and its receipts remain unchanged. The additive `social_insights.py` entrypoint introduces `automation.social-media-insights/v1`: HTTPS provider classification, optional `yt-dlp` retrieval, existing SRT/VTT normalization, local FFmpeg frame evidence, opt-in offline `faster-whisper` ASR and local Ollama multimodal technical-claim extraction. Every emitted model claim must reference real cue/frame IDs and remains externally unverified. The local output and media sidecars stay private.
 
 See [SOCIAL_MEDIA_INSIGHTS.md](SOCIAL_MEDIA_INSIGHTS.md) for CLI usage, dependencies, cross-provider caveats, receipt statuses, seam review and the live-provider acceptance gate. Validation: `python -m unittest discover -s capabilities/media-transcript-acquisition/tests -v`. This addition has **no independently certified live Instagram extraction** and does not imply universal social-platform access.
+
+## Local media artifact delivery (additive host file contract)
+
+`deliver_artifact.py` supplies `automation.media-artifact-delivery/v1` for user-authorized accessible social media sources. It writes video, MP3 audio, or hybrid video+audio to a host-private output directory outside Git, with a hash-verifiable JSON manifest and typed blocked receipts. This is separate from `acquire.py` captions and `social_insights.py` evidence/analysis; neither existing contract is replaced.
+
+Read [ARTIFACT_DELIVERY.md](ARTIFACT_DELIVERY.md) for command, modes, dependencies, risk limits, P97/P141 dispositions, P82 offline canaries, P08 host certification, and the P04 machine-readable handoff. Offline CI is not provider/host certification. Do not automatically schedule or upload media.
