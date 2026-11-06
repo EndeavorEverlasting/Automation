@@ -135,3 +135,7 @@ Treat its machine-readable receipt as the current path/execution-context evidenc
 - Remote merge success is not local deployment proof.
 
 Before substantial mutation, recover current repository/provider truth and preserve these invariants.
+
+## Media artifact delivery — current owner
+
+For requests to fetch an authorized YouTube/Instagram/social-media video, audio, or hybrid artifact to the local host, read `capabilities/media-transcript-acquisition/ARTIFACT_DELIVERY.md` and use `deliver_artifact.py` plus its versioned receipt. Do not fork a downloader into another product or mistake analysis-only `social_insights.py` for an end-user media delivery guarantee. Host/provider acceptance and a P04 READY packet: `docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.json`. Do not install scheduled tasks, pass cookies, upload private clips or assert live success from synthetic tests.

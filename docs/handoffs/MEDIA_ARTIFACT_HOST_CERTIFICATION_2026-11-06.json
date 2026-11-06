@@ -1,0 +1,71 @@
+{
+  "schema_version": "automation-runtime-handoff-packet/v1",
+  "packet_state": "READY",
+  "work_unit_id": "media-artifact-host-certification-20261106",
+  "semantic_owner": "automation.media-artifact-delivery/v1",
+  "execution_environment": "LOCAL_AGENT_RUNTIME",
+  "required_capabilities": [
+    "current Automation repository checkout",
+    "Python 3.11+",
+    "host-installed yt-dlp",
+    "host-installed FFmpeg for audio/hybrid",
+    "authorized public test media URL",
+    "local host filesystem and media inspection"
+  ],
+  "mutation_authority": [
+    "read-only provider/host certification",
+    "bounded fixes only in media-transcript-acquisition capability through an isolated branch and reviewed pull request"
+  ],
+  "owned_scope": [
+    "capabilities/media-transcript-acquisition/",
+    "local private output root selected by operator",
+    "docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.md"
+  ],
+  "forbidden_scope": [
+    "provider/browser credentials, cookies, account sessions and DRM bypass",
+    "public Git media, raw transcripts or private host path publication",
+    "Task Scheduler registration or live account setting changes",
+    "other Automation capabilities, consumer product behavior and protected corporate systems",
+    "ChatGPT connectors to corporate services"
+  ],
+  "evidence_inputs": [
+    {
+      "type": "repository_contract",
+      "identity": "automation.media-artifact-delivery/v1"
+    },
+    {
+      "type": "repository_file",
+      "identity": "capabilities/media-transcript-acquisition/ARTIFACT_DELIVERY.md"
+    },
+    {
+      "type": "repository_file",
+      "identity": "capabilities/media-transcript-acquisition/tests/test_artifact_delivery.py"
+    }
+  ],
+  "dependencies": [],
+  "collision_surface": [
+    "media-transcript-acquisition adapters",
+    "local yt-dlp/FFmpeg tool versions"
+  ],
+  "expected_artifacts": [
+    "private local video/audio/hybrid file and receipt or typed blocked receipt",
+    "redacted provider/version/codec/hash observations",
+    "reviewed bounded fix if validation exposes a defect"
+  ],
+  "acceptance_gates": [
+    "sync checkout to integrated branch/main and confirm current commit",
+    "run media capability offline unittest suite and note exact test count",
+    "validate a real accessible user-authorized YouTube and Instagram URL separately with recorded tool versions",
+    "check video/audio playability and receipt SHA-256 against actual files",
+    "check provider denial behavior, no secret leakage, and no partial output promoted",
+    "certify Windows child-window and fullscreen behavior separately before any unattended scheduling",
+    "document current PR/merge status accurately; do not call synthetic proof live"
+  ],
+  "proof_ceiling": "Offline source tests and remote CI cannot certify local host installation, external provider access, specific video/audio codecs, or Windows fullscreen silence.",
+  "runtime_handoff": "Resume from the current branch/PR and receipt schema. Run the bounded checks above; if access is blocked, preserve typed redacted evidence without bypass. Fix only proven defects, rerun affected tests, and report CHANGED | PROVED | NEXT with commit IDs and exact provider/host status.",
+  "freshness_requirements": [
+    "refresh Automation main and open pull request state and verify branch SHA before changes",
+    "record fresh local Python yt-dlp and FFmpeg versions",
+    "verify authorization and reachability of selected test sources at runtime"
+  ]
+}
