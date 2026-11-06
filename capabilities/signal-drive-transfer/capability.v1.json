@@ -1,0 +1,69 @@
+{
+  "schema_version": "automation-capability/v1",
+  "capability_id": "signal-drive-transfer",
+  "status": "P95_DESIGN_AND_CALLSTACK_PROTOTYPES",
+  "purpose": "Deterministic host logic that turns Signal selection and/or Save-As export media into a Drive/Docs publish plan without judgment filtering and without screenshot capture.",
+  "core_owns": [
+    "selected-messages validation",
+    "deterministic match specs",
+    "Signal Save-As export ingest and media-group merge",
+    "markdown package rendering",
+    "acceptance gates",
+    "media acquisition policy (clipboard/export only)",
+    "transfer receipt / publish plan"
+  ],
+  "adapters_own": [
+    "UIA clipboard focus/copy/read hooks",
+    "Drive/Docs transport (MCP/token/callback)",
+    "optional SQLCipher decrypt (private)",
+    "private semantic→Drive id mapping"
+  ],
+  "core_owner": "capabilities/signal-drive-transfer/core/",
+  "entrypoint": "capabilities/signal-drive-transfer/host_transfer.py",
+  "entrypoints": {
+    "cli": "capabilities/signal-drive-transfer/host_transfer.py",
+    "doctor": "capabilities/signal-drive-transfer/host_transfer.py doctor",
+    "ingest": "capabilities/signal-drive-transfer/host_transfer.py ingest-export",
+    "admit_media": "capabilities/signal-drive-transfer/host_transfer.py admit-media",
+    "plan": "capabilities/signal-drive-transfer/host_transfer.py plan"
+  },
+  "artifacts": {
+    "contract": "automation.signal-drive-transfer/v1",
+    "media_policy": "automation.signal-drive-transfer.media-policy/v1",
+    "synthetic_profile": "capabilities/signal-drive-transfer/fixtures/transfer-profile.synthetic.v1.json"
+  },
+  "runtime_boundary": {
+    "default_mutation": "NONE",
+    "network": "none-by-default",
+    "media_allowed": [
+      "signal-save-as-export",
+      "uia-clipboard-image"
+    ],
+    "media_banned": [
+      "printscreen",
+      "screenshot",
+      "snip",
+      "bitblt",
+      "dxgi-capture"
+    ],
+    "supported_execution": [
+      "CI_SYNTHETIC_PROTOTYPE",
+      "LOCAL_EXPORT_INGEST",
+      "OPTIONAL_LIVE_DRIVE_TRANSPORT"
+    ]
+  },
+  "non_goals": [
+    "screenshot or print-screen capture",
+    "message relevance filtering",
+    "Entire hook/upload or Task Scheduler mutation",
+    "committing private Signal bodies/keys/Drive ids",
+    "landing durable host logic in Moonwake/TokenCorridor"
+  ],
+  "production_use_path": "UNDECLARED",
+  "proof_ceiling": "Synthetic unittest + host CLI prototypes prove export ingest, merge, media ban, and dry-run publish planning. Live Drive write and live UIA clipboard paste remain unproven here.",
+  "prior_art": [
+    "Project store internal/signal-transfer HOST-LOGIC-SPEC.md",
+    "Automation media-transcript-acquisition host_app delivery pattern",
+    "Automation document-formatting Google Docs adapter seam"
+  ]
+}

@@ -103,6 +103,7 @@ Admitted capabilities:
 - [`ghidra-bootstrap`](capabilities/ghidra-bootstrap/CAPABILITY.md) — status `CORE_IMPLEMENTED_WINDOWS_HOST`; deterministic agent-free Ghidra download/verify/install plus non-interactive `USER_AGREEMENT=ACCEPT` (same gate as GUI **I agree**).
 - [`windows-silent-scheduled-task`](capabilities/windows-silent-scheduled-task/CAPABILITY.md) — status `CORE_IMPLEMENTED_WINDOWS_HOST`; reusable `pythonw.exe` + Hidden Task Scheduler registration/classification so consumer repos stop forking noisy console cron. Live `--apply` is operator-gated; synthetic fixtures prove CI.
 - [`entire-local-continuous`](capabilities/entire-local-continuous/CAPABILITY.md) — status `CORE_IMPLEMENTED_OFFLINE_ADMISSION`; Entire + silence admission for Actions-optional AFK continuous development. Live Entire enable and fullscreen certification remain separate gates.
+- [`signal-drive-transfer`](capabilities/signal-drive-transfer/CAPABILITY.md) — status `P95_DESIGN_AND_CALLSTACK_PROTOTYPES`; deterministic Signal selection/Save-As export → Docs/Drive publish planning. **Save-As export + UIA clipboard only; print-screen banned.** Live Drive/UIA paste remain separate gates. Architecture: [docs/P95_SIGNAL_DRIVE_TRANSFER_ARCHITECTURE_2026-11-06.md](docs/P95_SIGNAL_DRIVE_TRANSFER_ARCHITECTURE_2026-11-06.md).
 
 Windows silent scheduled task:
 

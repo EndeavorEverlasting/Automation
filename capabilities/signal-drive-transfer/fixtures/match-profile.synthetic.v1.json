@@ -1,0 +1,8 @@
+{
+  "contract": "automation.signal-drive-transfer.match-profile/v1",
+  "matchSpecs": [
+    { "ordinal": 1, "exactBody": "synthetic-account@example.test" },
+    { "ordinal": 2, "startsWith": "Synthetic plan summary" },
+    { "ordinal": 3, "startsWith": "Synthetic autopay" }
+  ]
+}

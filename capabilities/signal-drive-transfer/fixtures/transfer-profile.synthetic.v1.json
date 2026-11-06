@@ -1,0 +1,17 @@
+{
+  "contract": "automation.signal-drive-transfer.profile/v1",
+  "title": "Synthetic Signal Import",
+  "expectedCount": 3,
+  "expectedMediaGroups": 2,
+  "allowMediaOnlySubset": false,
+  "mediaSource": "signal-save-as-export",
+  "mediaActions": [
+    { "kind": "read-export-file" },
+    { "kind": "drive-upload-image" }
+  ],
+  "requireAttachmentsFor": [2, 3],
+  "workingDocSemantic": "working-doc",
+  "indexDocSemantic": "index-doc",
+  "mediaFolderSemantic": "media-folder",
+  "reconcileDocSemantic": "reconcile-doc"
+}

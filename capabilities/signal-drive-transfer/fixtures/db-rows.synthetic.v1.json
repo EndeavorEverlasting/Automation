@@ -1,0 +1,34 @@
+[
+  {
+    "id": "row-1",
+    "sent_at": 1000,
+    "sent_at_iso": "2026-11-05T21:00:00.000Z",
+    "body": "synthetic-account@example.test",
+    "hasAttachments": false,
+    "attachments": []
+  },
+  {
+    "id": "row-2",
+    "sent_at": 2000,
+    "sent_at_iso": "2026-11-05T21:01:00.000Z",
+    "body": "Synthetic plan summary line with more text",
+    "hasAttachments": true,
+    "attachments": [{ "fileName": "a.png", "contentType": "image/png" }]
+  },
+  {
+    "id": "row-noise",
+    "sent_at": 2500,
+    "sent_at_iso": "2026-11-05T21:01:30.000Z",
+    "body": "unrelated note",
+    "hasAttachments": false,
+    "attachments": []
+  },
+  {
+    "id": "row-3",
+    "sent_at": 3000,
+    "sent_at_iso": "2026-11-05T21:02:00.000Z",
+    "body": "Synthetic autopay note continues",
+    "hasAttachments": true,
+    "attachments": [{ "fileName": "b.png", "contentType": "image/png" }]
+  }
+]

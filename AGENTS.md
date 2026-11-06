@@ -8,6 +8,10 @@ AgentSwitchboard is a retired product; source evidence and verified legacy calle
 
 For loss-of-provider recovery and portable Git profile bootstrapping, consult `capabilities/git-portability/CAPABILITY.md` and its `git-portability/v1` CLI/receipt contract. Do not reinvent a prompt registry or provider credentials. The local public repo bundle/restore proof is not private-estate backup or live Google Drive publication proof. Honor the incumbent seam-boundary and migration-collision gates.
 
+## Signal → Drive transfer — discoverable owner
+
+For deterministic Signal selection / Save-As export → Docs/Drive host logic, consult `capabilities/signal-drive-transfer/CAPABILITY.md` and `docs/P95_SIGNAL_DRIVE_TRANSFER_ARCHITECTURE_2026-11-06.md`. Media intake is **Save-As export files** and/or **UIA clipboard copy-paste only**. Print-screen and screenshot capture are banned. Do not land this durable host logic in Moonwake/TokenCorridor.
+
 ## Entire-local continuous development + silent AFK cron — discoverable owner
 
 Automation incubates **Actions-optional continuous local development**. Do not invent console-flashing cron jobs, treat GitHub Actions as required AFK velocity, or push Entire session transcripts to a public origin by default.

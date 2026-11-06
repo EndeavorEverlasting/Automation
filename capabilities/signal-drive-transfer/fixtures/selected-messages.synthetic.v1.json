@@ -1,0 +1,36 @@
+{
+  "extractedAt": "2026-11-06T18:00:00.0000000-05:00",
+  "source": "Signal Desktop UI Automation (selected messages)",
+  "conversationTitle": "Note to Self synthetic",
+  "selectedCountLabelPresent": true,
+  "selectedCount": 3,
+  "messages": [
+    {
+      "ordinal": 1,
+      "listIndex": 10,
+      "dayHint": null,
+      "body": "synthetic-account@example.test",
+      "hasAttachmentDownload": false,
+      "links": [],
+      "truncatedUi": false
+    },
+    {
+      "ordinal": 2,
+      "listIndex": 11,
+      "dayHint": null,
+      "body": "Synthetic plan summary line",
+      "hasAttachmentDownload": true,
+      "links": [],
+      "truncatedUi": false
+    },
+    {
+      "ordinal": 3,
+      "listIndex": 12,
+      "dayHint": null,
+      "body": "Synthetic autopay note",
+      "hasAttachmentDownload": true,
+      "links": [],
+      "truncatedUi": false
+    }
+  ]
+}
