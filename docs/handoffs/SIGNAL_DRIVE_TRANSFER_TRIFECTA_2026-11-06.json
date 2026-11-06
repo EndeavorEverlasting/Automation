@@ -1,0 +1,62 @@
+{
+  "schema_version": "automation-runtime-handoff-packet/v1",
+  "packet_state": "READY",
+  "work_unit_id": "SIGNAL-DRIVE-TRANSFER-TRIFECTA-20261106",
+  "semantic_owner": "EndeavorEverlasting/Automation capabilities/signal-drive-transfer",
+  "execution_environment": "LOCAL_AGENT_RUNTIME",
+  "required_capabilities": [
+    "automation.signal-drive-transfer/v1"
+  ],
+  "mutation_authority": [
+    "Automation feature branch cursor/signal-drive-host-17a4 only",
+    "No Entire hook/upload mutation",
+    "No Task Scheduler mutation",
+    "No print-screen or screenshot capture"
+  ],
+  "owned_scope": [
+    "capabilities/signal-drive-transfer/**",
+    "docs/P95_SIGNAL_DRIVE_TRANSFER_ARCHITECTURE_2026-11-06.md",
+    "docs/handoffs/SIGNAL_DRIVE_TRANSFER_TRIFECTA_2026-11-06.*"
+  ],
+  "forbidden_scope": [
+    "Moonwake/TokenCorridor durable Signal host landing",
+    "print-screen/screenshot capture",
+    "Entire trust/upload settings",
+    "Windows Task Scheduler without encoded approval",
+    "committing private Signal bodies/keys/Drive ids"
+  ],
+  "evidence_inputs": [
+    {
+      "type": "git_commit",
+      "identity": "6159833bcfdd2e2a881ed23e9a9a95ea23bd3006"
+    },
+    {
+      "type": "export_dir_semantic",
+      "identity": "media/signal-transfer/export-20261106-182436"
+    }
+  ],
+  "dependencies": [
+    "P95 architecture complete"
+  ],
+  "collision_surface": [
+    "cursor/signal-drive-host-17a4"
+  ],
+  "expected_artifacts": [
+    "unittest 14/14",
+    "live export ingest receipt",
+    "dry-run transfer plan receipt",
+    "Trifecta handoff md/json"
+  ],
+  "acceptance_gates": [
+    "P83 corrections honored",
+    "P82 offline + live export measured",
+    "P07 branch contains capability",
+    "P08 distinguishes export-proved vs Drive/UIA unproven"
+  ],
+  "proof_ceiling": "Live Save-As export ingest and dry-run package planning proved; live Drive paste and UIA clipboard paste remain separate gates.",
+  "runtime_handoff": "Continue Drive upload canary and PR merge from Automation branch; do not reopen Moonwake landing.",
+  "freshness_requirements": [
+    "Re-count export PNG groups before publish batch",
+    "Re-fetch origin/main before merge"
+  ]
+}

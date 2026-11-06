@@ -25,7 +25,7 @@ def render_message_markdown(message: Mapping[str, Any], *, total: int) -> str:
     attachments = list(message.get("attachmentsSaved") or message.get("attachments") or [])
     image_meta = list(message.get("imageMeta") or [])
     if image_meta or attachments:
-        lines.extend(["## Attachments / screenshots", ""])
+        lines.extend(["## Attachments / images", ""])
         if image_meta:
             for item in image_meta:
                 name = item.get("file") or item.get("path") or "attachment"
