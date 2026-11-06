@@ -5,7 +5,7 @@ Purpose: user-authorized, accessible HTTPS social video URLs → private host vi
 
 ## CLI on the host
 
-Install Python 3.11+, current yt-dlp, and FFmpeg for audio/hybrid mode. Clone does not install or start anything.
+Install Python 3.11+, current yt-dlp, and FFmpeg for all capture modes (including video stream merging). Clone does not install or start anything.
 
     python capabilities/media-transcript-acquisition/deliver_artifact.py --url "https://www.youtube.com/shorts/pl0EltNU5p0" --mode video --output-dir "$env:LOCALAPPDATA\Automation\MediaDelivery"
     python capabilities/media-transcript-acquisition/deliver_artifact.py --url "https://www.youtube.com/shorts/pl0EltNU5p0" --mode hybrid --output-dir "$env:LOCALAPPDATA\Automation\MediaDelivery"
@@ -19,7 +19,7 @@ Modes: video = video file, audio = MP3 via yt-dlp + FFmpeg, hybrid = one downloa
 - Output must be outside Git. A private staging directory is promoted only after valid nonempty file and SHA-256 verification. Failed staging is deleted. External process stdout/stderr is suppressed; no secrets or provider errors are persisted.
 - No shell, hidden Windows child process flags, closed stdin, no scheduler installation, no upload, no proxy, no provider token, no cross-boundary transport. Scheduled/fullscreen silence requires separate local certification.
 - --max-mb default 500, allowed 1–2048; --timeout default 300 seconds, allowed 10–900. The size cap is checked after download too; an in-progress failed download can still consume temporary disk.
-- Audio-only and hybrid require FFmpeg. Real codecs and streams may vary and fail; no guarantee of universal access or archival quality.
+- All capture modes require FFmpeg for consistent video/audio merging and postprocessing. Real codecs and streams may vary and fail; no guarantee of universal access or archival quality.
 - Statuses include YTDLP_UNAVAILABLE, FFMPEG_UNAVAILABLE, PROVIDER_OR_PROCESS_ERROR, PROCESS_TIMEOUT, MEDIA_NOT_PRODUCED, ARTIFACT_TOO_LARGE, EMPTY_ARTIFACT, AUDIO_EXTRACTION_FAILED, OUTPUT_INSIDE_REPOSITORY and invalid-source/limit states.
 
 ## P97 prior-art and solved-base disposition
