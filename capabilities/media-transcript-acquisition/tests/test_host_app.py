@@ -123,11 +123,11 @@ class MediaHostTests(unittest.TestCase):
         self.assertEqual(info["ready_modes"], [])
         self.assertFalse(info["yt_dlp"]["available"])
 
-    def test_doctor_video_only_without_ffmpeg(self):
+    def test_doctor_requires_ffmpeg_for_video_merge(self):
         with patch.object(h.shutil, "which", side_effect=lambda name: "/test/ytdlp" if name == "yt-dlp" else None), \
              patch.object(h, "tool_version", return_value="2026.10.01"):
             info = h.doctor()
-        self.assertEqual(info["ready_modes"], ["video"])
+        self.assertEqual(info["ready_modes"], [])
         self.assertFalse(info["ffmpeg"]["available"])
 
     def test_doctor_both_tools_support_all_modes(self):
