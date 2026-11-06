@@ -139,3 +139,7 @@ Before substantial mutation, recover current repository/provider truth and prese
 ## Media artifact delivery — current owner
 
 For requests to fetch an authorized YouTube/Instagram/social-media video, audio, or hybrid artifact to the local host, read `capabilities/media-transcript-acquisition/ARTIFACT_DELIVERY.md` and use `deliver_artifact.py` plus its versioned receipt. Do not fork a downloader into another product or mistake analysis-only `social_insights.py` for an end-user media delivery guarantee. Host/provider acceptance and a P04 READY packet: `docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.json`. Do not install scheduled tasks, pass cookies, upload private clips or assert live success from synthetic tests.
+
+### Windows/Linux Mint media host user entrypoints
+
+Use `capabilities/media-transcript-acquisition/HOST_SETUP.md` and `host_app.py`; Windows calls `Run-Media-Delivery.cmd`, Mint calls `bash run-media-delivery.sh`. The parent machine packet remains `docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.json`, with per-OS procedures in its sibling `.md`. Do not conflate Windows GitHub runner, Ubuntu runner, actual Linux Mint runtime, and real-media provider success; no automatic host installation or scheduling.

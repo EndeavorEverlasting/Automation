@@ -1,32 +1,37 @@
 {
   "schema_version": "automation-runtime-handoff-packet/v1",
   "packet_state": "READY",
-  "work_unit_id": "media-artifact-host-certification-20261106",
+  "work_unit_id": "media-artifact-windows-linuxmint-host-certification-20261106",
   "semantic_owner": "automation.media-artifact-delivery/v1",
   "execution_environment": "LOCAL_AGENT_RUNTIME",
   "required_capabilities": [
-    "current Automation repository checkout",
-    "Python 3.11+",
-    "host-installed yt-dlp",
-    "host-installed FFmpeg for audio/hybrid",
-    "authorized public test media URL",
-    "local host filesystem and media inspection"
+    "current Automation repository checkout at or after cross-platform host integration commit",
+    "Python 3.11+ interpreter on both Windows and Linux Mint",
+    "host-installed yt-dlp and FFmpeg on both operating systems",
+    "explicit user-approved accessible test URL for each provider",
+    "Windows user-launched CMD host and Linux Mint bash host",
+    "private host output directory and audio/video playback inspection"
   ],
   "mutation_authority": [
     "read-only provider/host certification",
     "bounded fixes only in media-transcript-acquisition capability through an isolated branch and reviewed pull request"
   ],
   "owned_scope": [
-    "capabilities/media-transcript-acquisition/",
-    "local private output root selected by operator",
-    "docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.md"
+    "capabilities/media-transcript-acquisition/host_app.py and existing media capability",
+    "capabilities/media-transcript-acquisition/Run-Media-Delivery.cmd",
+    "capabilities/media-transcript-acquisition/run-media-delivery.sh",
+    "capabilities/media-transcript-acquisition/HOST_SETUP.md",
+    "local private output roots on the certified Windows and Linux Mint machines",
+    "docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.md",
+    "docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.json"
   ],
   "forbidden_scope": [
-    "provider/browser credentials, cookies, account sessions and DRM bypass",
-    "public Git media, raw transcripts or private host path publication",
-    "Task Scheduler registration or live account setting changes",
-    "other Automation capabilities, consumer product behavior and protected corporate systems",
-    "ChatGPT connectors to corporate services"
+    "provider credentials, cookies, authenticated browser profiles, CAPTCHA, paywall and DRM bypass",
+    "raw media, private transcripts, full private paths or provider URLs committed to public Git",
+    "new Task Scheduler / cron registration and changes to live user system settings",
+    "private or corporate system access through ChatGPT and connected-provider tools",
+    "unrelated repository automation capabilities and product-specific behavior",
+    "claiming Mint/Windows live certification solely from Ubuntu/Windows GitHub CI"
   ],
   "evidence_inputs": [
     {
@@ -34,38 +39,58 @@
       "identity": "automation.media-artifact-delivery/v1"
     },
     {
+      "type": "repository_contract",
+      "identity": "automation.media-host/v1"
+    },
+    {
       "type": "repository_file",
       "identity": "capabilities/media-transcript-acquisition/ARTIFACT_DELIVERY.md"
     },
     {
       "type": "repository_file",
-      "identity": "capabilities/media-transcript-acquisition/tests/test_artifact_delivery.py"
+      "identity": "capabilities/media-transcript-acquisition/HOST_SETUP.md"
+    },
+    {
+      "type": "repository_file",
+      "identity": "capabilities/media-transcript-acquisition/tests/test_host_app.py"
+    },
+    {
+      "type": "repository_file",
+      "identity": "docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.md"
     }
   ],
   "dependencies": [],
   "collision_surface": [
-    "media-transcript-acquisition adapters",
-    "local yt-dlp/FFmpeg tool versions"
+    "existing media-transcript-acquisition adapters and stable delivery receipt",
+    "current PR #45 repository-handoff incubation (do not mutate its owned paths)",
+    "yt-dlp, FFmpeg, Python host versions, filesystem and desktop launcher behavior"
   ],
   "expected_artifacts": [
-    "private local video/audio/hybrid file and receipt or typed blocked receipt",
-    "redacted provider/version/codec/hash observations",
-    "reviewed bounded fix if validation exposes a defect"
+    "one user-readable, cross-platform setup and launch guide",
+    "private video/audio/hybrid artifacts plus versioned delivery receipt or typed blocked receipt",
+    "independent SHA-256 verification outcome for each captured file",
+    "Windows host certification receipt with tool versions launcher behavior and actual media playback",
+    "Linux Mint host certification receipt with distro version tool versions and actual media playback",
+    "sanitized evidence and bounded repairs on independent feature branches when required"
   ],
   "acceptance_gates": [
-    "sync checkout to integrated branch/main and confirm current commit",
-    "run media capability offline unittest suite and note exact test count",
-    "validate a real accessible user-authorized YouTube and Instagram URL separately with recorded tool versions",
-    "check video/audio playability and receipt SHA-256 against actual files",
-    "check provider denial behavior, no secret leakage, and no partial output promoted",
-    "certify Windows child-window and fullscreen behavior separately before any unattended scheduling",
-    "document current PR/merge status accurately; do not call synthetic proof live"
+    "sync exact Automation main revision; resolve any active write/collision in media capability",
+    "run on-branch and post-merge CI for Python 3.11 and 3.12 on Windows and Ubuntu",
+    "verify P04 packet against scripts/validate_runtime_handoff.py --require-ready",
+    "Windows: run CMD launcher doctor, interactive and noninteractive capture of an authorized accessible YouTube and Instagram item",
+    "Linux Mint: run bash launcher doctor, interactive and noninteractive capture of an authorized accessible YouTube and Instagram item",
+    "on each host exercise video audio hybrid and verify CLI SHA-256 parity of all delivered files; check codec and playability",
+    "on each host verify no automatic installation, login credential or cookie use, service/scheduler creation, or surprise background popup",
+    "test blocked provider access and invalid URL; confirm typed failure and zero promoted media",
+    "record OS and distro/tool versions, execution class, complete/blocked outcome, local focus and file permission evidence separately",
+    "keep raw media and private host records local; submit only sanitized receipt/status to the issue and do not close while either host unverified"
   ],
-  "proof_ceiling": "Offline source tests and remote CI cannot certify local host installation, external provider access, specific video/audio codecs, or Windows fullscreen silence.",
-  "runtime_handoff": "Resume from the current branch/PR and receipt schema. Run the bounded checks above; if access is blocked, preserve typed redacted evidence without bypass. Fix only proven defects, rerun affected tests, and report CHANGED | PROVED | NEXT with commit IDs and exact provider/host status.",
+  "proof_ceiling": "Merged code and GitHub Windows/Ubuntu CI prove source contract and simulated process behavior, not actual user-machine Python/yt-dlp/FFmpeg installation, Linux Mint distro behavior, Windows desktop focus, provider access, media codecs/playback or safe unattended scheduling.",
+  "runtime_handoff": "On Windows and Linux Mint separately: inspect HOST_SETUP.md, validate this READY packet, execute read-only doctor, use only authorized public test sources, capture selected video/audio/hybrid modes locally, run verify on receipts, observe actual media and host UI, record sanitized platform-specific proofs. Do not treat Windows proof as Mint proof or Ubuntu CI as Mint live proof. Fix specific defects in isolated media branch, validate, integrate and read back. Aggregate both status dimensions in the canonical issue; do not create another product or scheduler.",
   "freshness_requirements": [
-    "refresh Automation main and open pull request state and verify branch SHA before changes",
-    "record fresh local Python yt-dlp and FFmpeg versions",
-    "verify authorization and reachability of selected test sources at runtime"
+    "refresh Automation main SHA, open PRs and conflict surface before file mutations",
+    "recheck host OS/Mint version, installed Python, FFmpeg, yt-dlp and JavaScript dependencies before certification",
+    "confirm source URLs and authorization at execution time",
+    "recheck verified local media files after any tool upgrade or code fix"
   ]
 }

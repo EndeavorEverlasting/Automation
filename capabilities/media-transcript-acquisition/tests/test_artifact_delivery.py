@@ -147,6 +147,11 @@ class ArtifactDeliveryTests(unittest.TestCase):
             "a=sys.argv; p=a[a.index('-o')+1].replace('%(ext)s','mp4')\n"
             "pathlib.Path(p).write_bytes(b'fixture-media')\n", encoding="utf-8")
         binary.chmod(0o700)
+        # FFmpeg is required even in video mode for possible stream merging.
+        # This isolated consumer uses a fake executable and performs no codec work.
+        ffmpeg = fakebin / "ffmpeg"
+        ffmpeg.write_text("#!/usr/bin/env python3\n", encoding="utf-8")
+        ffmpeg.chmod(0o700)
         env = dict(os.environ, PATH=str(fakebin) + os.pathsep + os.environ.get("PATH", ""))
         command = [sys.executable, str(ROOT / "deliver_artifact.py"),
                    "--url", "https://www.youtube.com/shorts/pl0EltNU5p0",
