@@ -221,3 +221,13 @@ not silently uninstall, disable or change tasks. Consult the
 [capability guide](capabilities/windows-silent-scheduled-task/CAPABILITY.md)
 before consuming it from another repository. Launcher compliance, due-time
 observation, child-process proof, fullscreen focus and job success are separate.
+
+## Local social-media artifact delivery (incubating)
+
+The [media artifact delivery CLI](capabilities/media-transcript-acquisition/ARTIFACT_DELIVERY.md) provides a user-authorized HTTPS URL → local private video, audio, or hybrid files with a SHA-256 receipt (`automation.media-artifact-delivery/v1`). It reuses the existing social source validation and yt-dlp/FFmpeg ecosystem; it does not run scheduled scraping or claim public provider access works without local certification.
+
+```powershell
+python capabilities/media-transcript-acquisition/deliver_artifact.py --url "https://www.youtube.com/shorts/pl0EltNU5p0" --mode video --output-dir "$env:LOCALAPPDATA\Automation\MediaDelivery"
+```
+
+The [P04 local certification packet](docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.json) separates offline repository validation from real host/provider proof. No user media, credentials or local runtime receipts belong in this public repository.
