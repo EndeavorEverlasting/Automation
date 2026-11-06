@@ -1,19 +1,19 @@
 @echo off
 setlocal
-rem User-launched only; no scheduler, downloads or installation without a URL.
-pushd "%~dp0"
+rem Explicitly launched by user; no install, account change, or scheduler.
 where py >nul 2>nul
-if %errorlevel%==0 (
-  py -3 "%~dp0host_app.py" %*
-) else (
-  where python >nul 2>nul
-  if errorlevel 1 (
-    echo Python 3.11+ was not found. Open HOST_SETUP.md for installation steps.
-    popd
-    exit /b 2
-  )
-  python "%~dp0host_app.py" %*
-)
-set "exit_status=%errorlevel%"
-popd
-exit /b %exit_status%
+if errorlevel 1 goto :python_fallback
+py -3 -c "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>nul
+if errorlevel 1 goto :python_fallback
+py -3 "%~dp0host_app.py" %*
+exit /b %errorlevel%
+:python_fallback
+where python >nul 2>nul
+if errorlevel 1 goto :missing_python
+python -c "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>nul
+if errorlevel 1 goto :missing_python
+python "%~dp0host_app.py" %*
+exit /b %errorlevel%
+:missing_python
+echo Python 3.11+ was not found. Read HOST_SETUP.md for manual installation.
+exit /b 2
