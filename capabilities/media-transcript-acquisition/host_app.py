@@ -74,7 +74,7 @@ def doctor() -> dict[str, Any]:
         "python_supported": supported,
         "yt_dlp": {"available": bool(yt and version), "version": version},
         "ffmpeg": {"available": bool(ff and ffversion), "version": ffversion},
-        "ready_modes": list(MODES) if all_modes else (["video"] if available else []),
+        "ready_modes": list(MODES) if all_modes else [],
         "default_output": str(default_output()),
         "action": "READY" if all_modes else "DEPENDENCIES_MISSING",
     }
