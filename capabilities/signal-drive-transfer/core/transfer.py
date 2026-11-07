@@ -143,10 +143,17 @@ def run_transfer_plan(
     image_uploads = []
     for message in matched["messages"]:
         for item in message.get("attachmentsSaved") or []:
+            file_name = item.get("file") or item.get("path")
+            absolute = item.get("path") or item.get("absolutePath")
+            if absolute is None and export_dir is not None and isinstance(file_name, str):
+                candidate = export_dir / Path(file_name).name
+                if candidate.is_file():
+                    absolute = str(candidate.resolve())
             image_uploads.append(
                 {
                     "ordinal": int(message["ordinal"]),
-                    "file": item.get("file") or item.get("path"),
+                    "file": Path(str(file_name)).name if file_name else None,
+                    "absolutePath": absolute,
                     "bytes": item.get("bytes"),
                     "pasteMode": "drive-upload-or-docs-clipboard-paste",
                 }

@@ -26,25 +26,43 @@ python capabilities/signal-drive-transfer/host_transfer.py doctor
 python capabilities/signal-drive-transfer/host_transfer.py admit-media `
   --source signal-save-as-export --action read-export-file
 
+python capabilities/signal-drive-transfer/host_transfer.py discover-export `
+  --export-root PATH\to\media\signal-transfer
+
 python capabilities/signal-drive-transfer/host_transfer.py ingest-export `
-  --export-dir PATH\to\export-YYYYMMDD-HHMMSS `
+  --export-root PATH\to\media\signal-transfer `
   --expected-media-groups 3
 
 python capabilities/signal-drive-transfer/host_transfer.py plan `
   --profile capabilities/signal-drive-transfer/fixtures/transfer-profile.synthetic.v1.json `
   --selection capabilities/signal-drive-transfer/fixtures/selected-messages.synthetic.v1.json `
-  --export-dir PATH\to\export-YYYYMMDD-HHMMSS
+  --export-root PATH\to\media\signal-transfer
+
+python capabilities/signal-drive-transfer/host_transfer.py attach-media `
+  --markdown PATH\to\doc-clean.md `
+  --uploads PATH\to\DRIVE-PNG-RECEIPT.json `
+  --out PATH\to\doc-clean-with-drive-links.md
+
+python capabilities/signal-drive-transfer/host_transfer.py publish `
+  --profile PATH\to\profile.json `
+  --selection PATH\to\selected-messages.json `
+  --export-root PATH\to\media\signal-transfer `
+  --transport PATH\to\private_transport.py
 ```
+
+`publish` without `--transport` returns a deterministic `PLANNED_NO_TRANSPORT` receipt that still encodes the drive.file sibling fallback rule. With a private transport module exposing `transport(op, payload)`, it uploads images, rewrites markdown links, upserts the working Doc, and on `appNotAuthorizedToFile` creates a connector-writable sibling Doc as source of truth.
 
 ## Stages
 
-1. **capture-selection** (optional UIA JSON) — ordered `selected-messages.json`
-2. **ingest-export** — Save-As folder (flat Signal `signal-*-*.png` groups or message files)
-3. **merge** — attach export media groups onto attachment-bearing selection rows by order
-4. **render-markdown** — index + per-message + `doc-clean`
-5. **admit-media** — fail closed on screenshot sources/actions
-6. **drive-publish plan** — working Doc / INDEX / per-message Docs / image uploads / reconcile-when-writable
-7. **clipboard path** (optional adapter) — UIA focus → clipboard image → paste/upload
+1. **discover-export** — pick latest `export-YYYYMMDD-HHMMSS` (or Signal-image folder) under a root
+2. **capture-selection** (optional UIA JSON) — ordered `selected-messages.json`
+3. **ingest-export** — Save-As folder (flat Signal `signal-*-*.png` groups or message files)
+4. **merge** — attach export media groups onto attachment-bearing selection rows by order
+5. **render-markdown** — index + per-message + `doc-clean`
+6. **admit-media** — fail closed on screenshot sources/actions
+7. **attach-media** — rewrite attachment backticks to Drive `webViewLink` targets after upload
+8. **drive-publish** — working Doc / INDEX / image uploads / reconcile-when-writable; **drive.file sibling fallback** on 403 `appNotAuthorizedToFile`
+9. **clipboard path** (optional adapter) — UIA focus → clipboard image → paste/upload
 
 SQLCipher decrypt remains an optional private adapter, not the required media path.
 

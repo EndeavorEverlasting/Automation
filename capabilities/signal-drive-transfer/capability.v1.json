@@ -6,8 +6,10 @@
   "core_owns": [
     "selected-messages validation",
     "deterministic match specs",
+    "Signal Save-As export directory discovery",
     "Signal Save-As export ingest and media-group merge",
     "markdown package rendering",
+    "Drive link media attach into markdown",
     "acceptance gates",
     "media acquisition policy (clipboard/export only)",
     "transfer receipt / publish plan"
@@ -15,6 +17,7 @@
   "adapters_own": [
     "UIA clipboard focus/copy/read hooks",
     "Drive/Docs transport (MCP/token/callback)",
+    "drive.file sibling fallback on appNotAuthorizedToFile",
     "optional SQLCipher decrypt (private)",
     "private semantic→Drive id mapping"
   ],
@@ -23,13 +26,18 @@
   "entrypoints": {
     "cli": "capabilities/signal-drive-transfer/host_transfer.py",
     "doctor": "capabilities/signal-drive-transfer/host_transfer.py doctor",
+    "discover_export": "capabilities/signal-drive-transfer/host_transfer.py discover-export",
     "ingest": "capabilities/signal-drive-transfer/host_transfer.py ingest-export",
     "admit_media": "capabilities/signal-drive-transfer/host_transfer.py admit-media",
-    "plan": "capabilities/signal-drive-transfer/host_transfer.py plan"
+    "attach_media": "capabilities/signal-drive-transfer/host_transfer.py attach-media",
+    "plan": "capabilities/signal-drive-transfer/host_transfer.py plan",
+    "publish": "capabilities/signal-drive-transfer/host_transfer.py publish"
   },
   "artifacts": {
     "contract": "automation.signal-drive-transfer/v1",
     "media_policy": "automation.signal-drive-transfer.media-policy/v1",
+    "export_discovery": "automation.signal-drive-transfer.export-discovery/v1",
+    "media_attach": "automation.signal-drive-transfer.media-attach/v1",
     "synthetic_profile": "capabilities/signal-drive-transfer/fixtures/transfer-profile.synthetic.v1.json"
   },
   "runtime_boundary": {
@@ -60,7 +68,7 @@
     "landing durable host logic in Moonwake/TokenCorridor"
   ],
   "production_use_path": "UNDECLARED",
-  "proof_ceiling": "Synthetic unittest + host CLI prototypes prove export ingest, merge, media ban, and dry-run publish planning. Live Drive write and live UIA clipboard paste remain unproven here.",
+  "proof_ceiling": "Synthetic unittest + host CLI prototypes prove export discovery, ingest, merge, media ban, Drive-link attach, and drive.file sibling fallback planning. Live Drive write and live UIA clipboard paste remain transport-dependent proof gates.",
   "prior_art": [
     "Project store internal/signal-transfer HOST-LOGIC-SPEC.md",
     "Automation media-transcript-acquisition host_app delivery pattern",
