@@ -13,7 +13,7 @@ URL = "https://www.youtube.com/watch?v=pl0EltNU5p0"
 VTT = """WEBVTT
 
 00:00:01.000 --> 00:00:02.900
-Intro to <model> architecture.
+Intro to &lt;model&gt; architecture.
 
 00:00:03.000 --> 00:00:04.900
 A second actionable thought.
