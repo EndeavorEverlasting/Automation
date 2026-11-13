@@ -163,6 +163,7 @@ def run(args: argparse.Namespace) -> tuple[dict, Path]:
     source = f"https://www.youtube.com/watch?v={video_id}"
     packet = {"contract": CONTRACT, "status": "BLOCKED", "source": source,
               "method": None, "attempts": [], "cues": [], "quality": None,
+              "caption_input_sha256": None, "cue_sha256": None,
               "artifacts": [], "failure": None,
               "proof_ceiling": "NO_TRANSCRIPT_EVIDENCE"}
     audio_folder = None
@@ -170,6 +171,7 @@ def run(args: argparse.Namespace) -> tuple[dict, Path]:
         try:
             result = acquire(source, args.captions_file, "offline" if args.captions_file else "auto")
             packet["attempts"] = result.get("attempts", [])
+            packet["caption_input_sha256"] = result.get("input_sha256")
             cues = result.get("cues", [])
             method = result.get("method")
         except AcquisitionError as exc:
@@ -205,6 +207,7 @@ def run(args: argparse.Namespace) -> tuple[dict, Path]:
         packet["status"] = "TRANSCRIPT_ACQUIRED"
         packet["method"] = method
         packet["cues"] = primary_cues
+        packet["cue_sha256"] = hashlib.sha256(json.dumps(primary_cues, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
         flags = review_flags(primary_cues)
         if asr_cues and method != "local_faster_whisper":
             flags.extend(compare_independent(primary_cues, asr_cues))
