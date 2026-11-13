@@ -186,7 +186,9 @@ def run(args: argparse.Namespace) -> tuple[dict, Path]:
                                            "failure": delivery.get("failure")})
                 if delivery["status"] == "DELIVERED":
                     audio_folder = receipt.parent
-                    media_artifact = next(x for x in delivery["artifacts"] if x["role"] == "audio")
+                    media_artifact = next((x for x in delivery["artifacts"] if x["role"] == "audio"), None)
+                    if media_artifact is None:
+                        raise AcquisitionError("INVALID_AUDIO_DELIVERY")
                     media = audio_folder / media_artifact["file"]
             if media is not None:
                 if not media.is_file() or media.is_symlink() or not 0 < media.stat().st_size <= args.max_audio_mb * 1048576:
@@ -223,10 +225,21 @@ def run(args: argparse.Namespace) -> tuple[dict, Path]:
         packet["status"] = "BLOCKED"
         packet["failure"] = exc.status if hasattr(exc, "status") else "LOCAL_IO_ERROR"
         packet["proof_ceiling"] = "NO_VERIFIED_TRANSCRIPT_EXPORT"
+        for name in ("transcript.txt", "transcript.html", "development-notes.md", "quality-review.json"):
+            (folder / name).unlink(missing_ok=True)
+        packet["artifacts"] = []
+        packet.pop("document", None)
     finally:
-        if audio_folder is not None and not args.retain_audio:
-            # Only the uniquely created delivery folder; never delete user media.
-            shutil.rmtree(audio_folder)
+        if audio_folder is not None:
+            if args.retain_audio:
+                packet["audio_cleanup"] = "RETAINED_BY_REQUEST"
+            else:
+                try:
+                    # Only the uniquely created delivery folder; never delete user media.
+                    shutil.rmtree(audio_folder)
+                    packet["audio_cleanup"] = "REMOVED"
+                except OSError:
+                    packet["audio_cleanup"] = "CLEANUP_FAILED"
         atomic_text(folder / "receipt.json", json.dumps(packet, indent=2, sort_keys=True) + "\n")
     return packet, folder / "receipt.json"
 
