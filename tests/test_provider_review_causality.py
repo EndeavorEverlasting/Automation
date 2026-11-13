@@ -188,6 +188,33 @@ class ProviderCausalityTests(unittest.TestCase):
         self.assertEqual(item["candidate_alignment"], "STALE")
         self.assertEqual(item["failure_cause"], "UNKNOWN")
 
+    def test_second_codex_retry_makes_nearby_quota_notice_ambiguous(self):
+        first = {"id": 21, "user": {"login": "chatgpt-codex-connector[bot]"},
+                 "created_at": "2026-11-13T16:26:46Z",
+                 "body": "<!-- codex-review-state:v1 " +
+                 json.dumps({"code_review": {"commit_sha": SHA, "status": "failed"}}) + " -->"}
+        second = {"id": 22, "user": {"login": "chatgpt-codex-connector[bot]"},
+                  "created_at": "2026-11-13T16:27:20Z",
+                  "body": "<!-- codex-review-state:v1 " +
+                  json.dumps({"code_review": {"commit_sha": SHA, "status": "failed"}}) + " -->"}
+        quota = {"id": 23, "user": {"login": "chatgpt-codex-connector[bot]"},
+                 "created_at": "2026-11-13T16:27:22Z",
+                 "body": "You have reached your Codex usage limits for code reviews."}
+        raw = G.codex_snapshot("org/repo", 51, {"head": {"sha": SHA}},
+                               [first, second, quota], [])
+        self.assertEqual(raw["attempts"][0]["notices"], [])
+        reviewed = C.classify(raw)["attempts"][0]
+        self.assertEqual(reviewed["failure_cause"], "UNKNOWN")
+        self.assertEqual(reviewed["review_result"], "NOT_ASSESSED")
+
+    def test_pr_head_move_during_comment_fetch_fails_closed(self):
+        with mock.patch.object(G, "_github_json", side_effect=[
+            {"head": {"sha": SHA}}, {"head": {"sha": OLD}}
+        ]), mock.patch.object(G, "_pages", return_value=[]):
+            with self.assertRaises(C.CausalityError) as exc:
+                G.github_codex_snapshot("org/repo", 51)
+        self.assertEqual(str(exc.exception), "GITHUB_PR_HEAD_MOVED")
+
     def test_github_adapter_read_is_bounded_and_no_shell(self):
         with mock.patch.object(G.subprocess, "run", return_value=mock.Mock(
             returncode=0, stdout='{"head":{"sha":"' + SHA + '"}}', stderr="")) as runner:
