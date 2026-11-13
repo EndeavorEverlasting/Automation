@@ -12,7 +12,7 @@
   ],
   "test": "python -m unittest tests.test_provider_review_causality -v",
   "non_goals": [
-    "Replace MoonWake review-completion semantics",
+    "Replace any consumer-owned review-completion semantics",
     "Approve PRs",
     "Merge PRs",
     "Retry provider jobs automatically",
