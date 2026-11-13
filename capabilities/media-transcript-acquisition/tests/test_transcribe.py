@@ -116,6 +116,60 @@ class ResearchTranscriptTests(unittest.TestCase):
         self.assertEqual(flags[0]["code"], "CAPTION_ASR_DIVERGENCE")
         self.assertNotIn("confidence", json.dumps(flags))
 
+    def test_comparison_detects_missing_caption_tail(self):
+        caption = T.normalize([{"start_ms": 0, "end_ms": 20000,
+            "text": "some technical words spoken in the opening section"}])
+        asr = T.normalize([{"start_ms": 0, "end_ms": 20000,
+            "text": "some technical words spoken in the opening section"},
+            {"start_ms": 62000, "end_ms": 70000,
+             "text": "more technical words appear after the captions end abruptly"}])
+        flags = T.compare_independent(caption, asr)
+        self.assertIn({"code": "CAPTION_ASR_COVERAGE_DISAGREEMENT", "start_ms": 60000,
+                       "caption_tokens": 0, "asr_tokens": 9}, flags)
+
+    def test_comparison_caps_large_and_pathological_windows(self):
+        long_text = "token " * (T.MAX_WINDOW_TOKENS + 10)
+        left = T.normalize([{"start_ms": 0, "end_ms": 50000, "text": long_text}])
+        right = T.normalize([{"start_ms": 0, "end_ms": 50000, "text": long_text}])
+        self.assertEqual(T.compare_independent(left, right)[0]["code"],
+                         "COMPARISON_SKIPPED_LARGE_WINDOW")
+        long_asr = T.normalize([{"start_ms": 0, "end_ms": (T.MAX_COMPARISON_MINUTES + 1) * 60000,
+                                "text": "speech"}])
+        self.assertEqual(T.compare_independent(left, long_asr)[0]["code"],
+                         "COMPARISON_SKIPPED_LONG_SOURCE")
+
+    def test_output_boundary_and_unwritable_directory_have_typed_status(self):
+        import contextlib
+        import io
+        with self.assertRaises(T.DeliveryError):
+            T.output_root(self.output, windows=True)
+        stream = io.StringIO()
+        with patch.object(T, "private_directory", side_effect=OSError("read only")), \
+             contextlib.redirect_stdout(stream):
+            result = T.main(["--url", URL, "--output-dir", str(self.output),
+                             "--captions-file", str(self.captions)])
+        self.assertEqual(result, 2)
+        self.assertEqual(json.loads(stream.getvalue()),
+                         {"status": "BLOCKED", "failure": "LOCAL_IO_ERROR"})
+
+    def test_receipt_write_failure_is_typed_without_false_receipt(self):
+        import contextlib
+        import io
+        original = T.atomic_text
+        def fail_receipt(path, content):
+            if path.name == "receipt.json":
+                raise OSError("disk full")
+            return original(path, content)
+        stream = io.StringIO()
+        with patch.object(T, "atomic_text", side_effect=fail_receipt), \
+             contextlib.redirect_stdout(stream):
+            result = T.main(["--url", URL, "--output-dir", str(self.output),
+                             "--captions-file", str(self.captions)])
+        self.assertEqual(result, 2)
+        output = json.loads(stream.getvalue())
+        self.assertEqual(output, {"status": "BLOCKED", "failure": "LOCAL_IO_ERROR"})
+        self.assertNotIn("receipt", output)
+
     def test_no_output_inside_source_repository(self):
         proc = subprocess.run(
             [sys.executable, str(ROOT / "transcribe.py"), "--url", URL,

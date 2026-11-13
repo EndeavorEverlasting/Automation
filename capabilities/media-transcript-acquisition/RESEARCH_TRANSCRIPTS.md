@@ -47,3 +47,14 @@ Test with:
 Offline tests exercise export fidelity, link escaping, hashes, blocked caption sources, ASR fallback with operator-owned media, and review flags. They are not evidence of live YouTube access, ASR word error rate, desktop open behavior or the factual validity of any technical claim. Runtime certification requires an authorized host, successful provider capture, representative audio-to-text spot checking and protected regression replay.
 
 Seam: the consumer needs URL, optional local VTT/SRT/audio file, an opt-in locally present ASR model and output folder only. Automation owns provider adapter orchestration and normalized source evidence; downstream applications can consume citation IDs and notes without learning MoonWake's prompt layout or copying this machinery.
+
+## Closers review hardening (2026-11-13)
+
+Review findings were checked against source and handled in the owning modules:
+- Caption evidence now retains separated repeated occurrences with distinct timestamps. Only genuinely overlapping duplicate captions coalesce; existing deduplication tests were updated to preserve the stronger behavioral guarantee.
+- Caption/ASR comparison indexes cues by minute once rather than rescanning all cues for every minute. Work is explicitly bounded by 320 tokens per window, 24-hour comparison horizon and a 250,000 cue-window assignment budget. Over-budget comparisons generate explicit `COMPARISON_SKIPPED_*` review flags rather than hanging or claiming accuracy.
+- Windows output is limited to locations under the resolved user profile rather than potentially shared external folders. This inherits the user's configured Windows profile ACL; the tool does not claim to audit every host ACL.
+- A missed caption tail or one-sided minute of speech is flagged as `CAPTION_ASR_COVERAGE_DISAGREEMENT`. An explicitly requested ASR comparison that cannot run generates `ASR_COMPARISON_UNAVAILABLE` and remains review-required. A partial comparison is identified as `PARTIAL_REVIEW`.
+- CLI output-directory or receipt-write `OSError` now returns machine-readable `BLOCKED / LOCAL_IO_ERROR`, exit 2, with no invented receipt URL.
+
+These are offline protection gates. They do not certify the actual video's audio, on-screen claims, transcription word-error rate or authenticated Google Docs publication.

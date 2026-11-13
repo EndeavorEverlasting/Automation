@@ -27,6 +27,9 @@ TOKEN = re.compile(r"[\w']+", re.UNICODE)
 NON_SPEECH = re.compile(r"\[(?:music|applause|laughter|inaudible|silence|noise)[^\]]*\]", re.I)
 MAX_CUES = 50000
 MAX_TEXT = 8_000_000
+MAX_WINDOW_TOKENS = 320
+MAX_COMPARISON_MINUTES = 24 * 60
+MAX_WINDOW_ASSIGNMENTS = 250_000
 
 
 def stamp(ms: int) -> str:
@@ -83,23 +86,61 @@ def review_flags(cues: list[dict]) -> list[dict]:
     return flags[:1000]
 
 
+def _comparison_windows(cues: list[dict]) -> tuple[dict[int, list[str] | None], bool]:
+    """Index cues once by minute; None marks an oversized window."""
+    windows: dict[int, list[str] | None] = {}
+    assigned = 0
+    for cue in cues:
+        first = cue["start_ms"] // 60000
+        last = (cue["end_ms"] - 1) // 60000
+        assigned += last - first + 1
+        if assigned > MAX_WINDOW_ASSIGNMENTS:
+            return {}, False
+        tokens = []
+        for match in TOKEN.finditer(cue["text"]):
+            tokens.append(match.group().casefold())
+            if len(tokens) > MAX_WINDOW_TOKENS:
+                break
+        for minute in range(first, last + 1):
+            previous = windows.get(minute)
+            if minute in windows and previous is None:
+                continue
+            existing = previous if previous is not None else []
+            windows[minute] = (
+                None if len(existing) + len(tokens) > MAX_WINDOW_TOKENS
+                else existing + tokens
+            )
+    return windows, True
+
+
 def compare_independent(captions: list[dict], asr: list[dict]) -> list[dict]:
-    """Time-window lexical divergence is a review locator, not an accuracy score."""
-    flags = []
+    """Bounded minute comparison: disagreement is a review target, not accuracy."""
     if not captions or not asr:
-        return flags
+        return []
     maximum = max(captions[-1]["end_ms"], asr[-1]["end_ms"])
-    for start in range(0, maximum, 60000):
-        def tokens(cues):
-            return words(" ".join(c["text"] for c in cues
-                                 if c["start_ms"] < start + 60000 and c["end_ms"] > start))
-        a, b = tokens(captions), tokens(asr)
-        if len(a) >= 6 and len(b) >= 6:
+    if maximum > MAX_COMPARISON_MINUTES * 60000:
+        return [{"code": "COMPARISON_SKIPPED_LONG_SOURCE", "start_ms": 0}]
+    left, left_ok = _comparison_windows(captions)
+    right, right_ok = _comparison_windows(asr)
+    if not left_ok or not right_ok:
+        return [{"code": "COMPARISON_SKIPPED_RESOURCE_LIMIT", "start_ms": 0}]
+    flags = []
+    for minute in range((maximum + 59999) // 60000):
+        start = minute * 60000
+        a, b = left.get(minute, []), right.get(minute, [])
+        if a is None or b is None:
+            flags.append({"code": "COMPARISON_SKIPPED_LARGE_WINDOW", "start_ms": start})
+        elif max(len(a), len(b)) >= 6 and min(len(a), len(b)) < 3:
+            flags.append({"code": "CAPTION_ASR_COVERAGE_DISAGREEMENT",
+                          "start_ms": start, "caption_tokens": len(a), "asr_tokens": len(b)})
+        elif len(a) >= 6 and len(b) >= 6:
             similarity = difflib.SequenceMatcher(a=a, b=b, autojunk=False).ratio()
             if similarity < 0.55:
                 flags.append({"code": "CAPTION_ASR_DIVERGENCE", "start_ms": start,
                               "lexical_similarity": round(similarity, 3)})
-    return flags[:1000]
+        if len(flags) >= 1000:
+            break
+    return flags
 
 
 def atomic_text(path: Path, content: str) -> None:
@@ -154,9 +195,18 @@ def emit_documents(folder: Path, video_id: str, cues: list[dict], method: str,
     return {"artifacts": artifacts, "document": str(folder / "transcript.html")}
 
 
+def output_root(path: Path, *, windows: bool | None = None) -> Path:
+    """Windows transcript storage must inherit the user's private profile ACL."""
+    root = checked_root(path)
+    enforce_profile = os.name == "nt" if windows is None else windows
+    if enforce_profile and not root.is_relative_to(Path.home().resolve()):
+        raise DeliveryError("OUTPUT_OUTSIDE_USER_PROFILE")
+    return root
+
+
 def run(args: argparse.Namespace) -> tuple[dict, Path]:
     video_id = youtube_id(args.url)
-    root = checked_root(args.output_dir)
+    root = output_root(args.output_dir)
     private_directory(root)
     folder = root / f"{video_id}-{uuid.uuid4().hex[:12]}"
     private_directory(folder)
@@ -209,15 +259,25 @@ def run(args: argparse.Namespace) -> tuple[dict, Path]:
         packet["cues"] = primary_cues
         packet["cue_sha256"] = hashlib.sha256(json.dumps(primary_cues, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
         flags = review_flags(primary_cues)
-        if asr_cues and method != "local_faster_whisper":
-            flags.extend(compare_independent(primary_cues, asr_cues))
+        comparison_status = "NOT_REQUESTED"
+        if args.compare_asr:
+            if not asr_cues:
+                comparison_status = "UNAVAILABLE"
+                flags.append({"code": "ASR_COMPARISON_UNAVAILABLE", "start_ms": 0})
+            else:
+                comparison_flags = compare_independent(primary_cues, asr_cues)
+                flags.extend(comparison_flags)
+                comparison_status = ("PARTIAL_REVIEW" if any(
+                    f["code"].startswith("COMPARISON_SKIPPED") for f in comparison_flags
+                ) else "WINDOWS_COMPARED")
         review = {"contract": "automation.transcript-quality-review/v1",
                   "status": "REVIEW_REQUIRED" if flags else "UNVERIFIED_TRANSCRIPT",
                   "assurance": "NOT_INDEPENDENTLY_VERIFIED",
                   "cue_count": len(primary_cues),
                   "word_count": sum(len(words(c["text"])) for c in primary_cues),
                   "last_cue_end_ms": primary_cues[-1]["end_ms"],
-                  "independent_asr_compared": bool(asr_cues and method != "local_faster_whisper"),
+                  "independent_asr_compared": comparison_status == "WINDOWS_COMPARED",
+                  "comparison_status": comparison_status,
                   "flags": flags,
                   "notes": "Heuristic flags and lexical comparison locate review targets; neither proves accuracy."
                   }
@@ -267,8 +327,9 @@ def main(argv=None) -> int:
         parser.error("--media-file requires --asr-model")
     try:
         packet, receipt = run(args)
-    except (AcquisitionError, DeliveryError) as exc:
-        print(json.dumps({"status": "BLOCKED", "failure": exc.status}))
+    except (AcquisitionError, DeliveryError, OSError) as exc:
+        failure = exc.status if hasattr(exc, "status") else "LOCAL_IO_ERROR"
+        print(json.dumps({"status": "BLOCKED", "failure": failure}))
         return 2
     print(json.dumps({"status": packet["status"], "failure": packet["failure"],
                       "receipt": str(receipt), "document": packet.get("document")}))
