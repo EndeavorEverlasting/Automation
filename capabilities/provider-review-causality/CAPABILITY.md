@@ -73,4 +73,4 @@ P95 seam: raw provider event → provider-specific normalizer → immutable-cand
 - **Game/runtime consumers:** maintainer approval and live gameplay proof remain separate dimensions.
 - **Private operational consumers:** dated provider quota/fallback decisions remain in their own owner. No client artifacts or private identifiers are imported.
 
-**Proven vs next:** repository implementation + offline regression suite are the first useful milestone. Test current GitHub readback using the direct CLI on an authorized host, then have MoonWake consume the versioned result after PR #126 is reconciled. No automatic downstream write, installation, deployment, or merge is claimed.
+**Proven vs next:** repository implementation + offline regression suite are the first useful milestone. Test current GitHub readback using the direct CLI on an authorized host, then have the existing private review-completion owner consume the versioned result after its overlapping change is reconciled. No automatic downstream write, installation, deployment, or merge is claimed.
