@@ -93,6 +93,8 @@ The executable source catalog, safe local checkout CLI and current multi-engine 
 
 Admitted capabilities:
 
+
+- [Research transcript exports](capabilities/media-transcript-acquisition/RESEARCH_TRANSCRIPTS.md) — local transcript HTML/TXT, timestamped citation IDs, optional local ASR cross-check, quality flags and source receipt; no cloud account required.
 - [`media-transcript-acquisition`](capabilities/media-transcript-acquisition/CAPABILITY.md) — local-first SRT/VTT evidence normalization with optional YouTube caption adapters and explicit runtime-blocked receipts; live-source proof pending.
 - [`social-media-insights`](capabilities/media-transcript-acquisition/SOCIAL_MEDIA_INSIGHTS.md) — Instagram/YouTube/TikTok/etc. URL adapter, optional local media+ASR+vision, source-grounded technical insight receipts; offline tests only, no live provider certification.
 - [`visual-state-compare`](capabilities/visual-state-compare/CAPABILITY.md) — **VSC-0/VSC-1 synthetic CI + VSC-2 OCR CLI**: deterministic PNG compare, isolated Playwright capture, and normalized Tesseract/Paddle observation receipts (`action_authority=NONE`). Live host and OmniParser remain separate gates.
