@@ -21,6 +21,11 @@ MAX_INPUT_BYTES = 2_000_000
 MAX_ATTEMPTS = 200
 MAX_NOTICES = 100
 MAX_FINDINGS = 1000
+
+# The optional provider adapter imports this public exception/contract by name.
+# Keep script invocation and imported-module invocation the same identity.
+if __name__ == "__main__":
+    sys.modules.setdefault("classify", sys.modules[__name__])
 ERROR_CODES = {
     "USAGE_LIMIT_EXCEEDED": "USAGE_QUOTA",
     "QUOTA_EXHAUSTED": "USAGE_QUOTA",
