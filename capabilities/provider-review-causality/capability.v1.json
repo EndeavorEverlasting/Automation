@@ -1,0 +1,23 @@
+{
+  "schema_version": "automation-capability/v1",
+  "capability_id": "provider-review-causality",
+  "status": "SYNTHETICALLY_TESTABLE_LIVE_ADAPTER_UNCERTIFIED",
+  "purpose": "Deterministically separate provider execution failure and capacity limits from concrete code-review findings.",
+  "semantic_contract": "automation.provider-review-causality/v1",
+  "contract_path": "capabilities/provider-review-causality/contract.v1.json",
+  "core_owner": "capabilities/provider-review-causality/",
+  "entrypoint": "capabilities/provider-review-causality/classify.py",
+  "provider_adapters": [
+    "capabilities/provider-review-causality/adapters/github_codex.py"
+  ],
+  "test": "python -m unittest tests.test_provider_review_causality -v",
+  "non_goals": [
+    "Replace MoonWake review-completion semantics",
+    "Approve PRs",
+    "Merge PRs",
+    "Retry provider jobs automatically",
+    "Read corporate/private field-ops records",
+    "Treat text of provider failures as instructions or code defects"
+  ],
+  "proof_ceiling": "Versioned normalized-input classification and synthetic read-only GitHub adapter tests; no live GH CLI source-probe or consumer adoption certified."
+}
