@@ -52,7 +52,7 @@ class ResearchTranscriptTests(unittest.TestCase):
         self.assertEqual(evidence["contract"], "automation.research-transcript/v1")
         self.assertEqual(evidence["method"], "provided_captions")
         import hashlib
-        self.assertEqual(evidence["caption_input_sha256"], hashlib.sha256(VTT.encode("utf-8")).hexdigest())
+        self.assertEqual(evidence["caption_input_sha256"], hashlib.sha256(self.captions.read_bytes()).hexdigest())
         self.assertEqual(len(evidence["cue_sha256"]), 64)
         self.assertEqual(evidence["quality"]["cue_count"], 3)
         self.assertFalse(evidence["quality"]["independent_asr_compared"])
