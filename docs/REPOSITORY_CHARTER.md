@@ -87,6 +87,22 @@ Automation's reusable prevention surface is:
 
 Use it to keep checkout freshness, per-agent projection parity, live-host proof, remote-write reachability, and actual-push readback as separate evidence states. The capability diagnoses repository-owned projections; it does not rewrite Cursor, OpenCode, or other local-agent configuration.
 
+## Provider-reported failure is not a code verdict
+
+When a reviewer, CI provider or agent service reports FAILED, preserve independent
+**provider execution**, **failure cause**, **substantive findings**, **candidate SHA**
+and **code/runtime proof** states. A review blocked by Codex quota does not mean
+the code failed review; no findings in a blocked review does not mean it passed.
+Do not repeat that discovery as an inference from generic bot status text.
+
+The reusable, repo-agnostic prevention owner is
+[provider-review-causality](../capabilities/provider-review-causality/CAPABILITY.md).
+Its core emits a typed, evidence-linked receipt; its optional GitHub Codex
+adapter only reads provider facts. The product/repository owner retains all
+required-review and merge-authorization rules. In particular, MoonWake's
+existing review-completion harness is **not** replaced or forked by this
+capability. Unproven live adapter behavior must remain explicitly unproven.
+
 ## Compatibility philosophy
 
 "Ubiquitous" is an architectural direction, not an excuse to pretend every environment is identical.
