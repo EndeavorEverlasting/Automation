@@ -99,8 +99,8 @@ The reusable, repo-agnostic prevention owner is
 [provider-review-causality](../capabilities/provider-review-causality/CAPABILITY.md).
 Its core emits a typed, evidence-linked receipt; its optional GitHub Codex
 adapter only reads provider facts. The product/repository owner retains all
-required-review and merge-authorization rules. In particular, MoonWake's
-existing review-completion harness is **not** replaced or forked by this
+required-review and merge-authorization rules. In particular, an existing downstream
+review-completion harness is **not** replaced or forked by this
 capability. Unproven live adapter behavior must remain explicitly unproven.
 
 ## Compatibility philosophy
