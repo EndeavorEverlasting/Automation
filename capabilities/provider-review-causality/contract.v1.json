@@ -1,0 +1,63 @@
+{
+  "contract_id": "automation.provider-review-causality/v1",
+  "input_schema": "automation.review-causality-input/v1",
+  "receipt_schema": "automation.review-causality-receipt/v1",
+  "owner": "capabilities/provider-review-causality/",
+  "semantic_boundary": "Provider execution is not review outcome; review outcome is not independently verified code defect; provider quota is not a code review finding.",
+  "identity_fields": [
+    "candidate.sha",
+    "attempt.id",
+    "attempt.provider",
+    "attempt.kind",
+    "attempt.commit_sha"
+  ],
+  "independent_dimensions": {
+    "candidate_alignment": [
+      "CURRENT",
+      "STALE"
+    ],
+    "execution_state": [
+      "NOT_STARTED",
+      "EXECUTED_NON_SUCCESS",
+      "NOT_COMPLETED_EXECUTION_UNKNOWN",
+      "NOT_COMPLETED",
+      "COMPLETED",
+      "WAITING",
+      "UNKNOWN"
+    ],
+    "review_result": [
+      "NOT_APPLICABLE",
+      "NOT_ASSESSED",
+      "UNDETERMINED",
+      "NO_FINDINGS_REPORTED",
+      "FINDINGS_REPORTED",
+      "PARTIAL_FINDINGS_REPORTED"
+    ],
+    "failure_cause": [
+      "USAGE_QUOTA",
+      "RATE_LIMIT",
+      "AUTHORIZATION",
+      "PROVIDER_UNAVAILABLE",
+      "UNKNOWN",
+      "NONE"
+    ],
+    "code_defect_verification": [
+      "NOT_ESTABLISHED"
+    ]
+  },
+  "evidence_rules": [
+    "Classify provider failure cause only from recognized machine error codes or timestamp-related provider-origin notice text with an evidence id.",
+    "Only individually addressable reported findings count; a generic failed review, has_any_findings flag, or incidental discussion quote is not a confirmed finding.",
+    "An aborted review without explicit findings is NOT_ASSESSED, never NO_FINDINGS or CODE_DEFECTS.",
+    "An exhausted CI runner with zero steps is NOT_STARTED, never a tested-code failure.",
+    "Stale reviewed commits cannot establish current candidate outcome.",
+    "Provider raw status, execution proof, substantive findings, capability availability and merge authority are separate.",
+    "No retry, approval, authorization, merge, credential exchange, provider write or private text disclosure is performed."
+  ],
+  "consumers": {
+    "moonwake": "Existing private review-completion semantics owner; explicit adoption currently deferred while overlapping unmerged owner PR #126 remains.",
+    "betterinstincts": "Independent acceptance vs live game observation; pattern reference only.",
+    "nyc_hh_fieldops_lab": "Existing dated provider quota/CI runner admission; pattern reference only; no private data imported."
+  },
+  "proof_ceiling": "Synthetic source/adapter tests only until exact GitHub adapter is executed against live provider and return values are independently checked."
+}
