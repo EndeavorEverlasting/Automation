@@ -60,17 +60,17 @@ Raw provider comments stay in volatile process memory and are not echoed into th
 
 **Compared and falsified four directions:**
 
-1. Rebuild review-completion orchestration in Automation — **REJECTED**. MoonWake already owns provider-neutral review completion in `harness/contracts/review-completion.v1.json` and `scripts/review_completion.py`.
+1. Rebuild review-completion orchestration in Automation — **REJECTED**. Existing consumer-side completion and promotion policy remains authoritative.
 2. Add only a prompt reminding agents that failures may be quotas — **WEAKENED**. Does not prevent the next instance from incorrectly classifying a real failed review.
 3. Build a narrowly scoped provider-causality classification primitive with synthetic and real-adapter seams — **SURVIVES, SELECTED**. Reusable across agent reviews and CI admission without taking provider authorization or consumer review policy.
-4. Rework H&H/BetterInstincts review and operations policy — **DEFERRED**. H&H already has dated provider quota records and CI fallback; BetterInstincts already separates maintainer acceptance from Sims runtime proof. No private data should migrate.
+4. Rework downstream domain-specific review and operations policy — **DEFERRED**. Existing consumers already separate provider capacity, review acceptance and real runtime proof. No private data should migrate.
 
 P95 seam: raw provider event → provider-specific normalizer → immutable-candidate attempt → generic classifier → sanitized receipt → consumer policy owner. P82 hypothesis: quota notices can be identified without treating them as source findings, even when the provider summary contains a misleading `has_any_findings` flag. Falsify using the offline fixture and negative cases (user quotes, stale SHA, different reviewers, missing notices). P08 actual local GitHub CLI and cross-consumer live adoption remain **unproved** until executed; synthetic test evidence cannot claim them. P07 and P124 retain one canonical source/classifier, a thin adapter, and existing Automation CI tests without spawning another reviewer or scheduler.
 
 ## Adoption boundaries and next owner
 
-- **MoonWake**: candidate consumer. Its review-completion harness already owns required-vs-advisory checks, review readiness, actions and mainline policy. It should ingest normalized causality only as extra evidence, never let Automation redefine promotion policy. There is an overlapping **open PR #126** touching `scripts/review_completion.py` and its tests, so MoonWake consumer integration is deliberately **DEFERRED_ADOPTION** rather than racing another writer.
-- **BetterInstincts**: maintainer review and live gameplay validation remain independent; a future optional adapter could report provider attempts but cannot certify game behavior.
-- **NYC H&H field ops**: temporal CI quota/fallback logic remains in the private operational owner. This capability only references the general pattern; no organizational data, private URLs or deployment changes.
+- **Existing private review-completion owner:** retain required-vs-advisory checks, review actions and promotion authority. Ingest causality as evidence only, not as a second completion policy. Defer adoption while its exact owning PR is active; track the collision inside the private owner.
+- **Game/runtime consumers:** maintainer approval and live gameplay proof remain separate dimensions.
+- **Private operational consumers:** dated provider quota/fallback decisions remain in their own owner. No client artifacts or private identifiers are imported.
 
 **Proven vs next:** repository implementation + offline regression suite are the first useful milestone. Test current GitHub readback using the direct CLI on an authorized host, then have MoonWake consume the versioned result after PR #126 is reconciled. No automatic downstream write, installation, deployment, or merge is claimed.
