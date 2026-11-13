@@ -122,9 +122,19 @@ def codex_snapshot(
                 continue
             when = _moment(item.get("created_at"))
             body = item.get("body")
-            if when and isinstance(body, str) and 0 <= (when - origin).total_seconds() <= 600:
-                notices.append({"origin": "PROVIDER", "id": f"github-issue-comment-{item.get('id')}",
-                                "text": body[:6000]})
+            if not when or not isinstance(body, str) or not 0 <= (when - origin).total_seconds() <= 600:
+                continue
+            # Time proximity alone is not attribution when the bot retried:
+            # fail closed if two review attempts could own the same notice.
+            candidates = [
+                entry for entry in summaries
+                if (started := _moment(entry[0].get("created_at"))) is not None
+                and 0 <= (when - started).total_seconds() <= 600
+            ]
+            if len(candidates) != 1 or candidates[0][0] is not summary:
+                continue
+            notices.append({"origin": "PROVIDER", "id": f"github-issue-comment-{item.get('id')}",
+                            "text": body[:6000]})
     findings = []
     for item in inline_comments:
         if not _is_codex(item) or str(item.get("commit_id") or "").lower() != sha.lower():
@@ -154,4 +164,10 @@ def github_codex_snapshot(repo: str, pr: int) -> dict:
     pull = _github_json(f"{endpoint}/pulls/{pr}")
     comments = _pages(f"{endpoint}/issues/{pr}/comments")
     inline = _pages(f"{endpoint}/pulls/{pr}/comments")
-    return codex_snapshot(repo, pr, pull, comments, inline)
+    # Provider readback must pin one immutable head across all page requests.
+    after = _github_json(f"{endpoint}/pulls/{pr}")
+    before_sha = (pull.get("head") or {}).get("sha") if isinstance(pull, dict) else None
+    after_sha = (after.get("head") or {}).get("sha") if isinstance(after, dict) else None
+    if not isinstance(before_sha, str) or before_sha != after_sha:
+        _error("GITHUB_PR_HEAD_MOVED")
+    return codex_snapshot(repo, pr, after, comments, inline)
