@@ -142,7 +142,7 @@ class ResearchTranscriptTests(unittest.TestCase):
         import contextlib
         import io
         with self.assertRaises(T.DeliveryError):
-            T.output_root(self.output, windows=True)
+            T.output_root(Path(Path.home().anchor), windows=True)
         stream = io.StringIO()
         with patch.object(T, "private_directory", side_effect=OSError("read only")), \
              contextlib.redirect_stdout(stream):
