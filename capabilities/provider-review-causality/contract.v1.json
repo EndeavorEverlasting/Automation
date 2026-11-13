@@ -54,10 +54,6 @@
     "Provider raw status, execution proof, substantive findings, capability availability and merge authority are separate.",
     "No retry, approval, authorization, merge, credential exchange, provider write or private text disclosure is performed."
   ],
-  "consumers": {
-    "moonwake": "Existing private review-completion semantics owner; explicit adoption currently deferred while overlapping unmerged owner PR #126 remains.",
-    "betterinstincts": "Independent acceptance vs live game observation; pattern reference only.",
-    "nyc_hh_fieldops_lab": "Existing dated provider quota/CI runner admission; pattern reference only; no private data imported."
-  },
-  "proof_ceiling": "Synthetic source/adapter tests only until exact GitHub adapter is executed against live provider and return values are independently checked."
+  "proof_ceiling": "Synthetic source/adapter tests only until exact GitHub adapter is executed against live provider and return values are independently checked.",
+  "consumer_adoption_boundary": "Consumers retain review, acceptance, retry, provider-auth and integration policy. Adoption is deferred for any privately owned or collision-affected caller; store specific provider/repository references only in its private owner."
 }
