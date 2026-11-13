@@ -207,6 +207,22 @@ class ProviderCausalityTests(unittest.TestCase):
         self.assertEqual(json.loads(stream.getvalue()),
                          {"status": "BLOCKED", "failure": "GITHUB_ADAPTER_UNAVAILABLE"})
 
+    def test_cli_subprocess_provider_unavailable_has_no_traceback(self):
+        import os
+        # Execute the __main__ entrypoint, not only a mocked imported function.
+        # Deliberately hide gh from this one subprocess without touching host auth.
+        env = os.environ.copy()
+        env["PATH"] = ""
+        process = subprocess.run(
+            [sys.executable, str(CAP / "classify.py"),
+             "--repo", "org/repo", "--github-pr", "50"],
+            capture_output=True, text=True, timeout=12, env=env,
+        )
+        self.assertEqual(process.returncode, 2)
+        self.assertEqual(json.loads(process.stdout),
+                         {"status": "BLOCKED", "failure": "GITHUB_ADAPTER_UNAVAILABLE"})
+        self.assertNotIn("Traceback", process.stderr)
+
     def test_missing_github_provider_session_returns_typed_error(self):
         with mock.patch.object(G.subprocess, "run", side_effect=FileNotFoundError("gh")):
             with self.assertRaises(C.CausalityError) as exc:
