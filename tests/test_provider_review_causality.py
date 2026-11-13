@@ -196,6 +196,17 @@ class ProviderCausalityTests(unittest.TestCase):
             self.assertEqual(runner.call_args.args[0], ["gh", "api", "repos/org/repo/pulls/4"])
             self.assertNotIn("shell", runner.call_args.kwargs)
 
+    def test_cli_github_provider_unavailable_is_structured(self):
+        import contextlib
+        import io
+        stream = io.StringIO()
+        with mock.patch.object(G, "_github_json", side_effect=C.CausalityError("GITHUB_ADAPTER_UNAVAILABLE")), \
+             contextlib.redirect_stdout(stream):
+            code = C.main(["--repo", "org/repo", "--github-pr", "50"])
+        self.assertEqual(code, 2)
+        self.assertEqual(json.loads(stream.getvalue()),
+                         {"status": "BLOCKED", "failure": "GITHUB_ADAPTER_UNAVAILABLE"})
+
     def test_missing_github_provider_session_returns_typed_error(self):
         with mock.patch.object(G.subprocess, "run", side_effect=FileNotFoundError("gh")):
             with self.assertRaises(C.CausalityError) as exc:
