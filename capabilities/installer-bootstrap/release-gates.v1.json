@@ -1,0 +1,30 @@
+{
+  "contract": "installer-bootstrap-release-gates/v1",
+  "owner": "Automation",
+  "capability": "installer-bootstrap/v1",
+  "pilot": "media-transcript-acquisition",
+  "state": "INCUBATING",
+  "mainline_gates": [
+    {
+      "id": "reference-recording",
+      "state": "LOCAL_AGENT_REQUIRED",
+      "evidence": ["original_bytes_and_sha256", "duration", "timestamped_gate_and_toggle_map", "install_to_first_run_transition", "observed_vs_unknown"]
+    },
+    {
+      "id": "reference-reconciliation",
+      "state": "WAITING_FOR_REFERENCE",
+      "evidence": ["verified_candidate_commit", "reference_to_implementation_mapping"]
+    },
+    {
+      "id": "windows_desktop",
+      "state": "PENDING",
+      "evidence": ["launch_setup", "change_options", "cancel_or_retry", "verified_install", "launch_installed_cli"]
+    },
+    {
+      "id": "moonwake_sixth_gear",
+      "state": "PENDING",
+      "evidence": ["scoped_ordered_walk", "candidate_head_checks", "main_readback"]
+    }
+  ],
+  "reference_locator_policy": "Operator-private handoff only. Public automation carries sanitized proof state."
+}
