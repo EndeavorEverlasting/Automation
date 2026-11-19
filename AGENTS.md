@@ -19,6 +19,10 @@ Mandatory owners before creating/repairing scheduled AFK work:
 
 Fleet Entire inventory/adoption scripts remain in `EndeavorEverlasting/github-config` (`docs/entire/`). Live enablement stays local-first: `entire enable --local --skip-push-sessions --agent <used>`. Ignore `.entire/`; never mutate `.github/workflows/**` in an Entire lane. Admission is not due-time or fullscreen certification.
 
+## Installer / splash / first-run setup
+
+Start at `capabilities/installer-bootstrap/CAPABILITY.md` and its release gates. Reuse `installer-bootstrap/v1` for GUI and headless setup. Consumer adapters own effects. Progress comes from verified steps. Keep private reference media local.
+
 ## Repository identity
 
 This repository is a **ubiquitous automation substrate**.

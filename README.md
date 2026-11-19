@@ -91,6 +91,8 @@ The executable source catalog, safe local checkout CLI and current multi-engine 
 
 ## Capabilities
 
+Incubating: [Installer bootstrap](capabilities/installer-bootstrap/CAPABILITY.md) powers Media Delivery's guided setup and headless install through the same adapter.
+
 Admitted capabilities:
 
 - [`media-transcript-acquisition`](capabilities/media-transcript-acquisition/CAPABILITY.md) — local-first SRT/VTT evidence normalization with optional YouTube caption adapters and explicit runtime-blocked receipts; live-source proof pending.
@@ -234,4 +236,4 @@ The [P04 local certification packet](docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICA
 
 ### Windows and Linux Mint user launchers
 
-A supported [local Media Delivery host experience](capabilities/media-transcript-acquisition/HOST_SETUP.md) now provides a guided launcher, read-only dependency doctor, explicit video/audio/hybrid capture, and SHA-256 receipt verification through one portable Python core. Windows uses `Run-Media-Delivery.cmd`; Linux Mint uses `bash run-media-delivery.sh`. Source access and desktop behavior require independent real-host proof; no installer, browser login, background scheduler or cloud upload is installed. The [P04 Windows + Mint certification handoff](docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.md) is the canonical continuation.
+A supported [local Media Delivery host experience](capabilities/media-transcript-acquisition/HOST_SETUP.md) now provides a guided launcher, read-only dependency doctor, explicit video/audio/hybrid capture, and SHA-256 receipt verification through one portable Python core. Windows uses `Run-Media-Delivery.cmd`; Linux Mint uses `bash run-media-delivery.sh`. Source access and desktop behavior require independent real-host proof. The explicit `setup` command installs a per-user CLI. The capture launcher never installs or schedules work. The [P04 Windows + Mint certification handoff](docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.md) is the canonical continuation.
