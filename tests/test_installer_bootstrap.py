@@ -11,6 +11,7 @@ import unittest
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 from zipfile import ZipFile
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,16 +25,19 @@ from installer_bootstrap import Installer, Option, SetupError, Step, _Session
 class InstallerBootstrapTests(unittest.TestCase):
     def test_successful_host_install_is_usable_outside_checkout(self):
         with TemporaryDirectory() as temp:
-            target = Path(temp) / "app"
+            target = Path(temp) / "app with spaces"
             command = [sys.executable, str(HOST), "setup", "--install-dir", str(target),
                        "--prefer-audio", "--skip-tool-check"]
             plan = json.loads(subprocess.check_output(command + ["--plan"], cwd=temp))
             self.assertEqual(plan["status"], "review")
+            self.assertIsNone(plan["completion_action"])
             self.assertFalse(target.exists())
             result = json.loads(subprocess.check_output(command + ["--apply"], cwd=temp))
             self.assertEqual([step["state"] for step in result["steps"]], ["done", "skipped", "done"])
             self.assertEqual(result["progress"], 100)
+            self.assertEqual(result["readiness"]["status"], "not_checked")
             installed = target / "media-delivery.pyz"
+            self.assertIn(str(installed), result["completion_action"]["command"])
             digest = hashlib.sha256(installed.read_bytes()).digest()
             help_text = subprocess.check_output([sys.executable, "-I", str(installed), "--help"], cwd=temp)
             self.assertIn(b"doctor", help_text)
@@ -43,7 +47,6 @@ class InstallerBootstrapTests(unittest.TestCase):
             self.assertEqual(hashlib.sha256(installed.read_bytes()).digest(), digest)
 
     def test_failed_staged_validation_preserves_previous_install(self):
-        from unittest.mock import patch
         sys.path.insert(0, str(HOST.parent))
         try:
             from install_host import make_installer
@@ -56,8 +59,33 @@ class InstallerBootstrapTests(unittest.TestCase):
                     result = make_installer(directory).apply({"check_tools": False})
                 self.assertEqual(result["status"], "failed")
                 self.assertLess(result["progress"], 100)
+                self.assertIsNone(result["completion_action"])
                 self.assertEqual(installed.read_bytes(), b"last known usable")
                 self.assertEqual(list(directory.iterdir()), [installed])
+        finally:
+            sys.path.remove(str(HOST.parent))
+
+    def test_tool_readiness_is_independent_of_successful_install(self):
+        sys.path.insert(0, str(HOST.parent))
+        try:
+            from install_host import make_installer
+            for available, row_state, readiness in (
+                (True, "done", "verified"),
+                (False, "warning", "needs_attention"),
+            ):
+                with self.subTest(available=available), TemporaryDirectory() as temp:
+                    root = Path(temp)
+                    tools = {"yt_dlp": {"available": available}, "ffmpeg": {"available": True}}
+                    with patch("install_host.doctor", return_value=tools):
+                        result = make_installer(root).apply({})
+                    self.assertEqual(result["status"], "done")
+                    self.assertEqual(result["progress"], 100)
+                    self.assertTrue((root / "media-delivery.pyz").is_file())
+                    self.assertEqual(result["steps"][1]["state"], row_state)
+                    self.assertEqual(result["readiness"]["status"], readiness)
+                    self.assertTrue(result["completion_action"]["command"].endswith(" doctor"))
+                    if not available:
+                        self.assertIn("Install yt-dlp", result["readiness"]["detail"])
         finally:
             sys.path.remove(str(HOST.parent))
 
@@ -74,19 +102,23 @@ class InstallerBootstrapTests(unittest.TestCase):
                               options=(Option("extra", "Extra", "Extra"),),
                               steps=(Step("first", "First", first),
                                      Step("extra", "Extra", lambda _: calls.append("extra"), "extra"),
-                                     Step("last", "Last", lambda _: calls.append("last"))))
+                                     Step("last", "Last", lambda _: calls.append("last"))),
+                              readiness_step="extra")
         session = _Session(installer)
         with self.assertRaises(ValueError):
             session.start({"extra": "true"})
         session.start({"extra": True})
         self.assertTrue(entered.wait(2))
         self.assertEqual(session.snapshot()["progress"], 0)
+        self.assertEqual(session.snapshot()["readiness"]["status"], "pending")
         with self.assertRaises(ValueError):
             session.start({})
         session.cancel()
         self.assertEqual(session.snapshot()["status"], "stopping")
         release.set()
-        self.assertEqual(session.join()["status"], "cancelled")
+        stopped = session.join()
+        self.assertEqual(stopped["status"], "cancelled")
+        self.assertEqual(stopped["readiness"]["status"], "not_checked")
         self.assertEqual(calls, [])
         session.start({"extra": False})
         self.assertEqual(session.join()["progress"], 100)
@@ -132,7 +164,10 @@ class InstallerBootstrapTests(unittest.TestCase):
                         self.fail(f"Expected {status}, got {state}")
 
                     self.assertIn(b"Customize setup", request(""))
-                    self.assertIn(b"installer-bootstrap/v1", request("state"))
+                    state = json.loads(request("state"))
+                    self.assertEqual(state["contract"], "installer-bootstrap/v1")
+                    self.assertIsNone(state["readiness"])
+                    self.assertIsNone(state["completion_action"])
                     with self.assertRaises(HTTPError) as denied:
                         request("start", {}, "https://example.com")
                     self.assertEqual(denied.exception.code, 403)

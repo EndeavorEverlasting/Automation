@@ -5,6 +5,7 @@ from io import BytesIO
 import json
 import os
 from pathlib import Path
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -14,7 +15,7 @@ from host_app import doctor
 
 SOURCE = Path(__file__).resolve().parent
 sys.path.insert(0, str(SOURCE.parent / "installer-bootstrap"))
-from installer_bootstrap import Installer, Option, SetupError, Step
+from installer_bootstrap import CompletionAction, Installer, Option, SetupError, Step, StepWarning
 
 
 PAYLOAD = (
@@ -29,6 +30,13 @@ def default_install_dir() -> Path:
     return Path.home() / ".local" / "share" / "automation" / "media-delivery"
 
 
+def doctor_command(target: Path) -> str:
+    if sys.platform == "win32":
+        # The Windows host instructions use PowerShell. Single quotes keep paths literal.
+        return "& '" + sys.executable.replace("'", "''") + "' '" + str(target).replace("'", "''") + "' doctor"
+    return shlex.join([sys.executable, str(target), "doctor"])
+
+
 def make_installer(destination: Path) -> Installer:
     target = destination.expanduser().resolve() / "media-delivery.pyz"
 
@@ -41,7 +49,7 @@ def make_installer(destination: Path) -> Installer:
         missing = [label for key, label in (("yt_dlp", "yt-dlp"), ("ffmpeg", "FFmpeg"))
                    if not status[key]["available"]]
         if missing:
-            return "Install " + " and ".join(missing) + " before capturing media. See HOST_SETUP.md."
+            return StepWarning("Install " + " and ".join(missing) + " before capturing media.")
         return "Capture tools are available."
 
     def package_and_install(choices):
@@ -83,6 +91,8 @@ def make_installer(destination: Path) -> Installer:
             Step("tools", "Check capture tools", check_tools, option="check_tools"),
             Step("install", "Verify and install the local launcher", package_and_install),
         ),
+        readiness_step="tools",
+        completion_action=CompletionAction("Run the installed app’s dependency check", doctor_command(target)),
     )
 
 

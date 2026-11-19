@@ -18,7 +18,7 @@
     {
       "id": "windows_desktop",
       "state": "PENDING",
-      "evidence": ["launch_setup", "change_options", "cancel_or_retry", "verified_install", "launch_installed_cli"]
+      "evidence": ["launch_setup", "change_options", "cancel_or_retry", "verified_install", "tool_readiness_state", "launch_installed_cli", "observed_first_run"]
     },
     {
       "id": "moonwake_sixth_gear",

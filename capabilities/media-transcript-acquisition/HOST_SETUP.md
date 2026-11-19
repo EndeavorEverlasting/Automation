@@ -13,7 +13,7 @@ Run one of these commands from the Automation checkout:
     .\capabilities\media-transcript-acquisition\Run-Media-Delivery.cmd setup
     bash capabilities/media-transcript-acquisition/run-media-delivery.sh setup
 
-Review the destination and options, then select **Install**. Setup creates a self-contained `media-delivery.pyz` for Python 3.11+. Run `python PATH/TO/media-delivery.pyz doctor` to check capture prerequisites. Add `--plan` for a read-only setup plan, `--apply` for explicit headless setup, or `--install-dir PATH` to choose the destination up front. Headless options are `--prefer-audio` and `--skip-tool-check`. This setup packages the CLI and reports capture tool availability. Install missing capture tools separately.
+Review the destination and options, then select **Install**. Setup creates a self-contained `media-delivery.pyz` for Python 3.11+. Run `python PATH/TO/media-delivery.pyz doctor` to check capture prerequisites. Add `--plan` for a read-only setup plan, `--apply` for explicit headless setup, or `--install-dir PATH` to choose the destination up front. Headless options are `--prefer-audio` and `--skip-tool-check`. The completion screen shows the install path, the capture-tools check result, and the command for the installed CLI's dependency check. Install missing capture tools separately.
 
 ## Windows 10/11
 

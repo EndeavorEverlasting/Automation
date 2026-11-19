@@ -36,10 +36,11 @@ ol { list-style: none; padding: 0; margin: 18px 0 24px; }
 li.pending, li.skipped { background: #1a3449; color: #c0d4de; }
 li.running { background: #2c5366; }
 li.failed { box-shadow: inset 0 0 0 1px #ffaca4; }
+li.warning { box-shadow: inset 0 0 0 1px #ffd287; }
 .indicator { color: #9ee4b9; min-width: 20px; text-align: center; font-weight: 700; }
 .pending .indicator, .skipped .indicator { color: #c0d4de; }
 .failed .indicator { color: #ffaca4; }
-.running .indicator { color: #ffd287; }
+.running .indicator, .warning .indicator { color: #ffd287; }
 .rail { position: relative; height: 6px; margin: 28px 7px 23px; border-radius: 8px; background: #081824; --progress: 0%; }
 .fill { position: absolute; top: 0; bottom: 0; width: var(--progress); border-radius: inherit; background: #ffcb77; transition: width .3s ease-out; }
 .marker { position: absolute; top: 50%; left: var(--progress); border: 2px solid #ffdb9e; width: 14px; height: 14px;
@@ -50,6 +51,10 @@ button { font: inherit; cursor: pointer; border-radius: 9px; border: 1px solid #
 button.primary { color: #112b35; background: #a7dfce; border-color: #a7dfce; font-weight: 700; }
 button:disabled { cursor: wait; opacity: .55; }
 #feedback { color: #ffd0a6; }
+#completion { padding: 14px; border-radius: 11px; background: #162f42; }
+#next-label { display: block; margin-bottom: 8px; font-size: 15px; font-weight: 650; }
+#next-command { width: 100%; padding: 8px; border-radius: 7px; border: 1px solid #6e9baa;
+  background: #102536; color: #f3f7f9; font-family: monospace; }
 @media (max-width: 560px) { .actions label { margin-left: 0; } }
 @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
 .reduce-motion *, .reduce-motion *::before { animation: none !important; transition: none !important; }
@@ -73,6 +78,11 @@ button:disabled { cursor: wait; opacity: .55; }
     <ol id="steps"></ol>
     <div class="rail" id="rail" role="progressbar" aria-label="Installation steps completed"
       aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="marker"></div></div>
+  </section>
+  <section id="completion" aria-label="After installation" hidden>
+    <p id="readiness" hidden></p>
+    <div id="next-action" hidden><label id="next-label" for="next-command"></label>
+      <input id="next-command" type="text" readonly spellcheck="false"></div>
   </section>
   <p id="feedback" role="alert" hidden></p>
   <div class="actions" id="actions" hidden>

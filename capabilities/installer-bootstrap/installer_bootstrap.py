@@ -25,10 +25,21 @@ class Option:
 
 
 @dataclass(frozen=True)
+class StepWarning:
+    detail: str
+
+
+@dataclass(frozen=True)
+class CompletionAction:
+    label: str
+    command: str
+
+
+@dataclass(frozen=True)
 class Step:
     id: str
     label: str
-    run: Callable[[dict[str, bool]], str | None]
+    run: Callable[[dict[str, bool]], str | StepWarning | None]
     option: str | None = None
 
 
@@ -38,12 +49,16 @@ class SetupError(Exception):
 
 class Installer:
     def __init__(self, *, title: str, description: str, destination: str,
-                 options: tuple[Option, ...], steps: tuple[Step, ...]):
+                 options: tuple[Option, ...], steps: tuple[Step, ...],
+                 readiness_step: str | None = None,
+                 completion_action: CompletionAction | None = None):
         self.title = title
         self.description = description
         self.destination = destination
         self.options = options
         self.steps = steps
+        self.readiness_step = readiness_step
+        self.completion_action = completion_action
         self.defaults = {option.id: option.default for option in options}
         for items in (options, steps):
             ids = {item.id for item in items}
@@ -53,6 +68,8 @@ class Installer:
             raise ValueError("At least one step must be required.")
         if any(step.option is not None and step.option not in self.defaults for step in steps):
             raise ValueError("Step references an unknown option.")
+        if readiness_step is not None and readiness_step not in {step.id for step in steps}:
+            raise ValueError("Readiness references an unknown step.")
 
     def choices(self, overrides: dict[str, bool]) -> dict[str, bool]:
         if not isinstance(overrides, dict) or any(
@@ -63,6 +80,12 @@ class Installer:
 
     def plan(self, overrides: dict[str, bool]) -> dict:
         choices = self.choices(overrides)
+        steps = [
+            {"id": step.id, "label": step.label, "state": (
+                "pending" if step.option is None or choices[step.option] else "skipped"
+            ), "detail": None}
+            for step in self.steps
+        ]
         return {
             "contract": CONTRACT,
             "title": self.title,
@@ -72,13 +95,22 @@ class Installer:
             "choices": choices,
             "status": "review",
             "progress": 0,
-            "steps": [
-                {"id": step.id, "label": step.label, "state": (
-                    "pending" if step.option is None or choices[step.option] else "skipped"
-                ), "detail": None}
-                for step in self.steps
-            ],
+            "steps": steps,
+            "readiness": self._readiness(steps, "review"),
+            "completion_action": None,
         }
+
+    def _readiness(self, rows: list[dict], install_status: str) -> dict | None:
+        if self.readiness_step is None:
+            return None
+        row = next(row for row in rows if row["id"] == self.readiness_step)
+        status = {
+            "pending": "pending", "running": "pending", "done": "verified",
+            "warning": "needs_attention", "failed": "not_checked", "skipped": "not_checked",
+        }[row["state"]]
+        if status == "pending" and install_status in {"failed", "cancelled"}:
+            status = "not_checked"
+        return {"status": status, "label": row["label"], "detail": row["detail"]}
 
     def apply(self, overrides: dict[str, bool]) -> dict:
         session = _Session(self)
@@ -99,7 +131,10 @@ class _Session:
 
     def snapshot(self) -> dict:
         with self.lock:
-            return self.state | {"steps": [row.copy() for row in self.state["steps"]]}
+            steps = [row.copy() for row in self.state["steps"]]
+            return self.state | {
+                "steps": steps, "readiness": self.installer._readiness(steps, self.state["status"])
+            }
 
     def start(self, overrides: dict[str, bool]) -> None:
         with self.lock:
@@ -142,10 +177,16 @@ class _Session:
                     self.state["status"] = "failed"
                 return
             with self.lock:
-                row.update(state="done", detail=detail)
+                if isinstance(detail, StepWarning):
+                    row.update(state="warning", detail=detail.detail)
+                else:
+                    row.update(state="done", detail=detail)
                 self.state["progress"] = 100 * index // len(active)
                 if index == len(active):
                     self.state["status"] = "done"
+                    action = self.installer.completion_action
+                    if action is not None:
+                        self.state["completion_action"] = asdict(action)
 
 
 def _serve(installer: Installer, open_browser: bool) -> int:

@@ -13,7 +13,12 @@ let actionVersion = 0;
 
 const stepStatus = {
   pending: ["·", "Waiting"], running: ["›", "In progress"],
-  done: ["✓", "Complete"], skipped: ["–", "Skipped"], failed: ["!", "Needs attention"]
+  done: ["✓", "Complete"], skipped: ["–", "Skipped"],
+  failed: ["×", "Setup failed"], warning: ["!", "Needs attention"]
+};
+
+const readinessStatus = {
+  verified: "Verified", needs_attention: "Needs attention", not_checked: "Not checked"
 };
 
 function announce(node, text) {
@@ -38,6 +43,22 @@ function buildOptions(state) {
     options.append(label);
   }
   options.hidden = !state.options.length;
+}
+
+function renderCompletion(state) {
+  const {readiness, completion_action: next} = state;
+  get("completion").hidden = state.status !== "done" || !(readiness || next);
+  get("readiness").hidden = !readiness;
+  if (readiness) {
+    // The checklist already shows the actionable detail for this exact step.
+    announce(get("readiness"), readiness.label + " · " + (readinessStatus[readiness.status] || "Pending"));
+  }
+  get("next-action").hidden = !next;
+  if (next) {
+    announce(get("next-label"), next.label);
+    const command = get("next-command");
+    if (command.value !== next.command) command.value = next.command;
+  }
 }
 
 function render(state) {
@@ -66,6 +87,7 @@ function render(state) {
   })[state.status]);
   get("review").hidden = !review;
   get("work").hidden = state.status === "review";
+  renderCompletion(state);
   get("actions").hidden = false;
   install.hidden = !review;
   announce(install, retry ? "Retry setup" : "Install");
@@ -121,7 +143,7 @@ async function action(endpoint, payload = {}) {
     const state = await call(endpoint, payload);
     if (endpoint === "close") {
       closed = true;
-      get("review").hidden = get("work").hidden = get("actions").hidden = true;
+      get("review").hidden = get("work").hidden = get("completion").hidden = get("actions").hidden = true;
       announce(title, "Setup closed");
       announce(summary, "You can close this tab.");
       title.focus();
