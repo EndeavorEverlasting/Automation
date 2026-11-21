@@ -20,7 +20,7 @@ from installer_bootstrap import CompletionAction, Installer, Option, SetupError,
 
 PAYLOAD = (
     "host_app.py", "deliver_artifact.py", "acquire.py", "social_insights.py",
-    "adapters/yt_dlp_social.py", "adapters/ollama_local.py",
+    "adapters/yt_dlp_social.py", "adapters/ollama_local.py", "adapters/ffmpeg_files.py",
 )
 
 

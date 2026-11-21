@@ -1,36 +1,19 @@
 #!/usr/bin/env python3
-"""Fingerprint a local installer recording and extract selected review frames."""
+"""Fingerprint a local video and extract selected review frames."""
 from __future__ import annotations
 
 import argparse
 import json
 import math
 from pathlib import Path
-import shutil
-import subprocess
 import tempfile
 
+from adapters.ffmpeg_files import extract_frame, probe_video
 from social_insights import sha256_file
 
 
 REPOSITORY = Path(__file__).resolve().parents[2]
 MAX_FRAMES = 24
-
-
-def run_tool(name: str, arguments: list[str], timeout: int) -> str:
-    executable = shutil.which(name)
-    if executable is None:
-        raise ValueError(f"{name} is required on PATH.")
-    try:
-        result = subprocess.run(
-            [executable, *arguments], capture_output=True, text=True, timeout=timeout, check=False
-        )
-    except (OSError, subprocess.TimeoutExpired) as error:
-        raise ValueError(f"{name} could not finish within the local review run.") from error
-    if result.returncode:
-        # Native stderr can contain the private source path.
-        raise ValueError(f"{name} could not process the recording.")
-    return result.stdout
 
 
 def inspect(source: Path, output: Path, timestamps: list[float]) -> None:
@@ -45,10 +28,7 @@ def inspect(source: Path, output: Path, timestamps: list[float]) -> None:
 
     original = source.stat()
     digest = sha256_file(source)
-    probe = json.loads(run_tool("ffprobe", [
-        "-v", "error", "-protocol_whitelist", "file", "-select_streams", "v:0",
-        "-show_entries", "format=duration:stream=width,height", "-of", "json", str(source),
-    ], timeout=30))
+    probe = json.loads(probe_video(source))
     try:
         duration = float(probe["format"]["duration"])
         video = probe["streams"][0]
@@ -67,11 +47,7 @@ def inspect(source: Path, output: Path, timestamps: list[float]) -> None:
         frames = []
         for index, seconds in enumerate(sorted(set(timestamps)), 1):
             frame = stage / f"frame-{index:02}.png"
-            run_tool("ffmpeg", [
-                "-nostdin", "-hide_banner", "-loglevel", "error", "-protocol_whitelist", "file",
-                "-ss", f"{seconds:.6f}", "-i", str(source), "-map", "0:v:0",
-                "-frames:v", "1", "-threads", "1", "-update", "1", str(frame),
-            ], timeout=45)
+            extract_frame(source, frame, seconds)
             if not frame.is_file() or not frame.stat().st_size:
                 raise ValueError(f"No frame was decoded near {seconds:g} seconds.")
             frames.append({"requested_seconds": seconds, "file": frame.name, "sha256": sha256_file(frame)})
@@ -80,6 +56,7 @@ def inspect(source: Path, output: Path, timestamps: list[float]) -> None:
             raise ValueError("The source changed during inspection. Retry against a stable copy.")
         packet = {
             "schema": "automation.local-video-review/v1",
+            "processing": "FILES_ONLY",
             "source": {"bytes": original.st_size, "sha256": digest, "duration_seconds": duration,
                        "width": width, "height": height},
             "frames": frames,
@@ -101,7 +78,7 @@ def main() -> int:
         parser.exit(2, f"Video review unavailable: {error}\n")
     except OSError:
         parser.exit(2, "Video review unavailable: could not read source or write private evidence.\n")
-    print("Private video evidence written. Full playback and decision mapping remain separate.")
+    print("Private video evidence written.")
     return 0
 
 
