@@ -8,6 +8,7 @@
     {
       "id": "reference-recording",
       "state": "LOCAL_AGENT_REQUIRED",
+      "handoff": "capabilities/installer-bootstrap/REFERENCE_VIDEO.md",
       "evidence": ["original_bytes_and_sha256", "duration", "timestamped_gate_and_toggle_map", "install_to_first_run_transition", "observed_vs_unknown"]
     },
     {

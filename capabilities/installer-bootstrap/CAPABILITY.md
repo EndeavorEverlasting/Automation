@@ -8,7 +8,7 @@ Run the existing Media Delivery launcher with `setup` to open an interactive ins
 
 ## Interaction contract
 
-Use the [component and evidence checklist](EXPERIENCE.md) for setup, progress, recovery, and first-run work.
+Use the [component and evidence checklist](EXPERIENCE.md) for setup, progress, recovery, and first-run work. For an operator-supplied recording, use the [local video handoff](REFERENCE_VIDEO.md).
 
 ## Reuse
 
