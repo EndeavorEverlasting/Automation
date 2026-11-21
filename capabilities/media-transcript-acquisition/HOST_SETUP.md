@@ -1,10 +1,19 @@
 # Media Delivery host setup — Windows and Linux Mint
 
-This is a user-launched terminal application for locally saving authorized accessible public media as video, MP3 audio, or both. It does not automatically install dependencies, open a browser, register a background task, or send files to the cloud.
+This is a user-launched terminal application for locally saving authorized accessible public media as video, MP3 audio, or both. The explicit setup command can install a per-user CLI. Capture does not install dependencies, register a background task or send files to the cloud.
 
 ## Prerequisites
 
 Python 3.11+, yt-dlp, and FFmpeg must be present on the host PATH. FFmpeg is required for every capture mode, because video may require separate audio/video stream merging. Recent YouTube extraction may also depend on yt-dlp JavaScript components. Consult upstream installation documentation before changing your host.
+
+## Pilot installer
+
+Run one of these commands from the Automation checkout:
+
+    .\capabilities\media-transcript-acquisition\Run-Media-Delivery.cmd setup
+    bash capabilities/media-transcript-acquisition/run-media-delivery.sh setup
+
+Review the destination and options, then select **Install**. Setup creates a self-contained `media-delivery.pyz` for Python 3.11+. Run `python PATH/TO/media-delivery.pyz doctor` to check capture prerequisites. Add `--plan` for a read-only setup plan, `--apply` for explicit headless setup, or `--install-dir PATH` to choose the destination up front. Headless options are `--prefer-audio` and `--skip-tool-check`. The completion screen shows the install path, the capture-tools check result, and the command for the installed CLI's dependency check. Install missing capture tools separately.
 
 ## Windows 10/11
 

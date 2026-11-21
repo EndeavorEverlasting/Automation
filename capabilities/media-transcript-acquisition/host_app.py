@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Portable, local-first host UI for authorized social-media artifact capture.
 
-No installer, scheduler, login, cookie import, cloud relay, or background service.
-This is an entrypoint over the existing deliver_artifact engine, not a downloader.
+User-launched setup and capture backed by the existing deliver_artifact engine.
 """
 from __future__ import annotations
 
@@ -152,7 +151,7 @@ def do_capture(url: str, mode: str, output: Path, max_mb: int, timeout: int) -> 
     return 0 if packet["status"] == "DELIVERED" else 2
 
 
-def interactive() -> int:
+def interactive(default_mode: str) -> int:
     print("Automation Media Delivery | Windows / Linux Mint")
     print("Save only content you are authorized to access and download.")
     print("Files stay on this computer. No logins, cookies or background jobs.")
@@ -169,7 +168,7 @@ def interactive() -> int:
         url = input("\nEnter a video URL (blank to exit): ").strip()
         if not url:
             return 0
-        mode = input("Mode [video/audio/hybrid] (default video): ").strip().lower() or "video"
+        mode = input(f"Mode [video/audio/hybrid] (default {default_mode}): ").strip().lower() or default_mode
         if mode not in status["ready_modes"]:
             print("Mode unavailable; check the FFmpeg installation and try again.")
             continue
@@ -185,25 +184,39 @@ def interactive() -> int:
             return code
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, *, default_mode: str = "video", installed: bool = False) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command")
     check = commands.add_parser("doctor", help="Check installed tools without changing the host")
     check.add_argument("--json", action="store_true")
     take = commands.add_parser("capture", help="Download to private local host output")
     take.add_argument("--url", required=True)
-    take.add_argument("--mode", choices=MODES, default="video")
+    take.add_argument("--mode", choices=MODES, default=default_mode)
     take.add_argument("--output-dir", type=Path, default=None)
     take.add_argument("--max-mb", type=int, default=500)
     take.add_argument("--timeout", type=int, default=300)
     prove = commands.add_parser("verify", help="Rehash files referenced by a receipt")
     prove.add_argument("--receipt", type=Path, required=True)
     commands.add_parser("interactive", help="Guided local capture session")
+    if not installed:
+        setup_parser = commands.add_parser("setup", help="Install a per-user copy of Media Delivery")
+        setup_modes = setup_parser.add_mutually_exclusive_group()
+        setup_modes.add_argument("--plan", action="store_true", help="Print the setup plan and exit")
+        setup_modes.add_argument("--apply", action="store_true", help="Apply without opening the browser")
+        setup_modes.add_argument("--no-open", action="store_true", help="Print the local setup URL")
+        setup_parser.add_argument("--install-dir", type=Path)
+        setup_parser.add_argument("--prefer-audio", action="store_true")
+        setup_parser.add_argument("--skip-tool-check", action="store_true")
     a = parser.parse_args(argv)
     if sys.version_info < (3, 11):
         print(json.dumps({"contract": HOST_CONTRACT, "status": "BLOCKED",
                           "failure": "UNSUPPORTED_PYTHON_VERSION"}))
         return 2
+    if a.command == "setup":
+        if (a.prefer_audio or a.skip_tool_check) and not (a.plan or a.apply):
+            setup_parser.error("Select these options in the setup window or use --plan/--apply.")
+        from install_host import setup
+        return setup(a)
     if a.command == "doctor":
         info = doctor()
         if a.json:
@@ -224,7 +237,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(receipt, indent=2))
         return 0 if receipt["status"] == "VERIFIED" else 2
     try:
-        return interactive()
+        return interactive(default_mode)
     except (EOFError, KeyboardInterrupt):
         print("\nStopped without scheduling any follow-up.")
         return 130
