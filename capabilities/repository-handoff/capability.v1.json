@@ -1,0 +1,48 @@
+{
+  "schema_version": "automation-capability/v1",
+  "capability_id": "repository-handoff",
+  "name": "Repository-owned canonical handoff",
+  "status": "INCUBATING",
+  "purpose": "Validate and author one deterministic successor-agent handoff in an existing authorized repository without archives, duplicate clones, or provider-side action claims.",
+  "semantic_contract_id": "automation-repository-handoff/v1",
+  "entrypoint": "capabilities/repository-handoff/handoff.py",
+  "packet_schema": "capabilities/repository-handoff/schemas/handoff.v1.schema.json",
+  "core_owns": [
+    "portable packet validation",
+    "deterministic Markdown rendering",
+    "existing worktree path/branch/HEAD and preimage gating",
+    "atomic write and local verification receipt"
+  ],
+  "adapters_own": [
+    "authenticated provider commits and remote readback",
+    "worktree admission and concurrency leases",
+    "CI/provider workflow and release decision"
+  ],
+  "forbidden_operations": [
+    "clone",
+    "git add",
+    "git commit",
+    "git push",
+    "force push",
+    "merge",
+    "deploy",
+    "copy patch archive to operator",
+    "mutate user-level settings",
+    "overwrite without preimage"
+  ],
+  "execution_environments": [
+    "Python 3.11+ on Windows/Linux/macOS with Git CLI available for write/verify",
+    "provider-native consumers can render the exact content without local Git"
+  ],
+  "proof_states": [
+    "VALID_PACKET_NOT_WRITTEN",
+    "WRITTEN_WORKTREE_NOT_COMMITTED",
+    "LOCAL_CONTENT_MATCH_NOT_REMOTE_PROOF",
+    "REFUSED"
+  ],
+  "production_use_path": "UNDECLARED",
+  "secret_policy": "No credentials, private continuity-store locators, or personal filesystem paths in tracked handoff packets.",
+  "owner": "EndeavorEverlasting/Automation",
+  "prompt_ownership": "TokenCorridor is canonical for P01 and every P-number; this capability owns no prompt definitions or authority routing.",
+  "reference_consumer": "EndeavorEverlasting/ParallaxPort PR #36 (independent repo-owned handoff; exemplar only, not a runtime dependency)"
+}

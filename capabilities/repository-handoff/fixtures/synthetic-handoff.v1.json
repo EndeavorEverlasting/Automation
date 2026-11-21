@@ -1,0 +1,36 @@
+{
+  "schema_version": "automation-repository-handoff/v1",
+  "work_id": "EXAMPLE-HANDOFF-001",
+  "repository_id": "example-org/example-service",
+  "branch": "feature/portable-handoff-canary",
+  "baseline_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "canonical_path": "harness/handoffs/CURRENT.md",
+  "mission": "Keep the next agent oriented without operator-host archives or duplicate checkout.",
+  "status": "CANDIDATE",
+  "owned_scope": [
+    "harness/handoffs/CURRENT.md",
+    "tests/repository-handoff contract tests"
+  ],
+  "forbidden_scope": [
+    "main merges",
+    "production deployment",
+    "account settings",
+    "secrets"
+  ],
+  "accomplished": [
+    "Portable handoff contract drafted"
+  ],
+  "checks": [
+    {
+      "name": "synthetic fixture review",
+      "result": "NOT_RUN",
+      "evidence": "Example fixture; no runtime proof claimed"
+    }
+  ],
+  "blockers": [
+    "Sample is not associated with a live repository"
+  ],
+  "evidence_refs": [],
+  "next_action": "Resolve the actual owning branch and replace synthetic values with observed repository facts before writing.",
+  "proof_ceiling": "Synthetic fixture only; no remote commit or live test proof."
+}

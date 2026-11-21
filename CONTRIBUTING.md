@@ -44,6 +44,12 @@ A contribution does not pass this gate merely because the correct repository own
 
 If a consumer still needs internal source layout, donor checkout paths, migration topology, authority-selection logic, or provider-specific implementation details, treat the boundary as leaky until explicitly justified.
 
+## Canonical handoffs for agent work
+
+For an execution-ready repository task, leave one tracked successor handoff in the **consumer's existing repository**. Do not substitute a ZIP, chat-local patch, copied checkout, or operator-run extraction instructions when a provider commit is possible or has failed. The operator is not a file courier.
+
+Automation incubates the portable [`repository-handoff` capability](capabilities/repository-handoff/CAPABILITY.md) and [seam review](docs/REPOSITORY_HANDOFF_SEAM_REVIEW.md). Consumers own their authoritative destination path and actual provider commit/readback. Require exact branch/HEAD, a preimage hash for handoff replacement, owned/forbidden scope, checks, proof ceiling and one executable next step. If provider writes fail, report `WRITE_BLOCKED` and retain the parent objective, not a manual-host-copy assignment. For authentic offline exports, obtain explicit operator intent.
+
 ## Admission gate for a new capability
 
 A new `capabilities/<id>/` boundary must define:

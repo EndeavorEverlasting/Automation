@@ -68,6 +68,13 @@ The short version:
 - secrets and runtime state never belong in source control;
 - "ubiquitous" is a direction backed by validation, not an unsupported compatibility claim.
 
+## Repository-owned canonical handoff (P01 incubation)
+
+- [Repository handoff capability](capabilities/repository-handoff/CAPABILITY.md) — deterministic, privacy-conscious successor handoff in an **existing** owning repository, with a safe branch/HEAD/preimage-checked writer. No archive export, duplicate checkout or manual operator file copying.
+- [Seam review and consumer canaries](docs/REPOSITORY_HANDOFF_SEAM_REVIEW.md) — isolates the reusable core from ParallaxPort's [reference PR #36](https://github.com/EndeavorEverlasting/ParallaxPort/pull/36), while TokenCorridor remains canonical for P01 prompt text.
+- Validate and render without mutation: `python capabilities/repository-handoff/handoff.py validate --packet capabilities/repository-handoff/fixtures/synthetic-handoff.v1.json` and `... render --packet ...`.
+- Incubating: a local write is **not** a remote commit; the consumer's authenticated provider adapter must write to the canonical branch, verify readback and separately prove any merge/deployment.
+
 ## Git-provider portability (incubating)
 
 - [Git portability contract](capabilities/git-portability/CAPABILITY.md) — create/verify an offline Git-history bundle, safely restore exact refs, and optionally upload public source through a separately configured Google Drive/rclone adapter. This is **not yet an account-wide backup**, encrypted private mirror, or provider bootstrapper. Tokens/credentials never belong in this repository. TokenCorridor's prompt registry and judgment ownership remain upstream.
