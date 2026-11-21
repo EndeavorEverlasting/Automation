@@ -136,6 +136,10 @@ Treat its machine-readable receipt as the current path/execution-context evidenc
 
 Before substantial mutation, recover current repository/provider truth and preserve these invariants.
 
+## Silent video processing
+
+For video analysis, frame extraction, transcription, or a report of sound from a hidden media process, use the [file-only video processing contract](capabilities/media-transcript-acquisition/VIDEO_PROCESSING.md). Agents must never open a media player or send audio to an output device during processing. Use the source audio as data for transcription or explicit file export and leave Windows volume and mixer settings alone.
+
 ## Media artifact delivery — current owner
 
 For requests to fetch an authorized YouTube/Instagram/social-media video, audio, or hybrid artifact to the local host, read `capabilities/media-transcript-acquisition/ARTIFACT_DELIVERY.md` and use `deliver_artifact.py` plus its versioned receipt. Do not fork a downloader into another product or mistake analysis-only `social_insights.py` for an end-user media delivery guarantee. Host/provider acceptance and a P04 READY packet: `docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.json`. Do not install scheduled tasks, pass cookies, upload private clips or assert live success from synthetic tests.

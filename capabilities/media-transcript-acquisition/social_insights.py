@@ -9,13 +9,12 @@ import argparse
 import hashlib
 import json
 import re
-import shutil
-import subprocess
 import sys
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit, urlunsplit
 
 from acquire import AcquisitionError, from_file
+from adapters.ffmpeg_files import VideoToolError, VideoToolUnavailable, sample_preview_frames
 from adapters.yt_dlp_social import download_media
 from adapters.ollama_local import infer_insights
 
@@ -93,19 +92,13 @@ def asr_media(path: Path, model_name: str) -> list[dict]:
 
 def sample_frames(media: Path, directory: Path, limit: int = 12) -> list[dict]:
     """Local bounded preview frames; timestamps denote nominal sampling slots."""
-    ffmpeg = shutil.which("ffmpeg")
-    if not ffmpeg:
-        raise AcquisitionError("VIDEO_ADAPTER_UNAVAILABLE")
     directory.mkdir(parents=True, exist_ok=True)
-    argv = [ffmpeg, "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
-            "-i", str(media), "-vf", "fps=1/8,scale=640:-2", "-frames:v",
-            str(limit), str(directory / "frame-%03d.jpg")]
     try:
-        result = subprocess.run(argv, capture_output=True, timeout=90, check=False)
-    except (subprocess.TimeoutExpired, OSError):
+        sample_preview_frames(media, directory, limit)
+    except VideoToolUnavailable:
+        raise AcquisitionError("VIDEO_ADAPTER_UNAVAILABLE") from None
+    except VideoToolError:
         raise AcquisitionError("VIDEO_PROCESSING_FAILED") from None
-    if result.returncode != 0:
-        raise AcquisitionError("VIDEO_PROCESSING_FAILED")
     frames = []
     for i, frame in enumerate(sorted(directory.glob("frame-*.jpg"))[:limit]):
         if frame.stat().st_size > 2_000_000:
