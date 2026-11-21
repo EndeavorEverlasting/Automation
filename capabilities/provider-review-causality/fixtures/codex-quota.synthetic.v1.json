@@ -1,0 +1,47 @@
+{
+  "schema_version": "automation.review-causality-input/v1",
+  "candidate": {
+    "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "attempts": [
+    {
+      "id": "synthetic-codex-review-001",
+      "provider": "codex",
+      "kind": "CODE_REVIEW",
+      "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "status": "FAILED",
+      "notices": [
+        {
+          "origin": "PROVIDER",
+          "id": "synthetic-provider-notice-001",
+          "text": "You have reached your Codex usage limits for code reviews."
+        }
+      ],
+      "findings": []
+    },
+    {
+      "id": "synthetic-independent-review-002",
+      "provider": "generic-linter",
+      "kind": "CODE_REVIEW",
+      "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "status": "COMPLETED",
+      "no_findings_attested": false,
+      "findings": [
+        {
+          "id": "synthetic-review-finding-002"
+        }
+      ]
+    },
+    {
+      "id": "synthetic-github-ci-003",
+      "provider": "github-actions",
+      "kind": "CI_JOB",
+      "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "status": "FAILED",
+      "runner_assigned": false,
+      "executed_steps": 0,
+      "error_code": "MONTHLY_ACTIONS_QUOTA_EXHAUSTED",
+      "findings": []
+    }
+  ]
+}
