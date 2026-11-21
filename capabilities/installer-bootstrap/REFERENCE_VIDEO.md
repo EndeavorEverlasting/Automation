@@ -13,10 +13,9 @@ if (-not (Test-Path -LiteralPath $video -PathType Leaf)) { throw "Local recordin
 $evidence = Join-Path $env:LOCALAPPDATA ("Automation\InstallerReview\" + [guid]::NewGuid())
 python .\capabilities\media-transcript-acquisition\inspect_local_video.py --input "$video" --out-dir "$evidence"
 if ($LASTEXITCODE -ne 0) { throw "Recording inspection failed." }
-Invoke-Item -LiteralPath $video
 ```
 
-The command records bytes, SHA-256, video dimensions and duration in `source.json`. It writes outside the checkout. Open the recording in an approved local player and review from beginning to end, including the handoff after installation. Scrub or replay around each transition. If playback fails, record the exact failure and stop that validation gate.
+The command records bytes, SHA-256, video dimensions and duration in `source.json` outside the checkout. Review from beginning to end using file-based evidence, including the handoff after installation. Background review may extract frames and decode audio as data. Never open the recording with a player, browser, or the Windows default app from the agent run. Leave the system mixer alone.
 
 ## 2. Build a timestamped decision map
 
@@ -29,7 +28,7 @@ For every consequential transition, record a timestamp range in playback time, s
 | Work in progress | First meaningful progress, active versus complete labels, percentage or indeterminate states, motion cues, and any interruption. |
 | Completion and first run | End of installation, next action, first usable screen, and any visible onboarding, defer, or settings revisit. |
 
-Use the same inspector with a **new** private output directory and repeated `--at SECONDS` flags to retain representative frames, up to 24 per run. Pick times from playback. A requested seek identifies a nearby decoded frame. Confirm exact transition timing and actions in continuous playback.
+Use the same inspector with a **new** private output directory and repeated `--at SECONDS` flags to retain representative frames, up to 24 per run. Sample across the recording, then use denser frame sequences around transitions. A requested seek identifies a nearby decoded frame. If file-based evidence cannot establish full coverage or exact timing, keep that gate open for an explicitly requested foreground review. Record the unresolved interval and keep the source private.
 
 ## 3. Reconcile and certify separately
 
