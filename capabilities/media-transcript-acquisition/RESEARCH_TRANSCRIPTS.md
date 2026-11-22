@@ -18,11 +18,13 @@ Files:
 - development-notes.md: empty source-citation worksheet for verified development research, never an invented AI interpretation.
 - receipt.json: source, adapter attempts, exact cues, SHA-256 file hashes, proof ceiling.
 
-Windows PowerShell launch only on success:
+In a Windows background run, read the JSON result and retain the receipt path:
 
     $r = py -3 capabilities/media-transcript-acquisition/transcribe.py --url 'https://www.youtube.com/watch?v=pl0EltNU5p0' | ConvertFrom-Json
     if ($r.status -ne 'TRANSCRIPT_ACQUIRED') { throw "Transcript unavailable: $($r.receipt)" }
-    Start-Process $r.document
+    $r.receipt
+
+Open the HTML only for a requested foreground preview. Follow the [file-only video processing contract](VIDEO_PROCESSING.md) for background work. Reuse an existing successful receipt and its cue IDs for research instead of reacquiring the transcript. Muted review can confirm visible timing or content. For a claim that depends on speech, check the cited cues against the original audio in a separate foreground session and record the timestamps and result.
 
 ## Quality and fallback
 
