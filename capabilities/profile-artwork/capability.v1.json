@@ -1,0 +1,16 @@
+{
+  "schema_version": "automation-capability/v1",
+  "capability_id": "profile-artwork",
+  "semantic_contract": "profile-artwork/v1",
+  "status": "INCUBATING_LOCAL_PORTABLE_RELEASES",
+  "purpose": "Generate or import coordinated profile artwork and maintain verifiable, restorable releases in a consumer checkout.",
+  "entrypoint": "capabilities/profile-artwork/profile_artwork.py",
+  "operations": ["init", "build", "status", "verify", "restore"],
+  "inputs": ["local checkout", "GitHub login", "title", "tagline", "optional color pair", "optional six GIF and PNG files"],
+  "outputs": ["profile-artwork.json", "README media blocks", "numbered asset directories", "SHA-256 release manifest", "JSON status"],
+  "core_owns": ["local rendering", "media validation", "immutable release creation", "prose-preserving restore"],
+  "adapters_own": ["read-only GitHub profile rendering and hosted byte verification"],
+  "supported_execution": ["LOCAL_AGENT_RUNTIME", "CLI", "OFFLINE_CONSUMER_CANARY"],
+  "admission": "Python 3.10+ and Pillow; edits scoped to the explicitly selected checkout; Git credentials stay with the operator.",
+  "proof_ceiling": "Isolated consumer generation, exact V11 media import, local restore, and synthetic GitHub readback. Provider publication requires the consumer's ordinary authorized push and live verification."
+}

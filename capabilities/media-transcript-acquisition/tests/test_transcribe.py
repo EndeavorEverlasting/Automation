@@ -107,6 +107,24 @@ class ResearchTranscriptTests(unittest.TestCase):
         self.assertTrue(media.exists(), "Operator-supplied audio must be preserved")
         self.assertTrue(receipt.is_file())
 
+    def test_comparison_is_unavailable_when_asr_is_the_only_transcript(self):
+        media = self.root / "owned.wav"
+        media.write_bytes(b"synthetic-only")
+        args = T.argparse.Namespace(url=URL, output_dir=self.output, captions_file=None,
+                    media_file=media, asr_model="already-local", compare_asr=True,
+                    max_audio_mb=128, retain_audio=False)
+        asr = [{"start_ms": 1000, "end_ms": 2000,
+                "text": "enough words for a lexical comparison"}]
+        with patch.object(T, "acquire", return_value={"cues": []}), \
+             patch.object(T, "asr_media", return_value=asr):
+            result, _ = T.run(args)
+        self.assertEqual(result["status"], "TRANSCRIPT_ACQUIRED")
+        self.assertEqual(result["method"], "local_faster_whisper")
+        self.assertEqual(result["quality"]["comparison_status"], "UNAVAILABLE")
+        self.assertFalse(result["quality"]["independent_asr_compared"])
+        self.assertIn({"code": "ASR_COMPARISON_UNAVAILABLE", "start_ms": 0},
+                      result["quality"]["flags"])
+
     def test_caption_asr_disagreement_is_review_flag_not_confidence(self):
         caption = T.normalize([{"start_ms": 1000, "end_ms": 20000,
             "text": "the algorithm maps frames onto a trained motion model"}])
@@ -127,6 +145,16 @@ class ResearchTranscriptTests(unittest.TestCase):
         self.assertIn({"code": "CAPTION_ASR_COVERAGE_DISAGREEMENT", "start_ms": 60000,
                        "caption_tokens": 0, "asr_tokens": 9}, flags)
 
+    def test_comparison_includes_tail_of_earlier_overlapping_cue(self):
+        shared = {"start_ms": 15000, "end_ms": 20000, "text": "same short closing cue"}
+        caption = T.normalize([shared])
+        asr = T.normalize([{"start_ms": 0, "end_ms": 70000,
+                            "text": "more technical words appear beyond the last cue"},
+                           shared])
+        self.assertIn({"code": "CAPTION_ASR_COVERAGE_DISAGREEMENT", "start_ms": 60000,
+                       "caption_tokens": 0, "asr_tokens": 8},
+                      T.compare_independent(caption, asr))
+
     def test_comparison_caps_large_and_pathological_windows(self):
         long_text = "token " * (T.MAX_WINDOW_TOKENS + 10)
         left = T.normalize([{"start_ms": 0, "end_ms": 50000, "text": long_text}])
@@ -137,6 +165,17 @@ class ResearchTranscriptTests(unittest.TestCase):
                                 "text": "speech"}])
         self.assertEqual(T.compare_independent(left, long_asr)[0]["code"],
                          "COMPARISON_SKIPPED_LONG_SOURCE")
+
+    def test_comparison_rejects_an_earlier_overlapping_cue_past_horizon(self):
+        shared = {"start_ms": 1000, "end_ms": 2000, "text": "short late cue"}
+        long_stream = T.normalize([{"start_ms": 0,
+                                    "end_ms": T.MAX_COMPARISON_MINUTES * 60000 + 1,
+                                    "text": "speech"}, shared])
+        short_stream = T.normalize([shared])
+        for caption, asr in ((long_stream, short_stream), (short_stream, long_stream)):
+            with self.subTest(long_is_caption=caption is long_stream):
+                self.assertEqual(T.compare_independent(caption, asr),
+                                 [{"code": "COMPARISON_SKIPPED_LONG_SOURCE", "start_ms": 0}])
 
     def test_output_boundary_and_unwritable_directory_have_typed_status(self):
         import contextlib

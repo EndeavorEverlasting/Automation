@@ -91,6 +91,8 @@ The executable source catalog, safe local checkout CLI and current multi-engine 
 
 ## Capabilities
 
+- [Portable GitHub profile artwork](capabilities/profile-artwork/CAPABILITY.md) — generate or import coordinated GIFs, verify a release, and roll back while preserving README prose.
+
 Admitted capabilities:
 
 

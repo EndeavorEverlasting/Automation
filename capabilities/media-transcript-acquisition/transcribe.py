@@ -117,7 +117,8 @@ def compare_independent(captions: list[dict], asr: list[dict]) -> list[dict]:
     """Bounded minute comparison: disagreement is a review target, not accuracy."""
     if not captions or not asr:
         return []
-    maximum = max(captions[-1]["end_ms"], asr[-1]["end_ms"])
+    # Cues are sorted by start time, so an earlier overlapping cue can end last.
+    maximum = max(cue["end_ms"] for stream in (captions, asr) for cue in stream)
     if maximum > MAX_COMPARISON_MINUTES * 60000:
         return [{"code": "COMPARISON_SKIPPED_LONG_SOURCE", "start_ms": 0}]
     left, left_ok = _comparison_windows(captions)
@@ -227,9 +228,9 @@ def run(args: argparse.Namespace) -> tuple[dict, Path]:
         except AcquisitionError as exc:
             cues, method = [], None
             packet["attempts"] = [{"adapter": "captions", "status": exc.status}]
-        primary_cues = normalize(cues) if cues else []
+        caption_cues = normalize(cues) if cues else []
         asr_cues = []
-        if args.asr_model and (not primary_cues or args.compare_asr):
+        if args.asr_model and (not caption_cues or args.compare_asr):
             media = args.media_file
             if media is None:
                 delivery, receipt = capture(source, "audio", root / "media-cache",
@@ -250,9 +251,11 @@ def run(args: argparse.Namespace) -> tuple[dict, Path]:
                     packet["attempts"].append({"adapter": "local_faster_whisper", "status": "SUCCESS"})
                 except AcquisitionError as exc:
                     packet["attempts"].append({"adapter": "local_faster_whisper", "status": exc.status})
-        if not primary_cues and asr_cues:
+        if caption_cues:
+            primary_cues = caption_cues
+        elif asr_cues:
             primary_cues, method = asr_cues, "local_faster_whisper"
-        if not primary_cues:
+        else:
             raise AcquisitionError("NO_ACCESSIBLE_TRANSCRIPT")
         packet["status"] = "TRANSCRIPT_ACQUIRED"
         packet["method"] = method
@@ -261,11 +264,11 @@ def run(args: argparse.Namespace) -> tuple[dict, Path]:
         flags = review_flags(primary_cues)
         comparison_status = "NOT_REQUESTED"
         if args.compare_asr:
-            if not asr_cues:
+            if not caption_cues or not asr_cues:
                 comparison_status = "UNAVAILABLE"
                 flags.append({"code": "ASR_COMPARISON_UNAVAILABLE", "start_ms": 0})
             else:
-                comparison_flags = compare_independent(primary_cues, asr_cues)
+                comparison_flags = compare_independent(caption_cues, asr_cues)
                 flags.extend(comparison_flags)
                 comparison_status = ("PARTIAL_REVIEW" if any(
                     f["code"].startswith("COMPARISON_SKIPPED") for f in comparison_flags

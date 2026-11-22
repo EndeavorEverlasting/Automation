@@ -64,3 +64,5 @@ Read [ARTIFACT_DELIVERY.md](ARTIFACT_DELIVERY.md) for command, modes, dependenci
 ## Cross-platform media host entrypoints
 
 The additive `automation.media-host/v1` interface provides `host_app.py` doctor/capture/verify/interactive, with thin Windows `Run-Media-Delivery.cmd` and Linux Mint `run-media-delivery.sh` wrappers. FFmpeg is a required host dependency even for video because stream merging may be necessary. Read `HOST_SETUP.md` and `docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.md`. CI cannot certify real host provider access or local desktop behavior.
+
+For a private local recording, [file-only video processing](VIDEO_PROCESSING.md) provides `inspect_local_video.py` for a source fingerprint and timestamped frames. Social frame sampling uses the same file-only FFmpeg adapter.
