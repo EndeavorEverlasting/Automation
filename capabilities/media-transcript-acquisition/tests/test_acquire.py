@@ -50,8 +50,24 @@ class TranscriptTests(unittest.TestCase):
         self.assertEqual(result["status"], "TRANSCRIPT_ACQUIRED")
         self.assertEqual(result["method"], "provided_captions")
         self.assertEqual(result["cues"][0]["text"], "Hello & welcome!")
-        self.assertEqual(result["cues"][1]["end_ms"], 5000)
-        self.assertEqual(len(result["cues"]), 2)
+        self.assertEqual(result["cues"][1]["end_ms"], 4000)
+        self.assertEqual(result["cues"][2]["start_ms"], 4200)
+        self.assertEqual(len(result["cues"]), 3)
+
+    def test_repeated_captions_across_gap_keep_both_timestamps(self):
+        self.captions.write_text(
+            "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nRepeat.\n\n"
+            "00:03:00.000 --> 00:03:01.000\nRepeat.\n", encoding="utf-8"
+        )
+        proc, result = self.cli("--captions-file", str(self.captions), "--strategy", "offline")
+        self.assertEqual(proc.returncode, 0)
+        self.assertEqual([x["start_ms"] for x in result["cues"]], [0, 180000])
+
+    def test_overlapping_repeated_caption_coalesces(self):
+        cues = M.parse_cues("WEBVTT\n\n00:00:01.000 --> 00:00:03.000\nYes.\n\n"
+                            "00:00:02.000 --> 00:00:04.000\nYes.\n")
+        self.assertEqual(len(cues), 1)
+        self.assertEqual(cues[0]["end_ms"], 4000)
 
     def test_offline_srt(self):
         self.captions.write_text(

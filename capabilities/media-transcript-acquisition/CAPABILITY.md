@@ -42,6 +42,13 @@ Run `python -m unittest discover -s capabilities/media-transcript-acquisition/te
 **Current production/use path:** `UNDECLARED`. **First real-provider gate:** authorized host/source, observed successful direct caption call, provenance + version recorded, and replay test. **Next optional gate:** local audio-to-text ASR, separately measured.
 
 
+## Research transcript document exports (additive)
+
+The repository-owned command `python capabilities/media-transcript-acquisition/transcribe.py --url HTTPS_YOUTUBE_URL` exports an evidence-linked, locally stored text/HTML transcript, a quality review and a blank technical-insight worksheet. It reuses `acquire.py` as primary caption source, optionally uses existing local `social_insights.asr_media` (explicit model selection) for transcript recovery/caption disagreement review and `deliver_artifact.capture` for authorized audio. It does not automatically download models, claim audio-to-text correctness, upload a Google Doc or invent technical insights.
+
+See [RESEARCH_TRANSCRIPTS.md](RESEARCH_TRANSCRIPTS.md) for exact invocation, artifacts, local storage/privacy safeguards, failure semantics, manual Google Docs conversion and validation. Contract: `automation.research-transcript/v1`; P08 actual-video/host and transcript-quality certification remain unproven.
+
+
 ## Cross-platform social-media extension (incubating)
 
 The existing `acquire.py` YouTube-only contract and its receipts remain unchanged. The additive `social_insights.py` entrypoint introduces `automation.social-media-insights/v1`: HTTPS provider classification, optional `yt-dlp` retrieval, existing SRT/VTT normalization, local FFmpeg frame evidence, opt-in offline `faster-whisper` ASR and local Ollama multimodal technical-claim extraction. Every emitted model claim must reference real cue/frame IDs and remains externally unverified. The local output and media sidecars stay private.

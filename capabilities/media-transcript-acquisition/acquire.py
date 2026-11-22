@@ -87,7 +87,8 @@ def parse_cues(body: str) -> list[dict]:
         caption = " ".join(caption.split())
         if not caption:
             continue
-        if cues and cues[-1]["text"] == caption and start >= cues[-1]["start_ms"]:
+        if (cues and cues[-1]["text"] == caption
+                and cues[-1]["start_ms"] <= start < cues[-1]["end_ms"]):
             cues[-1]["end_ms"] = max(cues[-1]["end_ms"], end)
         else:
             cues.append({"start_ms": start, "end_ms": end, "text": caption})

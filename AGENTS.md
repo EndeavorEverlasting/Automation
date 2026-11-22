@@ -136,6 +136,10 @@ Treat its machine-readable receipt as the current path/execution-context evidenc
 
 Before substantial mutation, recover current repository/provider truth and preserve these invariants.
 
+## Research transcript exports — local source-evidence owner
+
+Use `capabilities/media-transcript-acquisition/transcribe.py` and its [local research transcript contract](capabilities/media-transcript-acquisition/RESEARCH_TRANSCRIPTS.md) when the user requests a readable, timestamp-linked video transcript for development. It extends existing caption acquisition, optional preinstalled offline ASR and private media delivery rather than creating another downloader. Outputs are local and unverified until source/audio inspection; optional Google Docs publication is NOT implemented. Never commit user transcript content or report caption/ASR parity without a real provider/host comparison.
+
 ## Media artifact delivery — current owner
 
 For requests to fetch an authorized YouTube/Instagram/social-media video, audio, or hybrid artifact to the local host, read `capabilities/media-transcript-acquisition/ARTIFACT_DELIVERY.md` and use `deliver_artifact.py` plus its versioned receipt. Do not fork a downloader into another product or mistake analysis-only `social_insights.py` for an end-user media delivery guarantee. Host/provider acceptance and a P04 READY packet: `docs/handoffs/MEDIA_ARTIFACT_HOST_CERTIFICATION_2026-11-06.json`. Do not install scheduled tasks, pass cookies, upload private clips or assert live success from synthetic tests.
