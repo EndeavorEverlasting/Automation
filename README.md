@@ -91,6 +91,8 @@ The executable source catalog, safe local checkout CLI and current multi-engine 
 
 ## Capabilities
 
+- [Portable GitHub profile artwork](capabilities/profile-artwork/CAPABILITY.md) — generate or import coordinated GIFs, verify a release, and roll back while preserving README prose.
+
 Admitted capabilities:
 
 - [`media-transcript-acquisition`](capabilities/media-transcript-acquisition/CAPABILITY.md) — local-first SRT/VTT evidence normalization with optional YouTube caption adapters and explicit runtime-blocked receipts; live-source proof pending.
