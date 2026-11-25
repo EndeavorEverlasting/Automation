@@ -37,7 +37,7 @@ def expected_role(path):
 
 def untracked_source_paths(root):
     raw = subprocess.check_output(["git", "ls-files", "--others", "--exclude-standard", "-z"], cwd=root)
-    return sorted(p for p in raw.decode("utf-8").split("\\0")
+    return sorted(p for p in raw.decode("utf-8").split("\0")
                   if p and PurePosixPath(p).suffix.lower() in SOURCE_SUFFIXES)
 
 
