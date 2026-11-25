@@ -94,6 +94,10 @@
           "path": "tests/test_agent_hook_shape_sampler.py",
           "role": "test"
         }
+      ],
+      "entrypoints": [
+        "capabilities/agent-hook-runtime/diagnose_cursor_hook.py",
+        "capabilities/agent-hook-runtime/sample_shapes.py"
       ]
     },
     {
@@ -112,6 +116,9 @@
           "path": "tests/test_path_receipt.py",
           "role": "test"
         }
+      ],
+      "entrypoints": [
+        "scripts/path_receipt.py"
       ]
     },
     {
@@ -222,6 +229,10 @@
           "path": "tests/test_document_formatting_consumer_canary.py",
           "role": "test"
         }
+      ],
+      "entrypoints": [
+        "capabilities/document-formatting/compile.py",
+        "capabilities/document-formatting/plan.py"
       ]
     },
     {
@@ -284,6 +295,9 @@
           "path": "harness/contracts/entire-local-continuous.v1.json",
           "role": "contract"
         }
+      ],
+      "entrypoints": [
+        "capabilities/entire-local-continuous/continuous_local.py"
       ]
     },
     {
@@ -306,6 +320,9 @@
           "path": "tests/test_feature_ontology.py",
           "role": "test"
         }
+      ],
+      "entrypoints": [
+        "scripts/validate_feature_ontology.py"
       ]
     },
     {
@@ -360,6 +377,11 @@
           "path": "capabilities/ghidra-bootstrap/tests/test_ghidra_bootstrap.py",
           "role": "test"
         }
+      ],
+      "entrypoints": [
+        "Bootstrap-Ghidra.cmd",
+        "capabilities/ghidra-bootstrap/Bootstrap-Ghidra.cmd",
+        "capabilities/ghidra-bootstrap/Prove-GhidraBootstrap.ps1"
       ]
     },
     {
@@ -382,6 +404,9 @@
           "path": "tests/test_git_portability.py",
           "role": "test"
         }
+      ],
+      "entrypoints": [
+        "capabilities/git-portability/portable_git.py"
       ]
     },
     {
@@ -416,6 +441,9 @@
           "path": "tests/test_idea_work_continuity.py",
           "role": "test"
         }
+      ],
+      "entrypoints": [
+        "scripts/validate_idea_work_continuity.py"
       ]
     },
     {
@@ -426,6 +454,9 @@
           "path": "Add_New_Day.gs",
           "role": "source"
         }
+      ],
+      "entrypoints": [
+        "Add_New_Day.gs"
       ]
     },
     {
@@ -488,6 +519,10 @@
           "path": "tests/test_local_agent_readiness.py",
           "role": "test"
         }
+      ],
+      "entrypoints": [
+        "capabilities/local-agent-readiness/core/readiness.py",
+        "capabilities/local-agent-readiness/verify.py"
       ]
     },
     {
@@ -606,6 +641,15 @@
           "path": "tests/test_media_artifact_handoff.py",
           "role": "test"
         }
+      ],
+      "entrypoints": [
+        "capabilities/media-transcript-acquisition/Run-Media-Delivery.cmd",
+        "capabilities/media-transcript-acquisition/acquire.py",
+        "capabilities/media-transcript-acquisition/deliver_artifact.py",
+        "capabilities/media-transcript-acquisition/host_app.py",
+        "capabilities/media-transcript-acquisition/inspect_local_video.py",
+        "capabilities/media-transcript-acquisition/run-media-delivery.sh",
+        "capabilities/media-transcript-acquisition/social_insights.py"
       ]
     },
     {
@@ -640,6 +684,10 @@
           "path": "tests/test_parallel_dispatch_lease_ledger.py",
           "role": "test"
         }
+      ],
+      "entrypoints": [
+        "capabilities/parallel-dispatch/lease_ledger.py",
+        "capabilities/parallel-dispatch/run.py"
       ]
     },
     {
@@ -714,6 +762,9 @@
           "path": "tests/test_playlist_yt_dlp_json_adapter.py",
           "role": "test"
         }
+      ],
+      "entrypoints": [
+        "capabilities/playlist-link-extraction/extract_links.py"
       ]
     },
     {
@@ -736,6 +787,9 @@
           "path": "capabilities/profile-artwork/tests/test_profile_artwork.py",
           "role": "test"
         }
+      ],
+      "entrypoints": [
+        "capabilities/profile-artwork/profile_artwork.py"
       ]
     },
     {
@@ -770,6 +824,9 @@
           "path": "vendor/prompt-invocation-upstream/prompt_invocation_resolver.py",
           "role": "vendor"
         }
+      ],
+      "entrypoints": [
+        "scripts/prompt_runtime.py"
       ]
     },
     {
@@ -816,7 +873,8 @@
           "path": "tests/test_seam_boundary_review.py",
           "role": "test"
         }
-      ]
+      ],
+      "entrypoints": []
     },
     {
       "id": "runtime-handoff",
@@ -846,6 +904,9 @@
           "path": "tests/test_runtime_handoff.py",
           "role": "test"
         }
+      ],
+      "entrypoints": [
+        "scripts/validate_runtime_handoff.py"
       ]
     },
     {
@@ -880,6 +941,11 @@
           "path": "capabilities/slide-flow-compiler/tests/test_readback.mjs",
           "role": "test"
         }
+      ],
+      "entrypoints": [
+        "capabilities/slide-flow-compiler/adapters/google-slides-readback.mjs",
+        "capabilities/slide-flow-compiler/adapters/google-slides.mjs",
+        "capabilities/slide-flow-compiler/compile.mjs"
       ]
     },
     {
@@ -934,6 +1000,9 @@
           "path": "tests/test_social_publication_p95.py",
           "role": "test"
         }
+      ],
+      "entrypoints": [
+        "capabilities/social-publication/prototype.py"
       ]
     },
     {
@@ -972,6 +1041,9 @@
           "path": "harness/upstream-intelligence/consumer.v1.json",
           "role": "contract"
         }
+      ],
+      "entrypoints": [
+        "capabilities/upstream-reference-discovery/lookup.py"
       ]
     },
     {
@@ -986,7 +1058,8 @@
           "path": ".github/workflows/validate.yml",
           "role": "workflow"
         }
-      ]
+      ],
+      "entrypoints": []
     },
     {
       "id": "visual-state-compare",
@@ -1100,6 +1173,13 @@
           "path": "tests/test_visual_upstreams.py",
           "role": "test"
         }
+      ],
+      "entrypoints": [
+        "capabilities/visual-state-compare/adapters/playwright-browser/capture.py",
+        "capabilities/visual-state-compare/benchmark_ocr.py",
+        "capabilities/visual-state-compare/compare.py",
+        "capabilities/visual-state-compare/upstreams.py",
+        "capabilities/visual-state-compare/vision_cli.py"
       ]
     },
     {
@@ -1210,6 +1290,12 @@
           "path": "docs/WINDOWS_SILENT_SCHEDULED_TASK_SEAM_REVIEW.md",
           "role": "documentation"
         }
+      ],
+      "entrypoints": [
+        "capabilities/windows-silent-scheduled-task/Register-SilentCron.ps1",
+        "capabilities/windows-silent-scheduled-task/adapters/node/silent_background.cjs",
+        "capabilities/windows-silent-scheduled-task/core/silent_background.py",
+        "capabilities/windows-silent-scheduled-task/silent_cron.py"
       ]
     }
   ]

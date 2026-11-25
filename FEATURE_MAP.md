@@ -2,17 +2,21 @@
 
 Generated from `harness/contracts/feature-ontology.v1.json`. Do not edit this projection manually.
 
-Every tracked path has exactly one primary feature owner. This includes implementation, adapters, tests, contracts, fixtures, workflows, vendor files and documentation. No wildcard ownership or catch-all exclusions.
+Every tracked path has exactly one primary feature owner. This includes implementation, adapters, tests, contracts, fixtures, workflows, vendor files and documentation. No wildcard ownership or catch-all exclusions. Capability directory ownership, file roles and declared entrypoints are checked against existing repository contracts.
 
 Validate locally: `python scripts/validate_feature_ontology.py`
 
-When adding, deleting, renaming or moving files, update the ontology and regenerate this map in the same change: `python scripts/validate_feature_ontology.py --render` (redirect to FEATURE_MAP.md using UTF-8). The repository test suite checks both coverage and projection parity.
+When adding, deleting, renaming or moving files, update the ontology, stage the affected paths, and regenerate this map in the same change: `python scripts/validate_feature_ontology.py --render` (redirect to FEATURE_MAP.md using UTF-8). The repository test suite checks both coverage and projection parity. The local validator also rejects non-ignored, unstaged source files.
 
 **23 features; 268 mapped paths.**
 
 ## agent-hook-runtime
 
 Normalize native agent hook protocols, sample shapes and transport hook receipts.
+
+Entrypoints:
+- [`capabilities/agent-hook-runtime/diagnose_cursor_hook.py`](capabilities/agent-hook-runtime/diagnose_cursor_hook.py)
+- [`capabilities/agent-hook-runtime/sample_shapes.py`](capabilities/agent-hook-runtime/sample_shapes.py)
 
 - `documentation` — [`capabilities/agent-hook-runtime/CAPABILITY.md`](capabilities/agent-hook-runtime/CAPABILITY.md)
 - `adapter` — [`capabilities/agent-hook-runtime/adapters/__init__.py`](capabilities/agent-hook-runtime/adapters/__init__.py)
@@ -41,6 +45,9 @@ Normalize native agent hook protocols, sample shapes and transport hook receipts
 
 Resolve canonical development and production path evidence.
 
+Entrypoints:
+- [`scripts/path_receipt.py`](scripts/path_receipt.py)
+
 - `contract` — [`harness/contracts/canonical-path.v1.json`](harness/contracts/canonical-path.v1.json)
 - `source` — [`scripts/path_receipt.py`](scripts/path_receipt.py)
 - `test` — [`tests/test_path_receipt.py`](tests/test_path_receipt.py)
@@ -48,6 +55,10 @@ Resolve canonical development and production path evidence.
 ## document-formatting
 
 Compile portable document design contracts and adapt them to Google Docs.
+
+Entrypoints:
+- [`capabilities/document-formatting/compile.py`](capabilities/document-formatting/compile.py)
+- [`capabilities/document-formatting/plan.py`](capabilities/document-formatting/plan.py)
 
 - `documentation` — [`capabilities/document-formatting/CAPABILITY.md`](capabilities/document-formatting/CAPABILITY.md)
 - `adapter` — [`capabilities/document-formatting/adapters/__init__.py`](capabilities/document-formatting/adapters/__init__.py)
@@ -80,6 +91,9 @@ Compile portable document design contracts and adapt them to Google Docs.
 
 Admit and verify Actions-optional local continuous development.
 
+Entrypoints:
+- [`capabilities/entire-local-continuous/continuous_local.py`](capabilities/entire-local-continuous/continuous_local.py)
+
 - `documentation` — [`capabilities/entire-local-continuous/CAPABILITY.md`](capabilities/entire-local-continuous/CAPABILITY.md)
 - `contract` — [`capabilities/entire-local-continuous/capability.v1.json`](capabilities/entire-local-continuous/capability.v1.json)
 - `source` — [`capabilities/entire-local-continuous/continuous_local.py`](capabilities/entire-local-continuous/continuous_local.py)
@@ -99,6 +113,9 @@ Admit and verify Actions-optional local continuous development.
 
 Enforce exact ownership for every tracked file and render the synchronized feature map.
 
+Entrypoints:
+- [`scripts/validate_feature_ontology.py`](scripts/validate_feature_ontology.py)
+
 - `documentation` — [`FEATURE_MAP.md`](FEATURE_MAP.md)
 - `contract` — [`harness/contracts/feature-ontology.v1.json`](harness/contracts/feature-ontology.v1.json)
 - `source` — [`scripts/validate_feature_ontology.py`](scripts/validate_feature_ontology.py)
@@ -107,6 +124,11 @@ Enforce exact ownership for every tracked file and render the synchronized featu
 ## ghidra-bootstrap
 
 Bootstrap and certify portable Ghidra installations.
+
+Entrypoints:
+- [`Bootstrap-Ghidra.cmd`](Bootstrap-Ghidra.cmd)
+- [`capabilities/ghidra-bootstrap/Bootstrap-Ghidra.cmd`](capabilities/ghidra-bootstrap/Bootstrap-Ghidra.cmd)
+- [`capabilities/ghidra-bootstrap/Prove-GhidraBootstrap.ps1`](capabilities/ghidra-bootstrap/Prove-GhidraBootstrap.ps1)
 
 - `source` — [`Bootstrap-Ghidra.cmd`](Bootstrap-Ghidra.cmd)
 - `source` — [`capabilities/ghidra-bootstrap/Bootstrap-Ghidra.cmd`](capabilities/ghidra-bootstrap/Bootstrap-Ghidra.cmd)
@@ -125,6 +147,9 @@ Bootstrap and certify portable Ghidra installations.
 
 Bundle, verify and restore Git history and repository portability.
 
+Entrypoints:
+- [`capabilities/git-portability/portable_git.py`](capabilities/git-portability/portable_git.py)
+
 - `documentation` — [`capabilities/git-portability/CAPABILITY.md`](capabilities/git-portability/CAPABILITY.md)
 - `contract` — [`capabilities/git-portability/capability.v1.json`](capabilities/git-portability/capability.v1.json)
 - `source` — [`capabilities/git-portability/portable_git.py`](capabilities/git-portability/portable_git.py)
@@ -133,6 +158,9 @@ Bundle, verify and restore Git history and repository portability.
 ## idea-work-continuity
 
 Preserve durable idea-to-work ownership and continuity receipts.
+
+Entrypoints:
+- [`scripts/validate_idea_work_continuity.py`](scripts/validate_idea_work_continuity.py)
 
 - `documentation` — [`capabilities/idea-work-continuity/CAPABILITY.md`](capabilities/idea-work-continuity/CAPABILITY.md)
 - `contract` — [`capabilities/idea-work-continuity/capability.v1.json`](capabilities/idea-work-continuity/capability.v1.json)
@@ -146,11 +174,18 @@ Preserve durable idea-to-work ownership and continuity receipts.
 
 Legacy Google Apps Script for adding a new day.
 
+Entrypoints:
+- [`Add_New_Day.gs`](Add_New_Day.gs)
+
 - `source` — [`Add_New_Day.gs`](Add_New_Day.gs)
 
 ## local-agent-readiness
 
 Diagnose agent checkout, projection and runtime readiness.
+
+Entrypoints:
+- [`capabilities/local-agent-readiness/core/readiness.py`](capabilities/local-agent-readiness/core/readiness.py)
+- [`capabilities/local-agent-readiness/verify.py`](capabilities/local-agent-readiness/verify.py)
 
 - `documentation` — [`capabilities/local-agent-readiness/CAPABILITY.md`](capabilities/local-agent-readiness/CAPABILITY.md)
 - `contract` — [`capabilities/local-agent-readiness/capability.v1.json`](capabilities/local-agent-readiness/capability.v1.json)
@@ -170,6 +205,15 @@ Diagnose agent checkout, projection and runtime readiness.
 ## media-transcript-acquisition
 
 Acquire, normalize, inspect and deliver media/transcript evidence locally.
+
+Entrypoints:
+- [`capabilities/media-transcript-acquisition/Run-Media-Delivery.cmd`](capabilities/media-transcript-acquisition/Run-Media-Delivery.cmd)
+- [`capabilities/media-transcript-acquisition/acquire.py`](capabilities/media-transcript-acquisition/acquire.py)
+- [`capabilities/media-transcript-acquisition/deliver_artifact.py`](capabilities/media-transcript-acquisition/deliver_artifact.py)
+- [`capabilities/media-transcript-acquisition/host_app.py`](capabilities/media-transcript-acquisition/host_app.py)
+- [`capabilities/media-transcript-acquisition/inspect_local_video.py`](capabilities/media-transcript-acquisition/inspect_local_video.py)
+- [`capabilities/media-transcript-acquisition/run-media-delivery.sh`](capabilities/media-transcript-acquisition/run-media-delivery.sh)
+- [`capabilities/media-transcript-acquisition/social_insights.py`](capabilities/media-transcript-acquisition/social_insights.py)
 
 - `workflow` — [`.github/workflows/media-transcript-acquisition.yml`](.github/workflows/media-transcript-acquisition.yml)
 - `documentation` — [`capabilities/media-transcript-acquisition/ARTIFACT_DELIVERY.md`](capabilities/media-transcript-acquisition/ARTIFACT_DELIVERY.md)
@@ -204,6 +248,10 @@ Acquire, normalize, inspect and deliver media/transcript evidence locally.
 
 Dispatch independent work and manage execution leases.
 
+Entrypoints:
+- [`capabilities/parallel-dispatch/lease_ledger.py`](capabilities/parallel-dispatch/lease_ledger.py)
+- [`capabilities/parallel-dispatch/run.py`](capabilities/parallel-dispatch/run.py)
+
 - `documentation` — [`capabilities/parallel-dispatch/CAPABILITY.md`](capabilities/parallel-dispatch/CAPABILITY.md)
 - `source` — [`capabilities/parallel-dispatch/lease_ledger.py`](capabilities/parallel-dispatch/lease_ledger.py)
 - `source` — [`capabilities/parallel-dispatch/run.py`](capabilities/parallel-dispatch/run.py)
@@ -215,6 +263,9 @@ Dispatch independent work and manage execution leases.
 ## playlist-link-extraction
 
 Normalize playlist observations and export link artifacts.
+
+Entrypoints:
+- [`capabilities/playlist-link-extraction/extract_links.py`](capabilities/playlist-link-extraction/extract_links.py)
 
 - `documentation` — [`capabilities/playlist-link-extraction/CAPABILITY.md`](capabilities/playlist-link-extraction/CAPABILITY.md)
 - `documentation` — [`capabilities/playlist-link-extraction/adapters/README.md`](capabilities/playlist-link-extraction/adapters/README.md)
@@ -238,6 +289,9 @@ Normalize playlist observations and export link artifacts.
 
 Generate, verify and roll back coordinated profile artwork.
 
+Entrypoints:
+- [`capabilities/profile-artwork/profile_artwork.py`](capabilities/profile-artwork/profile_artwork.py)
+
 - `documentation` — [`capabilities/profile-artwork/CAPABILITY.md`](capabilities/profile-artwork/CAPABILITY.md)
 - `contract` — [`capabilities/profile-artwork/capability.v1.json`](capabilities/profile-artwork/capability.v1.json)
 - `source` — [`capabilities/profile-artwork/profile_artwork.py`](capabilities/profile-artwork/profile_artwork.py)
@@ -246,6 +300,9 @@ Generate, verify and roll back coordinated profile artwork.
 ## prompt-runtime
 
 Consume the pinned upstream prompt invocation dependency.
+
+Entrypoints:
+- [`scripts/prompt_runtime.py`](scripts/prompt_runtime.py)
 
 - `documentation` — [`docs/PROMPT_RUNTIME.md`](docs/PROMPT_RUNTIME.md)
 - `source` — [`scripts/prompt_runtime.py`](scripts/prompt_runtime.py)
@@ -274,6 +331,9 @@ Define repository identity, contribution boundaries, and seam review.
 
 Validate runtime execution handoff and public/private placement.
 
+Entrypoints:
+- [`scripts/validate_runtime_handoff.py`](scripts/validate_runtime_handoff.py)
+
 - `documentation` — [`docs/PUBLIC_PRIVATE_BRIDGE.md`](docs/PUBLIC_PRIVATE_BRIDGE.md)
 - `documentation` — [`docs/RUNTIME_DISTRIBUTION.md`](docs/RUNTIME_DISTRIBUTION.md)
 - `fixture` — [`docs/examples/runtime-handoff.example.json`](docs/examples/runtime-handoff.example.json)
@@ -284,6 +344,11 @@ Validate runtime execution handoff and public/private placement.
 ## slide-flow-compiler
 
 Compile slide flows and verify Google Slides readback.
+
+Entrypoints:
+- [`capabilities/slide-flow-compiler/adapters/google-slides-readback.mjs`](capabilities/slide-flow-compiler/adapters/google-slides-readback.mjs)
+- [`capabilities/slide-flow-compiler/adapters/google-slides.mjs`](capabilities/slide-flow-compiler/adapters/google-slides.mjs)
+- [`capabilities/slide-flow-compiler/compile.mjs`](capabilities/slide-flow-compiler/compile.mjs)
 
 - `workflow` — [`.github/workflows/slide-flow-compiler.yml`](.github/workflows/slide-flow-compiler.yml)
 - `documentation` — [`capabilities/slide-flow-compiler/CAPABILITY.md`](capabilities/slide-flow-compiler/CAPABILITY.md)
@@ -296,6 +361,9 @@ Compile slide flows and verify Google Slides readback.
 ## social-publication
 
 Compile publication intent and isolate provider-specific delivery.
+
+Entrypoints:
+- [`capabilities/social-publication/prototype.py`](capabilities/social-publication/prototype.py)
 
 - `documentation` — [`capabilities/social-publication/CAPABILITY.md`](capabilities/social-publication/CAPABILITY.md)
 - `adapter` — [`capabilities/social-publication/adapters/__init__.py`](capabilities/social-publication/adapters/__init__.py)
@@ -313,6 +381,9 @@ Compile publication intent and isolate provider-specific delivery.
 ## upstream-reference-discovery
 
 Discover and qualify upstream references.
+
+Entrypoints:
+- [`capabilities/upstream-reference-discovery/lookup.py`](capabilities/upstream-reference-discovery/lookup.py)
 
 - `documentation` — [`.agents/skills/upstream-intelligence/SKILL.md`](.agents/skills/upstream-intelligence/SKILL.md)
 - `documentation` — [`.cursor/rules/upstream-intelligence.mdc`](.cursor/rules/upstream-intelligence.mdc)
@@ -333,6 +404,13 @@ Orchestrate repository-wide validation without becoming a runtime prerequisite.
 ## visual-state-compare
 
 Compare visual observations and orchestrate OCR/browser capture adapters.
+
+Entrypoints:
+- [`capabilities/visual-state-compare/adapters/playwright-browser/capture.py`](capabilities/visual-state-compare/adapters/playwright-browser/capture.py)
+- [`capabilities/visual-state-compare/benchmark_ocr.py`](capabilities/visual-state-compare/benchmark_ocr.py)
+- [`capabilities/visual-state-compare/compare.py`](capabilities/visual-state-compare/compare.py)
+- [`capabilities/visual-state-compare/upstreams.py`](capabilities/visual-state-compare/upstreams.py)
+- [`capabilities/visual-state-compare/vision_cli.py`](capabilities/visual-state-compare/vision_cli.py)
 
 - `workflow` — [`.github/workflows/visual-state-compare.yml`](.github/workflows/visual-state-compare.yml)
 - `documentation` — [`capabilities/visual-state-compare/CAPABILITY.md`](capabilities/visual-state-compare/CAPABILITY.md)
@@ -365,6 +443,12 @@ Compare visual observations and orchestrate OCR/browser capture adapters.
 ## windows-silent-scheduled-task
 
 Register and verify silent Windows background scheduling.
+
+Entrypoints:
+- [`capabilities/windows-silent-scheduled-task/Register-SilentCron.ps1`](capabilities/windows-silent-scheduled-task/Register-SilentCron.ps1)
+- [`capabilities/windows-silent-scheduled-task/adapters/node/silent_background.cjs`](capabilities/windows-silent-scheduled-task/adapters/node/silent_background.cjs)
+- [`capabilities/windows-silent-scheduled-task/core/silent_background.py`](capabilities/windows-silent-scheduled-task/core/silent_background.py)
+- [`capabilities/windows-silent-scheduled-task/silent_cron.py`](capabilities/windows-silent-scheduled-task/silent_cron.py)
 
 - `documentation` — [`capabilities/windows-silent-scheduled-task/CAPABILITY.md`](capabilities/windows-silent-scheduled-task/CAPABILITY.md)
 - `source` — [`capabilities/windows-silent-scheduled-task/Register-SilentCron.ps1`](capabilities/windows-silent-scheduled-task/Register-SilentCron.ps1)
