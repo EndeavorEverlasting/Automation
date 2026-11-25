@@ -127,6 +127,8 @@ def check_capability_contracts(root, ontology, actual):
         if len(parts) != 3 or parts[0] != "capabilities" or parts[-1] != "capability.v1.json":
             continue
         ident = parts[1]
+        if ident not in features:
+            raise ValueError(f"unmapped capability contract: {path}")
         contract = json.loads((root / path).read_text(encoding="utf-8"),
                               object_pairs_hook=reject_duplicate_keys)
         if not isinstance(contract, dict) or contract.get("capability_id") != ident:
@@ -138,7 +140,7 @@ def check_capability_contracts(root, ontology, actual):
         declared.extend(entries.values())
         if any(not isinstance(value, str) or not value.strip() for value in declared):
             raise ValueError(f"invalid capability entrypoint value: {path}")
-        declared_paths = {re.split(r"[\\s#]", value.strip(), maxsplit=1)[0] for value in declared}
+        declared_paths = {re.split(r"[\s#]", value.strip(), maxsplit=1)[0] for value in declared}
         if declared_paths != set(features[ident]["entrypoints"]):
             raise ValueError(f"capability entrypoint drift: {path}: expected {sorted(declared_paths)}")
 
